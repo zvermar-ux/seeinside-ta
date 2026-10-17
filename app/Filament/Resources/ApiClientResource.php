@@ -72,6 +72,7 @@ class ApiClientResource extends Resource
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active')),
             ])
             ->actions([
+                Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('key')->label(__('New API key'))->icon('heroicon-o-key')->color('warning')->iconButton()->tooltip(__('New API key'))
                     ->requiresConfirmation()
                     ->modalDescription(__('The old key stops working immediately.'))
@@ -83,7 +84,6 @@ class ApiClientResource extends Resource
                         Notification::make()->title(__('Website answered: :status', ['status' => $status ?: __('no answer')]))
                             ->color($status >= 200 && $status < 300 ? 'success' : 'danger')->send();
                     }),
-                Tables\Actions\EditAction::make()->iconButton(),
                 Tables\Actions\DeleteAction::make()->iconButton(),
             ]);
     }

@@ -9,6 +9,9 @@ class RoomRate extends Model
 {
     protected $guarded = ['id'];
 
+    /** changes reach the website through the parent */
+    protected $touches = ['room'];
+
     protected function casts(): array
     {
         return ['date_from' => 'date', 'date_to' => 'date', 'price' => 'decimal:2', 'is_last_minute' => 'boolean'];

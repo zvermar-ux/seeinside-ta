@@ -14,6 +14,9 @@ class DeparturePlaceTour extends Model
 
     protected $guarded = ['id'];
 
+    /** changes reach the website through the parent */
+    protected $touches = ['tour'];
+
     protected function casts(): array
     {
         return ['surcharge' => 'decimal:2'];

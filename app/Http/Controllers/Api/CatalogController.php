@@ -247,6 +247,32 @@ class CatalogController extends Controller
         ]]);
     }
 
+    /* ---------------- charters ---------------- */
+
+    /** Upcoming charter flights / seats (active only) */
+    public function charters(Request $request): JsonResponse
+    {
+        $rows = \App\Models\Charter::query()->where('agency_id', $this->agencyId($request))->where('is_active', true)
+            ->where(fn ($q) => $q->whereNull('departure_date')->orWhereDate('departure_date', '>=', today()))
+            ->orderBy('departure_date')->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'region' => $c->region,
+                'destination' => $c->destination,
+                'departure_place' => $c->departure_place,
+                'departure_date' => $c->departure_date?->toDateString(),
+                'return_date' => $c->return_date?->toDateString(),
+                'price' => (float) $c->price,
+                'transport_only_price' => $c->transport_only_price !== null ? (float) $c->transport_only_price : null,
+                'currency' => $c->currency,
+                'seats_left' => $c->seatsLeft(),
+                'note' => $c->note,
+                'updated_at' => $c->updated_at?->toIso8601String(),
+            ]);
+
+        return response()->json(['data' => $rows->values()]);
+    }
+
     /* ---------------- visas ---------------- */
 
     public function visas(Request $request): JsonResponse

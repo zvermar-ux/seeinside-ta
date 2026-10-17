@@ -757,5 +757,6 @@
     "Applies to super admins and to the login page. Each agency admin sets the look for his own agency.": "Важи за суперадминот и за страницата за најава. Секој админ на агенција го поставува изгледот за својата агенција.",
     "Restore the standard look": "Врати стандарден изглед",
     "The agency's changes are removed and its users see the standard look again.": "Промените на агенцијата се бришат и нејзините корисници повторно го гледаат стандардниот изглед.",
-    "Super admin (my login) and login page": "Суперадмин (мојата најава) и страница за најава"
+    "Super admin (my login) and login page": "Суперадмин (мојата најава) и страница за најава",
+    "WordPress plugin": "WordPress плагин"
 }

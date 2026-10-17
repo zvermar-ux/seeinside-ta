@@ -1,0 +1,1346 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: SeeInside Travel 1.0.0\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: mk_MK\n"
+"Plural-Forms: nplurals=2; plural=(n % 10 == 1 && n % 100 != 11) ? 0 : 1;\n"
+
+msgid "January"
+msgstr "Јануари"
+
+msgid "February"
+msgstr "Февруари"
+
+msgid "March"
+msgstr "Март"
+
+msgid "April"
+msgstr "Април"
+
+msgid "May"
+msgstr "Мај"
+
+msgid "June"
+msgstr "Јуни"
+
+msgid "July"
+msgstr "Јули"
+
+msgid "August"
+msgstr "Август"
+
+msgid "September"
+msgstr "Септември"
+
+msgid "October"
+msgstr "Октомври"
+
+msgid "November"
+msgstr "Ноември"
+
+msgid "December"
+msgstr "Декември"
+
+msgid "Mo"
+msgstr "По"
+
+msgid "Tu"
+msgstr "Вт"
+
+msgid "We"
+msgstr "Ср"
+
+msgid "Th"
+msgstr "Че"
+
+msgid "Fr"
+msgstr "Пе"
+
+msgid "Sa"
+msgstr "Са"
+
+msgid "Su"
+msgstr "Не"
+
+msgid "\"%s\" is empty for this item."
+msgstr "„%s“ е празно за оваа ставка."
+
+msgid "%s – data from SeeInside Travel"
+msgstr "%s – податоци од SeeInside Travel"
+
+msgid "ACF field groups are registered in code (no import needed). In Elementor Pro use <b>Dynamic Tags → ACF Field</b> for single values."
+msgstr "ACF групите полиња се регистрирани во кодот (не треба увоз). Во Elementor Pro користи <b>Dynamic Tags → ACF Field</b> за поединечни вредности."
+
+msgid "API key"
+msgstr "API клуч"
+
+msgid "Accent (badges)"
+msgstr "Акцент (ознаки)"
+
+msgid "Accommodation type"
+msgstr "Тип на сместување"
+
+msgid "Accommodation types"
+msgstr "Типови сместување"
+
+msgid "Add row"
+msgstr "Додај ред"
+
+msgid "Address"
+msgstr "Адреса"
+
+msgid "Addresses (URL)"
+msgstr "Адреси (URL)"
+
+msgid "Adult"
+msgstr "Возрасен"
+
+msgid "Adults"
+msgstr "Возрасни"
+
+msgid "Age of child"
+msgstr "Возраст на дете"
+
+msgid "Age restriction"
+msgstr "Возрасно ограничување"
+
+msgid "Agenda"
+msgstr "Агенда"
+
+msgid "Airline"
+msgstr "Авиокомпанија"
+
+msgid "Airline logo"
+msgstr "Лого на авиокомпанијата"
+
+msgid "All destinations"
+msgstr "Сите дестинации"
+
+msgid "All last minute offers"
+msgstr "Сите last minute понуди"
+
+msgid "Amenities"
+msgstr "Содржини"
+
+msgid "Amenity"
+msgstr "Содржина"
+
+msgid "Any section can be replaced from the theme: <code>/your-theme/seeinside-travel/section-program.php</code> (variables <code>$d</code>, <code>$type</code>, <code>$post_id</code>). Forms: <code>form-booking.php</code>, <code>form-visa.php</code>."
+msgstr "Секој дел може да се замени од темата: <code>/your-theme/seeinside-travel/section-program.php</code> (променливи <code>$d</code>, <code>$type</code>, <code>$post_id</code>). Форми: <code>form-booking.php</code>, <code>form-visa.php</code>."
+
+msgid "Apply online"
+msgstr "Аплицирај онлајн"
+
+msgid "Aries quality"
+msgstr "Aries квалитет"
+
+msgid "As <b>Webhook URL</b> enter:"
+msgstr "Како <b>Webhook URL</b> внеси:"
+
+msgid "Automatic layout when the builder has no template"
+msgstr "Автоматски изглед кога билдерот нема темплејт"
+
+msgid "Availability"
+msgstr "Достапност"
+
+msgid "Availability calendar"
+msgstr "Календар на достапност"
+
+msgid "Available"
+msgstr "Достапно"
+
+msgid "Baggage"
+msgstr "Багаж"
+
+msgid "Basic"
+msgstr "Основно"
+
+msgid "Beach"
+msgstr "Плажа"
+
+msgid "Beds"
+msgstr "Кревети"
+
+msgid "Block theme (Gutenberg)"
+msgstr "Блок тема (Gutenberg)"
+
+msgid "Board"
+msgstr "Услуга"
+
+msgid "Board types"
+msgstr "Видови услуга"
+
+msgid "Book"
+msgstr "Резервирај"
+
+msgid "Book now"
+msgstr "Резервирај сега"
+
+msgid "Book this tour"
+msgstr "Резервирај го аранжманот"
+
+msgid "Booked"
+msgstr "Зафатено"
+
+msgid "Booking form"
+msgstr "Форма за резервација"
+
+msgid "Booking mode"
+msgstr "Начин на резервација"
+
+msgid "Booking system is not reachable at the moment. Please call us."
+msgstr "Системот за резервации моментално не е достапен. Ве молиме јавете ни се."
+
+msgid "Brings in all tours, events, hotels, visas, destinations, slider and charters with photos. Needed once; after that changes arrive automatically in real time."
+msgstr "Ги внесува сите аранжмани, настани, хотели, визи, дестинации, слајдерот и чартерите со фотографии. Потребно е еднаш; потоа промените пристигнуваат автоматски во реално време."
+
+msgid "Budget up to"
+msgstr "Буџет до"
+
+msgid "Buy tickets"
+msgstr "Купи билети"
+
+msgid "Cancellation policy"
+msgstr "Услови за откажување"
+
+msgid "Category"
+msgstr "Категорија"
+
+msgid "Centre"
+msgstr "Центар"
+
+msgid "Change every (seconds, 0 = off)"
+msgstr "Промена на секои (секунди, 0 = исклучено)"
+
+msgid "Charter seats"
+msgstr "Чартер места"
+
+msgid "Charter seats with booking"
+msgstr "Чартер места со резервација"
+
+msgid "Check"
+msgstr "Провери"
+
+msgid "Check availability"
+msgstr "Провери достапност"
+
+msgid "Check prices & book"
+msgstr "Провери цени и резервирај"
+
+msgid "Check your booking"
+msgstr "Провери резервација"
+
+msgid "Check your booking or visa application"
+msgstr "Провери ја резервацијата или барањето за виза"
+
+msgid "Check-in"
+msgstr "Пријавување"
+
+msgid "Check-in / out"
+msgstr "Пријавување / одјавување"
+
+msgid "Check-out"
+msgstr "Одјавување"
+
+msgid "Checking prices…"
+msgstr "Се проверуваат цените…"
+
+msgid "Child"
+msgstr "Дете"
+
+msgid "Child age from"
+msgstr "Возраст на дете од"
+
+msgid "Child age to"
+msgstr "Возраст на дете до"
+
+msgid "Child price for ages %1$s–%2$s."
+msgstr "Детска цена за возраст %1$s–%2$s години."
+
+msgid "Children"
+msgstr "Деца"
+
+msgid "Choose"
+msgstr "Избери"
+
+msgid "Choose a date"
+msgstr "Избери датум"
+
+msgid "Choose below"
+msgstr "Избери подолу"
+
+msgid "City"
+msgstr "Град"
+
+msgid "City or airport"
+msgstr "Град или аеродром"
+
+msgid "Classic theme"
+msgstr "Класична тема"
+
+msgid "Click the key icon, copy the <b>API key</b> and the <b>webhook secret</b> and paste them below."
+msgstr "Кликни на иконата за клуч, копирај ги <b>API клучот</b> и <b>webhook тајната</b> и залепи ги подолу."
+
+msgid "Colours"
+msgstr "Бои"
+
+msgid "Columns"
+msgstr "Колони"
+
+msgid "Connect with SeeInside Travel"
+msgstr "Поврзи со SeeInside Travel"
+
+msgid "Connected: %s"
+msgstr "Поврзано: %s"
+
+msgid "Connection"
+msgstr "Врска"
+
+msgid "Connection failed (HTTP %1$d): %2$s"
+msgstr "Врската не успеа (HTTP %1$d): %2$s"
+
+msgid "Consular fee"
+msgstr "Конзуларна такса"
+
+msgid "Content"
+msgstr "Содржина"
+
+msgid "Corner radius"
+msgstr "Заобленост на аглите"
+
+msgid "Countries"
+msgstr "Држави"
+
+msgid "Country"
+msgstr "Држава"
+
+msgid "Country code"
+msgstr "Код на државата"
+
+msgid "Create Elementor templates"
+msgstr "Креирај Elementor темплејти"
+
+msgid "Create pages (tours, hotels, events, visas, last minute, charters, flights, booking check)"
+msgstr "Креирај страници (аранжмани, хотели, настани, визи, last minute, чартери, авио, проверка на резервација)"
+
+msgid "Currency"
+msgstr "Валута"
+
+msgid "Current archive (in archive templates)"
+msgstr "Тековна архива (во темплејти за листи)"
+
+msgid "Customer checks a booking / visa application (number + e-mail)"
+msgstr "Клиентот проверува резервација / барање за виза (број + е-пошта)"
+
+msgid "Data comes from SeeInside Travel automatically."
+msgstr "Податоците доаѓаат автоматски од SeeInside Travel."
+
+msgid "Date"
+msgstr "Датум"
+
+msgid "Dates & prices"
+msgstr "Термини и цени"
+
+msgid "Day"
+msgstr "Ден"
+
+msgid "Day %d"
+msgstr "Ден %d"
+
+msgid "Delete permanently"
+msgstr "Избриши трајно"
+
+msgid "Deleted in SeeInside"
+msgstr "Избришано во SeeInside"
+
+msgid "Departure"
+msgstr "Поаѓање"
+
+msgid "Departure date"
+msgstr "Датум на поаѓање"
+
+msgid "Departure dates"
+msgstr "Термини на поаѓање"
+
+msgid "Departure place"
+msgstr "Место на поаѓање"
+
+msgid "Departure places"
+msgstr "Места на поаѓање"
+
+msgid "Deposit %"
+msgstr "Аванс %"
+
+msgid "Deposit when booking: %s%%."
+msgstr "Аванс при резервација: %s%%."
+
+msgid "Description"
+msgstr "Опис"
+
+msgid "Description (EN)"
+msgstr "Опис (EN)"
+
+msgid "Description (EN) – the Macedonian description is the post content"
+msgstr "Опис (EN) – македонскиот опис е содржината на објавата"
+
+msgid "Description (MK)"
+msgstr "Опис (МК)"
+
+msgid "Destination"
+msgstr "Дестинација"
+
+msgid "Destination tiles"
+msgstr "Плочки со дестинации"
+
+msgid "Destinations"
+msgstr "Дестинации"
+
+msgid "Destinations, groups and slider imported"
+msgstr "Дестинациите, групите и слајдерот се внесени"
+
+msgid "Details"
+msgstr "Детали"
+
+msgid "Detected:"
+msgstr "Препознаено:"
+
+msgid "Display & templates"
+msgstr "Приказ и темплејти"
+
+msgid "Distance to airport (km)"
+msgstr "Оддалеченост од аеродром (km)"
+
+msgid "Distance to beach (m)"
+msgstr "Оддалеченост од плажа (m)"
+
+msgid "Distance to centre (m)"
+msgstr "Оддалеченост од центар (m)"
+
+msgid "Distance to ski lift (m)"
+msgstr "Оддалеченост од ски-лифт (m)"
+
+msgid "Documents"
+msgstr "Документи"
+
+msgid "Doors open"
+msgstr "Отворање на вратите"
+
+msgid "Duration"
+msgstr "Траење"
+
+msgid "Duration (days)"
+msgstr "Траење (денови)"
+
+msgid "E-mail"
+msgstr "Е-пошта"
+
+msgid "Edit in SeeInside"
+msgstr "Уреди во SeeInside"
+
+msgid "Elementor (free): single pages use the automatic layout; on any page you can use the \"Travel\" widgets (lists, slider, search…). With Elementor Pro the plugin also creates Theme Builder templates."
+msgstr "Elementor (бесплатен): поединечните страници го користат автоматскиот изглед; на која било страница може да ги користиш „Travel“ виџетите (листи, слајдер, пребарување…). Со Elementor Pro плагинот креира и Theme Builder темплејти."
+
+msgid "Elementor is not active."
+msgstr "Elementor не е активен."
+
+msgid "Elementor widgets also have their own colour settings."
+msgstr "Elementor виџетите имаат и свои поставки за бои."
+
+msgid "Ends"
+msgstr "Завршува"
+
+msgid "English: texts switch automatically when the page language is English (Polylang / WPML / site language)."
+msgstr "Англиски: текстовите се менуваат автоматски кога јазикот на страницата е англиски (Polylang / WPML / јазик на сајтот)."
+
+msgid "Error"
+msgstr "Грешка"
+
+msgid "Estimated price"
+msgstr "Проценета цена"
+
+msgid "Event"
+msgstr "Настан"
+
+msgid "Event categories"
+msgstr "Категории настани"
+
+msgid "Event category"
+msgstr "Категорија настан"
+
+msgid "Events"
+msgstr "Настани"
+
+msgid "Everything"
+msgstr "Сè"
+
+msgid "Express fee"
+msgstr "Експресна такса"
+
+msgid "Express processing (+%s)"
+msgstr "Експресна обработка (+%s)"
+
+msgid "Express processing (optional)"
+msgstr "Експресна обработка (по избор)"
+
+msgid "External ticket link"
+msgstr "Надворешен линк за билети"
+
+msgid "Extras"
+msgstr "Дополнително"
+
+msgid "Extras & excursions"
+msgstr "Доплати и екскурзии"
+
+msgid "Featured"
+msgstr "Издвоено"
+
+msgid "Fees"
+msgstr "Такси"
+
+msgid "Filled automatically by the SeeInside Travel sync."
+msgstr "Се пополнува автоматски од синхронизацијата со SeeInside Travel."
+
+msgid "First minute discount"
+msgstr "First minute попуст"
+
+msgid "First minute discount type (amount / percent)"
+msgstr "Тип на first minute попуст (износ / процент)"
+
+msgid "First minute until"
+msgstr "First minute до"
+
+msgid "First name"
+msgstr "Име"
+
+msgid "Flight"
+msgstr "Авион"
+
+msgid "Flight search (GOL IBE widget from SeeInside)"
+msgstr "Пребарување летови (GOL IBE виџет од SeeInside)"
+
+msgid "Flights"
+msgstr "Авио билети"
+
+msgid "For designers"
+msgstr "За дизајнери"
+
+msgid "Form"
+msgstr "Форма"
+
+msgid "Free"
+msgstr "Слободно"
+
+msgid "From"
+msgstr "Од"
+
+msgid "Full import"
+msgstr "Целосен увоз"
+
+msgid "Full name"
+msgstr "Име и презиме"
+
+msgid "Gallery"
+msgstr "Галерија"
+
+msgid "Good to know"
+msgstr "Добро е да знаете"
+
+msgid "Grid of offers. type: tour, hotel, event, visa, all · last_minute=\"1\" · featured=\"1\" · orderby: date, departure, price, title, random · pagination=\"1\" · search=\"1\""
+msgstr "Мрежа со понуди. type: tour, hotel, event, visa, all · last_minute=\"1\" · featured=\"1\" · orderby: date, departure, price, title, random · pagination=\"1\" · search=\"1\""
+
+msgid "Group"
+msgstr "Група"
+
+msgid "Group size"
+msgstr "Големина на група"
+
+msgid "Group size from"
+msgstr "Група од"
+
+msgid "Group size to"
+msgstr "Група до"
+
+msgid "Groups"
+msgstr "Групи"
+
+msgid "Guaranteed"
+msgstr "Загарантиран"
+
+msgid "Height (px)"
+msgstr "Висина (px)"
+
+msgid "Hide the title"
+msgstr "Скриј го насловот"
+
+msgid "Highlights"
+msgstr "Најинтересно"
+
+msgid "Homepage slider (supertitle, title, subtitle, button)"
+msgstr "Слајдер на почетна (наднаслов, наслов, поднаслов, копче)"
+
+msgid "Hotel / apartment"
+msgstr "Хотел / апартман"
+
+msgid "Hotels"
+msgstr "Хотели"
+
+msgid "Hotels & apartments"
+msgstr "Хотели и апартмани"
+
+msgid "House rules"
+msgstr "Куќен ред"
+
+msgid "I agree that my data is used to process this request (%s)."
+msgstr "Се согласувам моите податоци да се користат за обработка на барањето (%s)."
+
+msgid "I confirm the data is correct and agree that it is used to process my visa application."
+msgstr "Потврдувам дека податоците се точни и се согласувам да се користат за обработка на барањето за виза."
+
+msgid "ID in SeeInside"
+msgstr "ID во SeeInside"
+
+msgid "Import finished."
+msgstr "Увозот е завршен."
+
+msgid "Important information"
+msgstr "Важни информации"
+
+msgid "Importing… keep this page open."
+msgstr "Се увезува… не ја затворај страницата."
+
+msgid "In SeeInside Travel open <b>Settings → Websites (WordPress)</b> and add this site."
+msgstr "Во SeeInside Travel отвори <b>Подесувања → Веб-страници (WordPress)</b> и додај го овој сајт."
+
+msgid "Included"
+msgstr "Вклучено"
+
+msgid "Included & info"
+msgstr "Вклучено и информации"
+
+msgid "Included / not included"
+msgstr "Вклучено / не е вклучено"
+
+msgid "Included in the price"
+msgstr "Цената вклучува"
+
+msgid "Key facts"
+msgstr "Основни информации"
+
+msgid "Kind"
+msgstr "Вид"
+
+msgid "Label"
+msgstr "Натпис"
+
+msgid "Last change in SeeInside"
+msgstr "Последна промена во SeeInside"
+
+msgid "Last check of changes:"
+msgstr "Последна проверка на промени:"
+
+msgid "Last full import:"
+msgstr "Последен целосен увоз:"
+
+msgid "Last minute / First minute"
+msgstr "Last minute / First minute"
+
+msgid "Last minute discount %"
+msgstr "Last minute попуст %"
+
+msgid "Last minute price"
+msgstr "Last minute цена"
+
+msgid "Last minute until"
+msgstr "Last minute до"
+
+msgid "Last name"
+msgstr "Презиме"
+
+msgid "Last sync:"
+msgstr "Последна синхронизација:"
+
+msgid "Last webhook (real time):"
+msgstr "Последен webhook (реално време):"
+
+msgid "Layout"
+msgstr "Изглед"
+
+msgid "Links"
+msgstr "Линкови"
+
+msgid "List"
+msgstr "Листа"
+
+msgid "Lists (archives)"
+msgstr "Листи (архиви)"
+
+msgid "Location"
+msgstr "Локација"
+
+msgid "Log"
+msgstr "Дневник"
+
+msgid "Lowest price"
+msgstr "Најниска цена"
+
+msgid "Main"
+msgstr "Главна"
+
+msgid "Main colour"
+msgstr "Главна боја"
+
+msgid "Main photo"
+msgstr "Главна фотографија"
+
+msgid "Map"
+msgstr "Мапа"
+
+msgid "Map (lat,lng or address)"
+msgstr "Мапа (lat,lng или адреса)"
+
+msgid "Max adults"
+msgstr "Макс. возрасни"
+
+msgid "Max children"
+msgstr "Макс. деца"
+
+msgid "Meals"
+msgstr "Оброци"
+
+msgid "Meals:"
+msgstr "Оброци:"
+
+msgid "Message"
+msgstr "Порака"
+
+msgid "Min. nights"
+msgstr "Мин. ноќевања"
+
+msgid "Move to trash"
+msgstr "Премести во корпа"
+
+msgid "Name"
+msgstr "Назив"
+
+msgid "Name (EN)"
+msgstr "Назив (EN)"
+
+msgid "Name (MK)"
+msgstr "Назив (МК)"
+
+msgid "New dates coming soon – send an inquiry."
+msgstr "Наскоро нови термини – испратете барање."
+
+msgid "Newest"
+msgstr "Најнови"
+
+msgid "Next date"
+msgstr "Најблиску поаѓање"
+
+msgid "Next departure"
+msgstr "Следно поаѓање"
+
+msgid "Nights"
+msgstr "Ноќевања"
+
+msgid "No"
+msgstr "Не"
+
+msgid "No charter seats at the moment."
+msgstr "Моментално нема чартер места."
+
+msgid "No free rooms for these dates. Send an inquiry and we will find an option."
+msgstr "Нема слободни соби за овие датуми. Испратете барање и ќе најдеме решение."
+
+msgid "No offers at the moment."
+msgstr "Моментално нема понуди."
+
+msgid "Not included"
+msgstr "Не е вклучено"
+
+msgid "Note"
+msgstr "Забелешка"
+
+msgid "Notes & terms"
+msgstr "Забелешки и услови"
+
+msgid "Nothing found. Check the number and e-mail."
+msgstr "Не е пронајдено. Проверете го бројот и е-поштата."
+
+msgid "Nothing synced yet – SeeInside Travel → Sync"
+msgstr "Сè уште нема синхронизирано – SeeInside Travel → Синхронизација"
+
+msgid "Nothing synced yet – run the import in SeeInside Travel → Sync."
+msgstr "Сè уште нема синхронизирано – пушти го увозот во SeeInside Travel → Синхронизација."
+
+msgid "Number"
+msgstr "Број"
+
+msgid "Number of tickets"
+msgstr "Број на билети"
+
+msgid "Off – I build everything with widgets / shortcodes"
+msgstr "Исклучено – сè градам со виџети / шорткодови"
+
+msgid "Offer valid until %s"
+msgstr "Понудата важи до %s"
+
+msgid "Offers per page"
+msgstr "Понуди по страница"
+
+msgid "One part of the current tour/hotel/event/visa page. Names:"
+msgstr "Еден дел од тековниот аранжман/хотел/настан/виза. Имиња:"
+
+msgid "Online booking enabled"
+msgstr "Онлајн резервација овозможена"
+
+msgid "Online payment"
+msgstr "Онлајн плаќање"
+
+msgid "Online visa application"
+msgstr "Онлајн барање за виза"
+
+msgid "Only featured"
+msgstr "Само издвоени"
+
+msgid "Only last minute"
+msgstr "Само last minute"
+
+msgid "Open Theme Builder"
+msgstr "Отвори Theme Builder"
+
+msgid "Optional"
+msgstr "По избор"
+
+msgid "Order"
+msgstr "Редослед"
+
+msgid "Organized tours"
+msgstr "Организирани тури"
+
+msgid "Organizer"
+msgstr "Организатор"
+
+msgid "Overnight"
+msgstr "Ноќевање"
+
+msgid "Overnight:"
+msgstr "Ноќевање:"
+
+msgid "Own title (empty = default)"
+msgstr "Свој наслов (празно = стандарден)"
+
+msgid "PDF or photo (JPG, PNG, HEIC), up to 10 MB per file. Documents are stored privately."
+msgstr "PDF или фотографија (JPG, PNG, HEIC), до 10 MB по датотека. Документите се чуваат приватно."
+
+msgid "Page builder"
+msgstr "Билдер"
+
+msgid "Pages ready: %s"
+msgstr "Страниците се подготвени: %s"
+
+msgid "Pagination"
+msgstr "Страничење"
+
+msgid "Paid"
+msgstr "Платено"
+
+msgid "Payment"
+msgstr "Плаќање"
+
+msgid "Payment terms"
+msgstr "Услови за плаќање"
+
+msgid "Performer"
+msgstr "Изведувач"
+
+msgid "Performer / teams"
+msgstr "Изведувач / тимови"
+
+msgid "Phone"
+msgstr "Телефон"
+
+msgid "Photos & video"
+msgstr "Фотографии и видео"
+
+msgid "Place"
+msgstr "Место"
+
+msgid "Place (EN)"
+msgstr "Место (EN)"
+
+msgid "Place (MK)"
+msgstr "Место (МК)"
+
+msgid "Please try again."
+msgstr "Обидете се повторно."
+
+msgid "Plugin grid with search"
+msgstr "Мрежа од плагинот со пребарување"
+
+msgid "Post types: <code>sta_tour</code>, <code>sta_event</code>, <code>sta_hotel</code>, <code>sta_visa</code>. Taxonomies: <code>sta_destination</code>, <code>sta_group</code>, <code>sta_tour_type</code>, <code>sta_event_category</code>, <code>sta_hotel_type</code>, <code>sta_amenity</code>, <code>sta_country</code>."
+msgstr "Типови објави: <code>sta_tour</code>, <code>sta_event</code>, <code>sta_hotel</code>, <code>sta_visa</code>. Таксономии: <code>sta_destination</code>, <code>sta_group</code>, <code>sta_tour_type</code>, <code>sta_event_category</code>, <code>sta_hotel_type</code>, <code>sta_amenity</code>, <code>sta_country</code>."
+
+msgid "Price"
+msgstr "Цена"
+
+msgid "Price & booking button"
+msgstr "Цена и копче за резервација"
+
+msgid "Price from"
+msgstr "Цена од"
+
+msgid "Price is"
+msgstr "Цената е"
+
+msgid "Price list (PDF)"
+msgstr "Ценовник (PDF)"
+
+msgid "Price on request"
+msgstr "Цена на барање"
+
+msgid "Price per adult"
+msgstr "Цена за возрасен"
+
+msgid "Price per child"
+msgstr "Цена за дете"
+
+msgid "Price per night"
+msgstr "Цена за ноќ"
+
+msgid "Price type"
+msgstr "Тип на цена"
+
+msgid "Prices & dates"
+msgstr "Цени и термини"
+
+msgid "Prices by period"
+msgstr "Цени по периоди"
+
+msgid "Processing time"
+msgstr "Време на обработка"
+
+msgid "Program"
+msgstr "Програма"
+
+msgid "Program (PDF)"
+msgstr "Програма (PDF)"
+
+msgid "Program by days"
+msgstr "Програма по денови"
+
+msgid "Quality"
+msgstr "Квалитет"
+
+msgid "Questionnaire (managed in SeeInside)"
+msgstr "Прашалник (се уредува во SeeInside)"
+
+msgid "Random"
+msgstr "Случаен"
+
+msgid "Re-create (overwrite my changes)"
+msgstr "Креирај одново (ги брише моите промени)"
+
+msgid "Reference number"
+msgstr "Број на резервација"
+
+msgid "Region"
+msgstr "Регион"
+
+msgid "Related tour (slug)"
+msgstr "Поврзан аранжман (slug)"
+
+msgid "Required documents (managed in SeeInside)"
+msgstr "Потребни документи (се уредуваат во SeeInside)"
+
+msgid "Requirements"
+msgstr "Услови"
+
+msgid "Return"
+msgstr "Враќање"
+
+msgid "Room amenities"
+msgstr "Содржини во собата"
+
+msgid "Room type"
+msgstr "Тип на соба"
+
+msgid "Rooms"
+msgstr "Соби"
+
+msgid "Rooms & prices"
+msgstr "Соби и цени"
+
+msgid "Rules & info"
+msgstr "Правила и информации"
+
+msgid "SEO description"
+msgstr "SEO опис"
+
+msgid "SEO title"
+msgstr "SEO наслов"
+
+msgid "Save"
+msgstr "Зачувај"
+
+msgid "Saved."
+msgstr "Зачувано."
+
+msgid "Search"
+msgstr "Барај"
+
+msgid "Search flights"
+msgstr "Барај летови"
+
+msgid "Search: destination, month, budget, last minute"
+msgstr "Пребарување: дестинација, месец, буџет, last minute"
+
+msgid "Seasonal prices"
+msgstr "Сезонски цени"
+
+msgid "Seats"
+msgstr "Места"
+
+msgid "Seats left"
+msgstr "Слободни места"
+
+msgid "SeeInside address"
+msgstr "Адреса на SeeInside"
+
+msgid "Send application"
+msgstr "Испрати барање"
+
+msgid "Send booking"
+msgstr "Испрати резервација"
+
+msgid "Send booking request"
+msgstr "Испрати барање за резервација"
+
+msgid "Send inquiry"
+msgstr "Испрати барање"
+
+msgid "Sending…"
+msgstr "Се испраќа…"
+
+msgid "Service fee"
+msgstr "Агенциска такса"
+
+msgid "Settings"
+msgstr "Поставки"
+
+msgid "Short description"
+msgstr "Краток опис"
+
+msgid "Short form of the same"
+msgstr "Кратка форма на истото"
+
+msgid "Shortcodes"
+msgstr "Шорткодови"
+
+msgid "Shortcodes & help"
+msgstr "Шорткодови и помош"
+
+msgid "Show"
+msgstr "Прикажи"
+
+msgid "Show available rooms & prices"
+msgstr "Прикажи слободни соби и цени"
+
+msgid "Single pages"
+msgstr "Поединечни страници"
+
+msgid "Single pages use the automatic layout. On pages use the blocks \"SeeInside Travel\" (Gutenberg) or the shortcodes from the Help tab – they work in every builder."
+msgstr "Поединечните страници го користат автоматскиот изглед. На страниците користи ги блоковите „SeeInside Travel“ (Gutenberg) или шорткодовите од табот Помош – работат во секој билдер."
+
+msgid "Single room supplement"
+msgstr "Доплата за еднокреветна соба"
+
+msgid "Single room supplement: %s."
+msgstr "Доплата за еднокреветна соба: %s."
+
+msgid "Sold out"
+msgstr "Распродадено"
+
+msgid "Something went wrong. Please try again or call us."
+msgstr "Нешто не е во ред. Обидете се повторно или јавете ни се."
+
+msgid "Source"
+msgstr "Извор"
+
+msgid "Stars"
+msgstr "Ѕвезди"
+
+msgid "Start full import"
+msgstr "Започни целосен увоз"
+
+msgid "Starts"
+msgstr "Почнува"
+
+msgid "Status"
+msgstr "Статус"
+
+msgid "Status (EN)"
+msgstr "Статус (EN)"
+
+msgid "Status (MK)"
+msgstr "Статус (МК)"
+
+msgid "Subtitle"
+msgstr "Поднаслов"
+
+msgid "Surcharge"
+msgstr "Доплата"
+
+msgid "Sync"
+msgstr "Синхронизација"
+
+msgid "Sync changes now"
+msgstr "Синхронизирај промени сега"
+
+msgid "Sync settings"
+msgstr "Поставки за синхронизација"
+
+msgid "Sync this one now"
+msgstr "Синхронизирај го ова сега"
+
+msgid "Tabs"
+msgstr "Табови"
+
+msgid "Templates ready: %s"
+msgstr "Темплејтите се подготвени: %s"
+
+msgid "Test connection"
+msgstr "Тестирај врска"
+
+msgid "Thank you! Your request was received."
+msgstr "Ви благодариме! Вашето барање е примено."
+
+msgid "The plugin creates Theme Builder templates (single page and list) for tours, events, hotels and visas, made of \"Travel\" widgets. You can then change the design freely in Elementor."
+msgstr "Плагинот креира Theme Builder темплејти (поединечна страница и листа) за аранжмани, настани, хотели и визи, составени од „Travel“ виџети. Потоа дизајнот слободно го менуваш во Elementor."
+
+msgid "The whole record is in the meta <code>_sta_payload</code> (JSON, both languages) – helper <code>sta_data()</code>."
+msgstr "Целиот запис е во мета полето <code>_sta_payload</code> (JSON, двата јазика) – функција <code>sta_data()</code>."
+
+msgid "Theme archive"
+msgstr "Архива од темата"
+
+msgid "This content is managed in SeeInside Travel. Changes made here are overwritten at the next sync."
+msgstr "Оваа содржина се уредува во SeeInside Travel. Промените направени тука се бришат при следната синхронизација."
+
+msgid "Ticket"
+msgstr "Билет"
+
+msgid "Tickets"
+msgstr "Билети"
+
+msgid "Time"
+msgstr "Време"
+
+msgid "Title (EN)"
+msgstr "Наслов (EN)"
+
+msgid "Title (MK)"
+msgstr "Наслов (МК)"
+
+msgid "To"
+msgstr "До"
+
+msgid "Too many requests. Please call us."
+msgstr "Премногу барања. Ве молиме јавете ни се."
+
+msgid "Total"
+msgstr "Вкупно"
+
+msgid "Total price"
+msgstr "Вкупна цена"
+
+msgid "Tour"
+msgstr "Аранжман"
+
+msgid "Tour leader"
+msgstr "Водич"
+
+msgid "Tour type"
+msgstr "Тип на тура"
+
+msgid "Tour types"
+msgstr "Типови тури"
+
+msgid "Tours"
+msgstr "Аранжмани"
+
+msgid "Tours, events, hotels and visas are entered in SeeInside Travel and appear here automatically (real-time sync)."
+msgstr "Аранжманите, настаните, хотелите и визите се внесуваат во SeeInside Travel и автоматски се појавуваат тука (синхронизација во реално време)."
+
+msgid "Transport"
+msgstr "Превоз"
+
+msgid "Transport only"
+msgstr "Само превоз"
+
+msgid "Travel: charter seats"
+msgstr "Travel: чартер места"
+
+msgid "Travel: check booking"
+msgstr "Travel: провери резервација"
+
+msgid "Travel: destinations"
+msgstr "Travel: дестинации"
+
+msgid "Travel: flight search"
+msgstr "Travel: авио пребарување"
+
+msgid "Travel: homepage slider"
+msgstr "Travel: слајдер на почетна"
+
+msgid "Travel: offer list"
+msgstr "Travel: листа понуди"
+
+msgid "Travel: search"
+msgstr "Travel: пребарување"
+
+msgid "Travel: section"
+msgstr "Travel: дел од страница"
+
+msgid "Type"
+msgstr "Тип"
+
+msgid "Use the search form filters"
+msgstr "Користи ги филтрите од пребарувањето"
+
+msgid "Validity"
+msgstr "Важност"
+
+msgid "Venue"
+msgstr "Место на настанот"
+
+msgid "Video"
+msgstr "Видео"
+
+msgid "Videos"
+msgstr "Видеа"
+
+msgid "Visa"
+msgstr "Виза"
+
+msgid "Visa requirements"
+msgstr "Услови за виза"
+
+msgid "Visa type"
+msgstr "Тип на виза"
+
+msgid "Visas"
+msgstr "Визи"
+
+msgid "Waiting in queue:"
+msgstr "Чекаат во ред:"
+
+msgid "Webhook secret"
+msgstr "Webhook тајна"
+
+msgid "What to show"
+msgstr "Што да се прикаже"
+
+msgid "What you need"
+msgstr "Што ви треба"
+
+msgid "When?"
+msgstr "Кога?"
+
+msgid "Where to?"
+msgstr "Каде?"
+
+msgid "Whole page (all sections)"
+msgstr "Цела страница (сите делови)"
+
+msgid "Yes"
+msgstr "Да"
+
+msgid "Your design changes in these templates will be lost. Continue?"
+msgstr "Промените на дизајнот во овие темплејти ќе се изгубат. Продолжи?"
+
+msgid "already existed"
+msgstr "веќе постоеја"
+
+msgid "available"
+msgstr "слободни"
+
+msgid "charters"
+msgstr "чартери"
+
+msgid "connect the plugin with your API key to start the sync."
+msgstr "поврзи го плагинот со API клучот за да започне синхронизацијата."
+
+msgid "from"
+msgstr "од"
+
+msgid "inactive"
+msgstr "неактивни"
+
+msgid "max %1$d adults + %2$d children"
+msgstr "макс. %1$d возрасни + %2$d деца"
+
+msgid "min. %d nights"
+msgstr "мин. %d ноќевања"
+
+msgid "nights"
+msgstr "ноќевања"
+
+msgid "no data yet"
+msgstr "сè уште нема податоци"
+
+msgid "one per line"
+msgstr "по една во ред"
+
+msgid "or call"
+msgstr "или јавете се"
+
+msgid "per night"
+msgstr "за ноќ"
+
+msgid "per person"
+msgstr "по особа"
+
+msgid "per room"
+msgstr "по соба"
+
+msgid "per ticket"
+msgstr "по билет"
+
+msgid "person"
+msgstr "особа"
+
+msgid "privacy policy"
+msgstr "политика за приватност"
+
+msgid "saved – leave empty to keep"
+msgstr "зачувано – остави празно за да остане"
+
+msgid "slides"
+msgstr "слајдови"
+
+msgid "transport only"
+msgstr "само превоз"
+
+msgid "%d night"
+msgid_plural "%d nights"
+msgstr[0] "%d ноќевање"
+msgstr[1] "%d ноќевања"
+
+msgid "%d offer"
+msgid_plural "%d offers"
+msgstr[0] "%d понуда"
+msgstr[1] "%d понуди"
+
+msgid "Last %d seat"
+msgid_plural "Last %d seats"
+msgstr[0] "Последно %d место"
+msgstr[1] "Последни %d места"
+
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] "%d ден"
+msgstr[1] "%d дена"
+

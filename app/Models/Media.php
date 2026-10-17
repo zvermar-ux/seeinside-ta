@@ -25,6 +25,7 @@ class Media extends Model
                     ->whereKeyNot($media->id)->update(['is_main' => false]);
             }
             $media->mediable?->refreshCover();
+            $media->mediable?->touch();   // the website re-syncs the gallery
         });
 
         static::deleted(function (Media $media) {
@@ -34,6 +35,7 @@ class Media extends Model
                 Storage::disk('public')->delete($media->path);
             }
             $owner?->refreshCover();
+            $owner?->touch();
         });
     }
 

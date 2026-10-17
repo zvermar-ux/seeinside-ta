@@ -12,6 +12,9 @@ class EventTicket extends Model
 
     protected $guarded = ['id'];
 
+    /** changes reach the website through the parent */
+    protected $touches = ['event'];
+
     protected function casts(): array
     {
         return ['name' => 'array', 'description' => 'array', 'is_active' => 'boolean', 'price' => 'decimal:2'];

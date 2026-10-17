@@ -32,8 +32,9 @@ class TourDeparture extends Model
         });
 
         // keep the tour's "price from" current
-        static::saved(fn (TourDeparture $d) => $d->tour?->save());
-        static::deleted(fn (TourDeparture $d) => $d->tour?->save());
+        // touch: recompute "price from" and tell the website (updated_at moves for /changes)
+        static::saved(fn (TourDeparture $d) => $d->tour?->touch());
+        static::deleted(fn (TourDeparture $d) => $d->tour?->touch());
     }
 
     public function tour(): BelongsTo

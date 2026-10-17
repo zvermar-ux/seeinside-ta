@@ -9,13 +9,18 @@ use Illuminate\Support\Facades\Route;
 | Website API (WordPress plugin). All routes need the website's API key:
 |   X-Api-Key: ta_xxxxxxxx_...
 | Prefix: /api/v1
+| Limits are per website (all visitors of a site come from the site's server); the WordPress plugin
+| additionally limits each visitor.
 */
 
-Route::middleware([AuthenticateApiClient::class, 'throttle:240,1'])->group(function () {
+Route::middleware([AuthenticateApiClient::class, 'throttle:website'])->group(function () {
     Route::get('meta', [CatalogController::class, 'meta']);
     Route::get('changes', [CatalogController::class, 'changes']);
     Route::get('last-minute', [CatalogController::class, 'lastMinute']);
     Route::get('slider', [CatalogController::class, 'slider']);
+    Route::get('charters', [CatalogController::class, 'charters']);
+    Route::get('bookings/{reference}', [BookingController::class, 'status'])->middleware('throttle:website-forms');
+    Route::get('visa-applications/{reference}', [BookingController::class, 'visaStatus'])->middleware('throttle:website-forms');
 
     Route::get('tours', [CatalogController::class, 'tours']);
     Route::get('tours/{slug}', [CatalogController::class, 'tour']);
@@ -31,6 +36,6 @@ Route::middleware([AuthenticateApiClient::class, 'throttle:240,1'])->group(funct
     Route::get('visas', [CatalogController::class, 'visas']);
     Route::get('visas/{slug}', [CatalogController::class, 'visa']);
 
-    Route::post('bookings', [BookingController::class, 'store'])->middleware('throttle:20,1');
-    Route::post('visa-applications', [BookingController::class, 'visaApplication'])->middleware('throttle:10,1');
+    Route::post('bookings', [BookingController::class, 'store'])->middleware('throttle:website-forms');
+    Route::post('visa-applications', [BookingController::class, 'visaApplication'])->middleware('throttle:website-forms');
 });

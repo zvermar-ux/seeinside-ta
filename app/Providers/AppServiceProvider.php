@@ -48,9 +48,15 @@ class AppServiceProvider extends ServiceProvider
             'accommodation' => \App\Models\Accommodation::class,
             'accommodation_room' => \App\Models\AccommodationRoom::class,
             'visa_type' => \App\Models\VisaType::class,
+            'charter' => \App\Models\Charter::class,
         ]);
 
         // Website API (WordPress plugin)
+        // Rate limits per website (API client), not per IP: every visitor's request arrives from the site's server
+        $client = fn ($request) => 'api-client:'.(app()->bound(\App\Models\ApiClient::class) ? app(\App\Models\ApiClient::class)->id : $request->ip());
+        \Illuminate\Support\Facades\RateLimiter::for('website', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(1200)->by($client($request)));
+        \Illuminate\Support\Facades\RateLimiter::for('website-forms', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(120)->by('forms:'.$client($request)));
+
         Route::prefix('api/v1')->middleware('api')->name('api.')->group(base_path('routes/api.php'));
 
         // Missing translation -> show any language that has a value

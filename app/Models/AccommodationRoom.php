@@ -35,8 +35,8 @@ class AccommodationRoom extends Model
             $r->is_active = $r->is_active ?? true;
             $r->max_children = (int) $r->max_children;
         });
-        static::saved(fn (AccommodationRoom $r) => $r->accommodation?->save());
-        static::deleted(fn (AccommodationRoom $r) => $r->accommodation?->save());
+        static::saved(fn (AccommodationRoom $r) => $r->accommodation?->touch());
+        static::deleted(fn (AccommodationRoom $r) => $r->accommodation?->touch());
     }
 
     /** Rooms have no own cover column; their first photo is used directly */

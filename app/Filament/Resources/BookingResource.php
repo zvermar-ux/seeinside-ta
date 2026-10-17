@@ -70,7 +70,7 @@ class BookingResource extends Resource
         return ['reference', 'customer_name', 'customer_email', 'customer_phone'];
     }
 
-    public const TYPES = ['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class];
+    public const TYPES = ['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class, 'charter' => \App\Models\Charter::class];
 
     public static function form(Form $form): Form
     {
@@ -80,7 +80,7 @@ class BookingResource extends Resource
                     Forms\Components\Section::make(__('Offer'))->columns(2)->schema([
                         AgencyField::select(),
                         Forms\Components\Select::make('bookable_type')->label(__('Type'))->live()
-                            ->options(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Hotel / apartment')])
+                            ->options(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Hotel / apartment'), 'charter' => __('Charter')])
                             ->afterStateUpdated(fn (Forms\Set $set) => $set('bookable_id', null)),
                         Forms\Components\Select::make('bookable_id')->label(__('Offer'))->searchable()->live()
                             ->options(function (Get $get) {
@@ -91,7 +91,7 @@ class BookingResource extends Resource
 
                                 return $class::query()->when(AgencyField::current($get), fn ($q, $a) => $q->where('agency_id', $a))
                                     ->latest()->limit(500)->get()
-                                    ->mapWithKeys(fn ($m) => [$m->id => $m instanceof Accommodation ? $m->name : $m->tr('title')]);
+                                    ->mapWithKeys(fn ($m) => [$m->id => is_array($m->getAttribute('title')) ? $m->tr('title') : $m->name]);
                             }),
                         Forms\Components\Select::make('tour_departure_id')->label(__('Departure date'))
                             ->visible(fn (Get $get) => $get('bookable_type') === 'tour' && $get('bookable_id'))
@@ -197,6 +197,7 @@ class BookingResource extends Resource
                         'tour' => __('Organized tour').($r->departure ? ' · '.$r->departure->start_date->format('d.m.Y') : ''),
                         'event' => __('Event'),
                         'accommodation' => __('Hotel / apartment').($r->date_from ? ' · '.$r->date_from->format('d.m.').' – '.$r->date_to?->format('d.m.Y') : ''),
+                        'charter' => __('Charter'),
                         default => null,
                     }),
                 Tables\Columns\TextColumn::make('pax')->label(__('Persons'))->state(fn (Booking $r) => $r->adults.($r->children ? ' + '.$r->children : '')),
@@ -212,7 +213,7 @@ class BookingResource extends Resource
                 Tables\Filters\SelectFilter::make('status')->label(__('Status'))->options(BookingStatus::class)->multiple(),
                 Tables\Filters\SelectFilter::make('payment_status')->label(__('Payment'))->options(PaymentStatus::class),
                 Tables\Filters\SelectFilter::make('bookable_type')->label(__('Type'))
-                    ->options(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Hotel / apartment')]),
+                    ->options(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Hotel / apartment'), 'charter' => __('Charter')]),
             ])
             ->actions([
                 Tables\Actions\Action::make('confirm')->label(__('Confirm'))->icon('heroicon-o-check')->color('success')->iconButton()->tooltip(__('Confirm'))

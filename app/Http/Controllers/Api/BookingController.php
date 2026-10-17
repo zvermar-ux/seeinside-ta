@@ -32,8 +32,10 @@ class BookingController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'type' => 'required|in:tour,event,accommodation',
-            'slug' => 'required|string',
+            'type' => 'required|in:tour,event,accommodation,charter',
+            'slug' => 'required_unless:type,charter|nullable|string',
+            'charter_id' => 'required_if:type,charter|nullable|integer',
+            'transport_only' => 'nullable|boolean',
             'departure_id' => 'nullable|integer',
             'departure_place_id' => 'nullable|integer',
             'room_id' => 'nullable|integer',
@@ -61,10 +63,14 @@ class BookingController extends Controller
         ]);
 
         $agencyId = $this->agencyId($request);
-        $class = ['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class][$data['type']];
-        $item = $class::query()->where('agency_id', $agencyId)->where('is_active', true)->where('slug', $data['slug'])->firstOrFail();
+        if ($data['type'] === 'charter') {
+            $item = \App\Models\Charter::query()->where('agency_id', $agencyId)->where('is_active', true)->findOrFail($data['charter_id']);
+        } else {
+            $class = ['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class][$data['type']];
+            $item = $class::query()->where('agency_id', $agencyId)->where('is_active', true)->where('slug', $data['slug'])->firstOrFail();
+        }
 
-        if (! $item->booking_enabled) {
+        if (! ($item instanceof \App\Models\Charter) && ! $item->booking_enabled) {
             throw ValidationException::withMessages(['slug' => 'Online booking is disabled for this offer.']);
         }
 
@@ -91,6 +97,20 @@ class BookingController extends Controller
         $booking->bookable()->associate($item);
 
         $total = null;
+
+        if ($item instanceof \App\Models\Charter) {
+            $pax = max(1, $adults + $children);
+            if ($item->seatsLeft() !== null && $item->seatsLeft() < $pax) {
+                throw ValidationException::withMessages(['adults' => 'Not enough seats left on this charter.']);
+            }
+            $booking->date_from = $item->departure_date;
+            $booking->date_to = $item->return_date;
+            $transportOnly = ! empty($data['transport_only']) && $item->transport_only_price !== null;
+            $total = ($transportOnly ? (float) $item->transport_only_price : (float) $item->price) * $pax;
+            if ($transportOnly) {
+                $booking->extras = [['id' => 0, 'name' => 'Само превоз / Transport only', 'price' => (float) $item->transport_only_price, 'price_type' => 'per_person']];
+            }
+        }
 
         if ($item instanceof Tour) {
             $dep = $item->departures()->whereKey($data['departure_id'] ?? 0)->first();
@@ -181,6 +201,54 @@ class BookingController extends Controller
             'currency' => $booking->currency,
             'payment' => null,   // online payment link once a payment provider is configured
         ]], 201);
+    }
+
+    /** Status of a booking for the customer (reference + the e-mail used when booking) */
+    public function status(Request $request, string $reference): JsonResponse
+    {
+        $email = (string) $request->query('email');
+        $b = Booking::query()->where('agency_id', $this->agencyId($request))->where('reference', $reference)->first();
+        if (! $b || ! $email || strcasecmp(trim($b->customer_email), trim($email)) !== 0) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        return response()->json(['data' => [
+            'reference' => $b->reference,
+            'offer' => $b->itemTitle(),
+            'type' => $b->bookable_type,
+            'date_from' => $b->date_from?->toDateString(),
+            'date_to' => $b->date_to?->toDateString(),
+            'adults' => $b->adults,
+            'children' => $b->children,
+            'status' => ['value' => $b->status?->value, 'label' => $b->status?->labels()],
+            'payment_status' => ['value' => $b->payment_status?->value, 'label' => $b->payment_status?->labels()],
+            'total' => $b->total !== null ? (float) $b->total : null,
+            'paid' => (float) $b->paid_amount,
+            'currency' => $b->currency,
+            'created_at' => $b->created_at?->toIso8601String(),
+        ]]);
+    }
+
+    /** Status of a visa application for the applicant (reference + e-mail) */
+    public function visaStatus(Request $request, string $reference): JsonResponse
+    {
+        $email = (string) $request->query('email');
+        $a = VisaApplication::query()->with('visaType')->where('agency_id', $this->agencyId($request))->where('reference', $reference)->first();
+        if (! $a || ! $email || strcasecmp(trim($a->email), trim($email)) !== 0) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        return response()->json(['data' => [
+            'reference' => $a->reference,
+            'visa' => $a->visaType ? trim($a->visaType->country.' – '.$a->visaType->tr('name')) : null,
+            'name' => trim($a->first_name.' '.$a->last_name),
+            'status' => ['value' => $a->status?->value, 'label' => $a->status?->labels()],
+            'payment_status' => ['value' => $a->payment_status?->value, 'label' => $a->payment_status?->labels()],
+            'amount' => $a->amount !== null ? (float) $a->amount : null,
+            'currency' => $a->currency,
+            'documents' => count($a->documents ?? []),
+            'created_at' => $a->created_at?->toIso8601String(),
+        ]]);
     }
 
     /** Multipart form: visa, first_name, last_name, email, phone, answers[key], documents[key] (file or files[]) */

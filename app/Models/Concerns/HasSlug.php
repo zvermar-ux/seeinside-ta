@@ -11,10 +11,10 @@ trait HasSlug
     {
         static::saving(function ($model) {
             if (filled($model->slug)) {
-                $model->slug = Str::slug($model->slug);
+                $model->slug = Str::slug($model->slug, '-', 'mk');
             } else {
                 $source = $model->slugSource();
-                $model->slug = Str::slug($source) ?: Str::lower(Str::random(8));
+                $model->slug = Str::slug($source, '-', 'mk') ?: Str::lower(Str::random(8));   // Macedonian: Х→h, Ч→ch, Ш→sh, Ќ→kj…
             }
 
             $agencyId = $model->agency_id ?? \Illuminate\Support\Facades\Auth::user()?->agency_id;
