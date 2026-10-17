@@ -8,7 +8,7 @@ SITE="${SITE:-/www/wwwroot/ta.seeinsidesolution.com}"
 PHP="${PHP:-/www/server/php/84/bin/php}"
 cd "$SITE"
 
-before="$(git rev-parse HEAD 2>/dev/null || echo none)"
+before="$(git rev-parse -q --verify HEAD 2>/dev/null || echo none)"
 echo "▶ Превземање на новата верзија"
 git fetch --quiet origin main
 git reset --hard --quiet origin/main
@@ -32,7 +32,7 @@ echo "▶ База и кеш"
 "$PHP" artisan migrate --force
 "$PHP" artisan db:seed --force
 "$PHP" artisan filament:assets
-"$PHP" artisan storage:link 2>/dev/null || true
+[ -e public/storage ] || "$PHP" artisan storage:link
 "$PHP" artisan optimize:clear
 "$PHP" artisan filament:optimize-clear || true
 "$PHP" artisan optimize
