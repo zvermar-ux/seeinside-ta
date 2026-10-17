@@ -50,7 +50,9 @@ class AdminPanelProvider extends PanelProvider
             ->maxContentWidth(MaxWidth::Full)
             ->navigationGroups([
                 'offer' => NavigationGroup::make()->label(fn () => __('Offer')),
+                'bookings' => NavigationGroup::make()->label(fn () => __('Bookings & requests')),
                 'partners' => NavigationGroup::make()->label(fn () => __('Partners')),
+                'settings' => NavigationGroup::make()->label(fn () => __('Settings'))->collapsed(),
                 'administration' => NavigationGroup::make()->label(fn () => __('Administration')),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')

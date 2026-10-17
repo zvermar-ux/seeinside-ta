@@ -35,7 +35,7 @@ class TravelObjectResource extends Resource
 
     protected static ?string $navigationGroup = 'offer';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 9;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -51,7 +51,7 @@ class TravelObjectResource extends Resource
 
     public static function getPluralModelLabel(): string
     {
-        return __('Arrangements & hotels');
+        return __('Imported offer (Aries)');
     }
 
     public static function getGloballySearchableAttributes(): array
@@ -198,6 +198,15 @@ class TravelObjectResource extends Resource
             ->filtersFormColumns(3)
             ->persistFiltersInSession()
             ->actions([
+                Tables\Actions\Action::make('convert')->label(__('Create website offer'))->icon('heroicon-o-arrow-up-on-square')->color('success')->iconButton()
+                    ->tooltip(fn (TravelObject $r) => $r->type === ObjectType::Arrangement ? __('Create an organized tour from this record') : __('Create a hotel / apartment from this record'))
+                    ->requiresConfirmation()
+                    ->modalDescription(__('A new, inactive record is created with the name, description, location and photos. Prices and dates are added there.'))
+                    ->action(function (TravelObject $record, $livewire) {
+                        $url = \App\Services\Aries\AriesConverter::convert($record);
+                        Notification::make()->success()->title(__('Created'))->send();
+                        $livewire->redirect($url);
+                    }),
                 Tables\Actions\EditAction::make()->iconButton(),
             ])
             ->bulkActions([

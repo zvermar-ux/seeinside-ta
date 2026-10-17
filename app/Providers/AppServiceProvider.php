@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\User;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -18,6 +20,18 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+
+        // Short type names in polymorphic columns (bookings, gallery)
+        Relation::morphMap([
+            'tour' => \App\Models\Tour::class,
+            'event' => \App\Models\Event::class,
+            'accommodation' => \App\Models\Accommodation::class,
+            'accommodation_room' => \App\Models\AccommodationRoom::class,
+            'visa_type' => \App\Models\VisaType::class,
+        ]);
+
+        // Website API (WordPress plugin)
+        Route::prefix('api/v1')->middleware('api')->name('api.')->group(base_path('routes/api.php'));
 
         // Missing translation -> show any language that has a value
         Translatable::fallback(fallbackAny: true);

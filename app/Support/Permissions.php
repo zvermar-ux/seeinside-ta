@@ -14,6 +14,14 @@ class Permissions
 
     /** module => has manage permission */
     public const MODULES = [
+        'tours' => true,
+        'events' => true,
+        'accommodations' => true,
+        'visas' => true,
+        'bookings' => true,
+        'visa_applications' => true,
+        'catalog_settings' => true,
+        'integrations' => true,
         'objects' => true,
         'groups' => true,
         'charters' => true,
@@ -41,7 +49,15 @@ class Permissions
     public static function moduleLabel(string $module): string
     {
         return match ($module) {
-            'objects' => __('Arrangements & hotels'),
+            'tours' => __('Organized tours'),
+            'events' => __('Events'),
+            'accommodations' => __('Hotels & apartments'),
+            'visas' => __('Visa services'),
+            'bookings' => __('Bookings'),
+            'visa_applications' => __('Visa applications'),
+            'catalog_settings' => __('Departure places, airlines, amenities'),
+            'integrations' => __('Integrations & website API'),
+            'objects' => __('Imported offer (Aries)'),
             'groups' => __('Groups & destinations'),
             'charters' => __('Charters'),
             'tour_operators' => __('Tour operators'),
@@ -78,7 +94,12 @@ class Permissions
     {
         return match ($role) {
             self::AGENCY_ADMIN => self::all(),
-            self::OPERATOR => ['objects.view', 'objects.manage', 'groups.view', 'groups.manage', 'charters.view', 'charters.manage', 'tour_operators.view', 'subagents.view'],
+            self::OPERATOR => [
+                'tours.view', 'tours.manage', 'events.view', 'events.manage', 'accommodations.view', 'accommodations.manage',
+                'visas.view', 'visas.manage', 'bookings.view', 'bookings.manage', 'visa_applications.view', 'visa_applications.manage',
+                'catalog_settings.view', 'objects.view', 'objects.manage', 'groups.view', 'groups.manage', 'charters.view', 'charters.manage',
+                'tour_operators.view', 'subagents.view',
+            ],
             default => [],
         };
     }

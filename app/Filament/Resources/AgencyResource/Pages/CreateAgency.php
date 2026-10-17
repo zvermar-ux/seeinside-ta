@@ -4,6 +4,7 @@ namespace App\Filament\Resources\AgencyResource\Pages;
 
 use App\Filament\Resources\AgencyResource;
 use App\Filament\Resources\UserResource;
+use App\Models\DeparturePlace;
 use App\Models\TourOperator;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -19,6 +20,8 @@ class CreateAgency extends CreateRecord
             'name' => __('Own offer'),
             'is_own' => true,
         ]);
+
+        DeparturePlace::seedDefaults($this->record->id);
     }
 
     protected function getRedirectUrl(): string

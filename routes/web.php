@@ -17,3 +17,15 @@ Route::get('/locale/{locale}', function (Request $request, string $locale) {
 
     return redirect()->back(fallback: '/admin');
 })->name('locale.switch');
+
+// Private visa documents (only for logged-in staff of the same agency)
+Route::get('/admin/visa-documents/{application}/{index}', function (\App\Models\VisaApplication $application, int $index) {
+    if (! auth()->check()) {
+        return redirect('/admin/login');
+    }
+    abort_unless(auth()->user()->can('visa_applications.view'), 403);
+    $doc = $application->documents[$index] ?? abort(404);
+    abort_unless(\Illuminate\Support\Facades\Storage::disk('local')->exists($doc['path'] ?? ''), 404);
+
+    return \Illuminate\Support\Facades\Storage::disk('local')->download($doc['path'], $doc['name'] ?? basename($doc['path']));
+})->name('admin.visa-document');

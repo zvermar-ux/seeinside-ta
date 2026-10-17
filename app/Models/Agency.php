@@ -10,7 +10,7 @@ class Agency extends Model
 {
     protected $guarded = ['id'];
 
-    protected $hidden = ['mail_password'];
+    protected $hidden = ['mail_password', 'payment_settings'];
 
     protected function casts(): array
     {
@@ -18,6 +18,7 @@ class Agency extends Model
             'is_active' => 'boolean',
             'mail_password' => 'encrypted',
             'mail_port' => 'integer',
+            'payment_settings' => 'encrypted:array',
         ];
     }
 

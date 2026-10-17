@@ -78,6 +78,22 @@ class AgencyResource extends Resource
                         ->visible($withAdminFields)->inline(false),
                     Forms\Components\Textarea::make('notes')->label(__('Notes'))->columnSpanFull()->visible($withAdminFields),
                 ]),
+            Forms\Components\Section::make(__('Website, flights & payments'))
+                ->collapsible()->collapsed()
+                ->columns(2)
+                ->schema([
+                    Forms\Components\TextInput::make('booking_notify_email')->label(__('E-mail for new bookings'))->email()
+                        ->helperText(__('New bookings and visa applications from the website are sent here.')),
+                    Forms\Components\TextInput::make('flight_search_url')->label(__('Flight search (GOL IBE) address'))->url()
+                        ->placeholder('https://aviokarti.golibe.com/'),
+                    Forms\Components\Textarea::make('flight_widget_code')->label(__('Flight search box code'))->rows(3)->columnSpanFull()
+                        ->helperText(__('Embed code from the flight booking partner; the website shows it in the search box.')),
+                    Forms\Components\Select::make('payment_provider')->label(__('Online payment'))
+                        ->options(['casys' => 'CaSys (cPay)', 'nestpay' => 'NestPay / Halkbank', 'stripe' => 'Stripe', 'paypal' => 'PayPal'])
+                        ->placeholder(__('Not enabled')),
+                    Forms\Components\KeyValue::make('payment_settings')->label(__('Payment access keys'))->columnSpanFull()
+                        ->keyLabel(__('Name'))->valueLabel(__('Value'))->helperText(__('Stored encrypted.')),
+                ]),
             Forms\Components\Section::make(__('Outgoing e-mail (SMTP)'))
                 ->description(__('Used for e-mails sent on behalf of the agency.'))
                 ->collapsible()->collapsed()

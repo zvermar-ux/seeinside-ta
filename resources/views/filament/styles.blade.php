@@ -14,4 +14,15 @@
     .fi-sidebar-header { background:linear-gradient(135deg, rgba(var(--primary-500),.10), transparent); }
     .ta-map { width:100%; height:260px; border:0; border-radius:.75rem; }
     .ta-thumb-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:.5rem; }
+    .ta-lm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1rem; }
+    .ta-lm-card { display:block; border-radius:.9rem; overflow:hidden; border:1px solid rgba(var(--gray-200),1); background:#fff; transition:transform .15s, box-shadow .15s; }
+    .dark .ta-lm-card { background:rgba(255,255,255,.03); border-color:rgba(255,255,255,.08); }
+    .ta-lm-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.08); }
+    .ta-lm-img { position:relative; height:130px; background:rgba(var(--gray-100),1) center/cover no-repeat; }
+    .ta-lm-badge { position:absolute; top:.6rem; left:.6rem; background:rgb(var(--danger-600)); color:#fff; font-size:.65rem; font-weight:700; letter-spacing:.06em; padding:.2rem .5rem; border-radius:.4rem; }
+    .ta-lm-body { padding:.8rem .9rem; }
+    .ta-lm-title { font-weight:600; line-height:1.3; }
+    .ta-lm-meta { font-size:.8rem; color:rgb(var(--gray-500)); }
+    .ta-lm-foot { display:flex; justify-content:space-between; align-items:baseline; margin-top:.5rem; }
+    .ta-lm-price { font-weight:700; color:rgb(var(--danger-600)); }
 </style>
