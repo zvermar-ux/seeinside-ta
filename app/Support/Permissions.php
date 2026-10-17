@@ -1,0 +1,95 @@
+<?php
+
+namespace App\Support;
+
+/**
+ * Central list of modules and the permissions that can be granted per user.
+ * Each module has "view" and (optionally) "manage" permission: e.g. objects.view, objects.manage.
+ */
+class Permissions
+{
+    public const SUPER_ADMIN = 'super_admin';
+    public const AGENCY_ADMIN = 'agency_admin';
+    public const OPERATOR = 'operator';
+
+    /** module => has manage permission */
+    public const MODULES = [
+        'objects' => true,
+        'groups' => true,
+        'charters' => true,
+        'tour_operators' => true,
+        'subagents' => true,
+        'slider' => true,
+        'users' => true,
+        'agency' => true,
+        'imports' => false,
+    ];
+
+    public static function all(): array
+    {
+        $out = [];
+        foreach (self::MODULES as $module => $hasManage) {
+            $out[] = "{$module}.view";
+            if ($hasManage) {
+                $out[] = "{$module}.manage";
+            }
+        }
+
+        return $out;
+    }
+
+    public static function moduleLabel(string $module): string
+    {
+        return match ($module) {
+            'objects' => __('Arrangements & hotels'),
+            'groups' => __('Groups & destinations'),
+            'charters' => __('Charters'),
+            'tour_operators' => __('Tour operators'),
+            'subagents' => __('Subagents'),
+            'slider' => __('Homepage slider'),
+            'users' => __('Users'),
+            'agency' => __('Agency settings'),
+            'imports' => __('Imports'),
+            default => $module,
+        };
+    }
+
+    public static function label(string $permission): string
+    {
+        [$module, $action] = explode('.', $permission);
+
+        return self::moduleLabel($module).' — '.($action === 'view' ? __('view') : __('manage'));
+    }
+
+    /** Options for a CheckboxList, grouped label => permission */
+    public static function options(?array $only = null): array
+    {
+        $out = [];
+        foreach (self::all() as $p) {
+            if ($only === null || in_array($p, $only, true)) {
+                $out[$p] = self::label($p);
+            }
+        }
+
+        return $out;
+    }
+
+    public static function roleDefaults(string $role): array
+    {
+        return match ($role) {
+            self::AGENCY_ADMIN => self::all(),
+            self::OPERATOR => ['objects.view', 'objects.manage', 'groups.view', 'groups.manage', 'charters.view', 'charters.manage', 'tour_operators.view', 'subagents.view'],
+            default => [],
+        };
+    }
+
+    public static function roleLabel(?string $role): string
+    {
+        return match ($role) {
+            self::SUPER_ADMIN => __('Super admin'),
+            self::AGENCY_ADMIN => __('Agency admin'),
+            self::OPERATOR => __('Operator'),
+            default => '—',
+        };
+    }
+}
