@@ -99,18 +99,21 @@ class BookingResource extends Resource
                         Forms\Components\Select::make('departure_place_id')->label(__('Departure place'))
                             ->visible(fn (Get $get) => $get('bookable_type') === 'tour')
                             ->options(fn () => DeparturePlace::orderBy('sort_order')->get()->mapWithKeys(fn ($p) => [$p->id => $p->tr('name')])),
-                        Forms\Components\Select::make('accommodation_room_id')->label(__('Room'))
+                        Forms\Components\Select::make('accommodation_room_id')->label(__('Room'))->live()
                             ->visible(fn (Get $get) => $get('bookable_type') === 'accommodation' && $get('bookable_id'))
                             ->options(fn (Get $get) => Accommodation::find($get('bookable_id'))?->rooms->mapWithKeys(fn ($r) => [$r->id => $r->tr('name').' ('.$r->board?->value.')']) ?? []),
                         Forms\Components\Select::make('event_ticket_id')->label(__('Ticket'))
                             ->visible(fn (Get $get) => $get('bookable_type') === 'event' && $get('bookable_id'))
                             ->options(fn (Get $get) => Event::find($get('bookable_id'))?->tickets->mapWithKeys(fn ($t) => [$t->id => $t->tr('name').' — '.$t->price]) ?? []),
-                        Forms\Components\DatePicker::make('date_from')->label(__('From'))->native(false)->displayFormat('d.m.Y'),
-                        Forms\Components\DatePicker::make('date_to')->label(__('To'))->native(false)->displayFormat('d.m.Y'),
+                        Forms\Components\DatePicker::make('date_from')->label(__('From'))->native(false)->displayFormat('d.m.Y')->live(),
+                        Forms\Components\DatePicker::make('date_to')->label(__('To'))->native(false)->displayFormat('d.m.Y')->live()->afterOrEqual('date_from'),
+                        Forms\Components\Placeholder::make('room_availability')->label(__('Availability'))->columnSpanFull()
+                            ->visible(fn (Get $get) => $get('bookable_type') === 'accommodation' && $get('accommodation_room_id') && $get('date_from') && $get('date_to'))
+                            ->content(fn (Get $get, ?Booking $record) => static::availabilityHint($get, $record)),
                         Forms\Components\TextInput::make('adults')->label(__('Adults'))->numeric()->default(2)->minValue(0),
                         Forms\Components\TextInput::make('children')->label(__('Children'))->numeric()->default(0)->minValue(0),
                         Forms\Components\TagsInput::make('children_ages')->label(__('Children ages')),
-                        Forms\Components\TextInput::make('quantity')->label(__('Quantity / tickets'))->numeric()->default(1),
+                        Forms\Components\TextInput::make('quantity')->label(__('Quantity (rooms / tickets)'))->numeric()->default(1)->minValue(1)->live(onBlur: true),
                     ]),
                     Forms\Components\Section::make(__('Customer'))->columns(2)->schema([
                         Forms\Components\TextInput::make('customer_name')->label(__('Full name'))->required(),
@@ -145,6 +148,38 @@ class BookingResource extends Resource
                 ]),
             ]),
         ]);
+    }
+
+    /** "Free / already booked" hint for the chosen room and dates (this booking itself is not counted) */
+    public static function availabilityHint(Get $get, ?Booking $record): \Illuminate\Support\HtmlString
+    {
+        $acc = Accommodation::find($get('bookable_id'));
+        $from = \Carbon\Carbon::parse($get('date_from'));
+        $to = \Carbon\Carbon::parse($get('date_to'));
+        if (! $acc || $to->lte($from)) {
+            return new \Illuminate\Support\HtmlString('—');
+        }
+
+        $service = app(\App\Services\Availability\AvailabilityService::class);
+        $data = $service->forAccommodation($acc, $from, $to->copy()->subDay(), false);
+        $free = $service->freeForStay($data, (int) $get('accommodation_room_id'), $from->toDateString(), $to->toDateString());
+        if ($free === null) {
+            return new \Illuminate\Support\HtmlString('—');
+        }
+
+        $room = $data['rooms'][(int) $get('accommodation_room_id')] ?? null;
+        $own = $record?->exists && (int) $record->accommodation_room_id === (int) $get('accommodation_room_id') && ! $room['external']
+            && $record->status !== \App\Enums\BookingStatus::Cancelled
+            && $record->date_from && $record->date_to && $record->date_from->lt($to) && $record->date_to->gt($from)
+            ? max(1, (int) $record->quantity) : 0;
+        $free += $own;
+        $need = max(1, (int) ($get('quantity') ?: 1));
+        $calendar = \App\Filament\Pages\AvailabilityCalendar::getUrl(['accommodation' => $acc->id, 'from' => $from->copy()->subDays(3)->toDateString()]);
+        $link = ' <a href="'.e($calendar).'" target="_blank" style="color:rgb(var(--primary-600));font-weight:600">'.e(__('Open calendar')).' ↗</a>';
+
+        return new \Illuminate\Support\HtmlString($free >= $need
+            ? '<span style="color:rgb(var(--success-600));font-weight:600">✓ '.e(__('Free (:count units for all nights)', ['count' => $free])).'</span>'.$link
+            : '<span style="color:rgb(var(--danger-600));font-weight:600">⚠ '.e(__('Not free for the whole period – overbooking!')).'</span>'.$link);
     }
 
     public static function table(Table $table): Table

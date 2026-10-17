@@ -67,6 +67,7 @@ class CatalogController extends Controller
                 'name' => $agency->name, 'email' => $agency->email, 'phone' => $agency->phone, 'website' => $agency->website,
                 'address' => $agency->address, 'city' => $agency->city, 'logo' => P::url($agency->logo), 'currency' => $agency->default_currency,
             ],
+            'slider' => $this->sliderItems($agency->id),
             'flights' => ['search_url' => $agency->flight_search_url, 'widget_code' => $agency->flight_widget_code],
             'destinations' => $groups->where('type', GroupType::Destination)->map(fn ($g) => P::group($g) + ['parent_id' => $g->parent_id, 'image' => P::url($g->image)])->values(),
             'groups' => $groups->where('type', GroupType::Group)->map(fn ($g) => P::group($g) + ['parent_id' => $g->parent_id, 'image' => P::url($g->image)])->values(),
@@ -83,6 +84,29 @@ class CatalogController extends Controller
             ],
             'server_time' => now()->toIso8601String(),
         ]);
+    }
+
+    /** Homepage slider: image, supertitle, title, subtitle and button (MK / EN) */
+    public function slider(Request $request): JsonResponse
+    {
+        return response()->json(['data' => $this->sliderItems($this->agencyId($request))]);
+    }
+
+    protected function sliderItems(int $agencyId): array
+    {
+        $both = fn (\App\Models\SliderImage $s, string $f) => ['mk' => $s->getTranslation($f, 'mk', false) ?: null, 'en' => $s->getTranslation($f, 'en', false) ?: null];
+
+        return \App\Models\SliderImage::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)
+            ->orderBy('sort_order')->orderBy('id')->get()
+            ->map(fn ($s) => [
+                'id' => $s->id,
+                'image' => P::url($s->path),
+                'supertitle' => $both($s, 'supertitle'),
+                'title' => $both($s, 'title'),
+                'subtitle' => $both($s, 'subtitle'),
+                'button' => ['label' => $both($s, 'button_label'), 'url' => $s->link, 'new_tab' => (bool) $s->open_in_new_tab],
+                'updated_at' => $s->updated_at?->toIso8601String(),
+            ])->values()->all();
     }
 
     /* ---------------- tours ---------------- */
@@ -189,6 +213,38 @@ class CatalogController extends Controller
         $a = $this->published(Accommodation::class, $request)->where('slug', $slug)->firstOrFail();
 
         return response()->json(['data' => $a->quote($data['from'], $data['to'], (int) ($data['adults'] ?? 2), (int) ($data['children'] ?? 0))]);
+    }
+
+    /** Free units per room and night (for the calendar on the website); bookings are not exposed */
+    public function availability(Request $request, string $slug): JsonResponse
+    {
+        $data = $request->validate([
+            'from' => 'required|date',
+            'to' => 'required|date|after_or_equal:from',
+        ]);
+        $from = Carbon::parse($data['from'])->startOfDay();
+        $to = Carbon::parse($data['to'])->startOfDay();
+        if ($from->diffInDays($to) > 92) {
+            $to = $from->copy()->addDays(92);
+        }
+
+        $a = $this->published(Accommodation::class, $request)->where('slug', $slug)->firstOrFail();
+        $result = app(\App\Services\Availability\AvailabilityService::class)->forAccommodation($a, $from, $to, false);
+        $rooms = $a->rooms()->where('is_active', true)->get()->keyBy('id');
+
+        return response()->json(['data' => [
+            'from' => $result['from'],
+            'to' => $result['to'],
+            'source' => $result['source'],
+            'rooms' => collect($result['rooms'])->filter(fn ($r) => $rooms->has($r['id']))->map(fn ($r) => [
+                'room_id' => $r['id'],
+                'name' => $rooms[$r['id']]->trAll('name'),
+                'days' => collect($r['days'])->map(fn ($d) => [
+                    'free' => $d['free'],
+                    'price' => $d['price'],
+                ])->all(),
+            ])->values()->all(),
+        ]]);
     }
 
     /* ---------------- visas ---------------- */

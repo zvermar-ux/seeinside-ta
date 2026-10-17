@@ -28,6 +28,34 @@ class CatalogFields
         ]);
     }
 
+    /**
+     * Gallery edited directly in the form (used in modals, e.g. hotel rooms): the uploaded photos
+     * are kept in the shared media table, in the order shown, the first one marked as main.
+     */
+    public static function galleryField(string $directory = 'gallery'): Forms\Components\FileUpload
+    {
+        return Forms\Components\FileUpload::make('gallery')->label(__('Gallery'))
+            ->image()->multiple()->reorderable()->appendFiles()->maxFiles(60)->maxSize(10240)
+            ->disk('public')->directory($directory)->panelLayout('grid')
+            ->dehydrated(false)
+            ->loadStateFromRelationshipsUsing(function (Forms\Components\FileUpload $component, ?\Illuminate\Database\Eloquent\Model $record) {
+                $component->state($record?->exists ? $record->media()->pluck('path')->all() : []);
+            })
+            ->saveRelationshipsUsing(function (\Illuminate\Database\Eloquent\Model $record, $state) {
+                $paths = array_values(array_filter((array) $state, 'is_string'));
+                $record->media()->whereNotIn('path', $paths)->get()->each->delete();
+                $existing = $record->media()->get()->keyBy('path');
+                foreach ($paths as $i => $path) {
+                    $values = ['sort_order' => $i + 1, 'is_main' => $i === 0];
+                    if ($m = $existing->get($path)) {
+                        $m->update($values);
+                    } else {
+                        $record->media()->create(['path' => $path] + $values);
+                    }
+                }
+            });
+    }
+
     public static function promotions(): Forms\Components\Section
     {
         return Forms\Components\Section::make(__('Last minute / First minute'))

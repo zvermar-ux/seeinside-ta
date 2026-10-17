@@ -143,6 +143,14 @@ class BookingController extends Controller
             if (empty($data['date_from']) || empty($data['date_to'])) {
                 throw ValidationException::withMessages(['date_from' => 'Choose check-in and check-out dates.']);
             }
+            if (! empty($data['room_id'])) {
+                $service = app(\App\Services\Availability\AvailabilityService::class);
+                $availability = $service->forAccommodation($item, \Carbon\Carbon::parse($data['date_from']), \Carbon\Carbon::parse($data['date_to'])->subDay(), false);
+                $free = $service->freeForStay($availability, (int) $data['room_id'], \Carbon\Carbon::parse($data['date_from'])->toDateString(), \Carbon\Carbon::parse($data['date_to'])->toDateString());
+                if ($free !== null && $free < max(1, (int) ($data['quantity'] ?? 1))) {
+                    throw ValidationException::withMessages(['room_id' => 'This room is not available for the selected dates.']);
+                }
+            }
             $offers = collect($item->quote($data['date_from'], $data['date_to'], max(1, $adults), $children));
             $offer = ! empty($data['room_id']) ? $offers->firstWhere('room_id', (int) $data['room_id']) : $offers->first();
             if (! empty($data['room_id']) && ! $offer && ! $item->rooms()->whereKey($data['room_id'])->exists()) {

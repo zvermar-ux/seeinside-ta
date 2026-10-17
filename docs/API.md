@@ -8,14 +8,16 @@
 
 | Метод | Адреса | Филтри |
 |---|---|---|
-| GET | `/meta` | агенција, дестинации, групи, места на поаѓање, авиокомпании, содржини, енуми, авио widget |
+| GET | `/meta` | агенција, слајдер, дестинации, групи, места на поаѓање, авиокомпании, содржини, енуми, авио widget |
 | GET | `/tours` | `q, type, destination, group, featured, flight, last_minute, date_from, date_to, departure_place, price_max, sort=price\|newest, page, per_page` |
 | GET | `/tours/{slug}` | програма, датуми, места на поаѓање, доплати, вклучено/невклучено, галерија |
 | GET | `/events` | `q, category, city, featured, last_minute, past` |
 | GET | `/events/{slug}` | билети, поврзана тура |
 | GET | `/accommodations` | `q, type, destination, group, stars, board, amenities=wifi,pool, last_minute, price_max, sort=price\|stars` |
 | GET | `/accommodations/{slug}` | соби, цени по периоди, содржини, куќен ред |
-| GET | `/accommodations/{slug}/quote?from=YYYY-MM-DD&to=…&adults=2&children=0` | понуди по соба за престојот |
+| GET | `/accommodations/{slug}/quote?from=YYYY-MM-DD&to=…&adults=2&children=0` | понуди по соба за престојот (само слободните соби, со `available`) |
+| GET | `/accommodations/{slug}/availability?from=YYYY-MM-DD&to=…` | слободни единици и цена по соба и ноќ (до 92 дена), за календар на сајтот |
+| GET | `/slider` | слајдер на почетна: слика, наднаслов, наслов, поднаслов, копче (текст, линк, нов таб) |
 | GET | `/visas`, `/visas/{slug}` | прашалник и документи за формата |
 | GET | `/last-minute` | сите last minute понуди (тури, хотели, настани, визи) |
 
@@ -26,7 +28,7 @@
    {"event":"tour.updated","type":"tour","id":5,"slug":"neapol-sorento-amalfi","updated_at":"…"}
    ```
    Заглавие `X-TA-Signature: sha256=<HMAC-SHA256 на телото со webhook тајната>`.
-   Настани: `tour|event|accommodation|visa` + `.updated|.deleted`. Плагинот го повлекува записот по `slug` и го ажурира.
+   Настани: `tour|event|accommodation|visa|slider` + `.updated|.deleted` (за `slider` плагинот повторно го повлекува `/slider`). Плагинот го повлекува записот по `slug` и го ажурира.
 2. **Резерва (pull):** `GET /changes?since=<server_time од претходниот повик>` враќа `changed[]`, `deleted[]` и ново `server_time`. Плагинот го повикува на секои 15 мин.
 
 ## Форми од сајтот

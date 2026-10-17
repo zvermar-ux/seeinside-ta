@@ -37,6 +37,7 @@ class Accommodation extends Model
             'board_types' => 'array',
             'video_urls' => 'array',
             'booking_enabled' => 'boolean',
+            'use_supplier_availability' => 'boolean',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'price_from' => 'decimal:2',
@@ -107,10 +108,17 @@ class Accommodation extends Model
             return [];
         }
 
+        $availabilityService = app(\App\Services\Availability\AvailabilityService::class);
+        $availability = $availabilityService->forAccommodation($this, $start, $end->copy()->subDay(), false);
+
         $offers = [];
         foreach ($this->rooms()->where('is_active', true)->with('rates')->get() as $room) {
             if ($adults > $room->max_adults || $children > $room->max_children) {
                 continue;
+            }
+            $free = $availabilityService->freeForStay($availability, $room->id, $start->toDateString(), $end->toDateString());
+            if ($free !== null && $free < 1) {
+                continue;   // fully booked on at least one night
             }
 
             $total = 0.0;
@@ -138,6 +146,7 @@ class Accommodation extends Model
                 'room_type' => $room->room_type?->value,
                 'board' => $room->board?->value,
                 'nights' => $nights,
+                'available' => $free,
                 'total' => round($total, 2),
                 'currency' => $this->currency,
             ];

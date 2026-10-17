@@ -136,6 +136,9 @@ class AccommodationResource extends Resource
                                 ->when(AgencyField::current($get), fn ($q, $a) => $q->where('agency_id', $a))->pluck('name', 'id'))
                             ->placeholder(__('Own offer')),
                         Forms\Components\TextInput::make('provider_code')->label(__('Hotel code in the booking system')),
+                        Forms\Components\Toggle::make('use_supplier_availability')->label(__('Take availability (free / booked) from the booking system'))
+                            ->helperText(__('Each room needs its room code from the booking system (Rooms tab).'))
+                            ->default(true)->columnSpanFull(),
                     ]),
                 ]),
                 Forms\Components\Tabs\Tab::make(__('Media & promotions'))->icon('heroicon-o-bolt')->schema([
@@ -180,13 +183,18 @@ class AccommodationResource extends Resource
                 Duplicate::action(function (Accommodation $from, Accommodation $to) {
                     $to->amenities()->sync($from->amenities()->pluck('amenities.id'));
                     foreach ($from->rooms()->with('rates')->get() as $room) {
-                        $newRoom = $to->rooms()->create($room->only(['name', 'room_type', 'board', 'max_adults', 'max_children', 'beds', 'size_m2', 'units', 'description', 'room_amenities', 'price', 'price_type', 'is_active', 'sort_order']));
+                        $newRoom = $to->rooms()->create($room->only(['name', 'room_type', 'board', 'max_adults', 'max_children', 'beds', 'size_m2', 'units', 'description', 'room_amenities', 'cover_image', 'price', 'price_type', 'is_active', 'sort_order']));
+                        Duplicate::media($room, $newRoom);
                         foreach ($room->rates as $rate) {
                             $newRoom->rates()->create($rate->only(['date_from', 'date_to', 'price', 'price_type', 'board', 'min_nights', 'release_days', 'is_last_minute', 'note']));
                         }
                     }
                     Duplicate::media($from, $to);
                 }, ['supplier_connection_id', 'provider_code']),
+                Tables\Actions\Action::make('calendar')->label(__('Availability calendar'))->tooltip(__('Availability calendar'))
+                    ->icon('heroicon-o-calendar-days')->color('gray')->iconButton()
+                    ->visible(fn () => \App\Filament\Pages\AvailabilityCalendar::canAccess())
+                    ->url(fn (Accommodation $record) => \App\Filament\Pages\AvailabilityCalendar::getUrl(['accommodation' => $record->id])),
             ])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])])
             ->defaultSort('name');

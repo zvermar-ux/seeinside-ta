@@ -248,6 +248,7 @@ class CatalogPresenter
                     'price' => (float) $x->price, 'price_type' => $x->price_type, 'min_nights' => $x->min_nights,
                     'is_last_minute' => $x->is_last_minute,
                 ])->values()->all(),
+                'cover_image' => static::url($r->cover_image ?: $r->media->first()?->path),
                 'images' => static::gallery($r),
             ])->values()->all(),
             'price_list_pdf' => static::url($a->price_list_pdf),

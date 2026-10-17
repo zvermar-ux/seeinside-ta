@@ -111,8 +111,11 @@ class GroupResource extends Resource
                 Tables\Columns\ImageColumn::make('image')->label('')->disk('public')->square()->size(44),
                 Tables\Columns\TextColumn::make('name')->label(__('Name'))->weight('semibold')
                     ->state(fn (Group $r) => $r->display_name)
-                    ->description(fn (Group $r) => $r->parent?->display_name)
                     ->searchable(query: fn (Builder $query, string $search) => $query->where('name', 'like', '%'.$search.'%')),
+                Tables\Columns\TextColumn::make('parent_name')->label(__('Parent group'))
+                    ->state(fn (Group $r) => $r->parent?->display_name)
+                    ->placeholder('—')->badge()->color('gray')->icon('heroicon-m-folder')
+                    ->sortable(query: fn (Builder $query, string $direction) => $query->orderByRaw('parent_id is null')->orderBy('parent_id', $direction)),
                 Tables\Columns\TextColumn::make('type')->label(__('Type'))->badge()->color(fn (Group $r) => $r->type === GroupType::Destination ? 'success' : 'info'),
                 AgencyField::column(),
                 Tables\Columns\TextColumn::make('objects_count')->label(__('Arrangements & hotels'))->badge()->color('gray')
@@ -128,6 +131,15 @@ class GroupResource extends Resource
             ]))
             ->filters([
                 AgencyField::filter(),
+                Tables\Filters\TernaryFilter::make('has_parent')->label(__('Parent group'))
+                    ->trueLabel(__('With parent group'))->falseLabel(__('Main groups only (no parent)'))
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereNotNull('parent_id'),
+                        false: fn (Builder $query) => $query->whereNull('parent_id'),
+                        blank: fn (Builder $query) => $query,
+                    ),
+                Tables\Filters\SelectFilter::make('parent_id')->label(__('Belongs to group'))->searchable()
+                    ->options(fn () => Group::query()->whereIn('id', Group::query()->whereNotNull('parent_id')->select('parent_id'))->get()->mapWithKeys(fn (Group $g) => [$g->id => $g->display_name])->sort()),
                 Tables\Filters\TernaryFilter::make('is_active')->label(__('Active')),
                 Tables\Filters\TernaryFilter::make('show_on_homepage')->label(__('Show on homepage')),
             ])

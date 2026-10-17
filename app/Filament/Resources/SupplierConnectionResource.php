@@ -56,6 +56,10 @@ class SupplierConnectionResource extends Resource
                 Forms\Components\KeyValue::make('credentials')->label(__('Access keys'))->columnSpanFull()
                     ->keyLabel(__('Name'))->valueLabel(__('Value'))
                     ->helperText(__('API key, secret, password… stored encrypted.')),
+                Forms\Components\TextInput::make('settings.availability_url')->label(__('Availability address (JSON)'))->columnSpanFull()
+                    ->placeholder('https://partner.mk/api/availability?hotel={hotel}&from={from}&to={to}')
+                    ->helperText(__('For systems that give free rooms as a simple JSON feed. {hotel} = hotel code, {from}/{to} = dates. The access key is taken from "api_key" in the keys above.'))
+                    ->visible(fn (Forms\Get $get) => in_array($get('provider'), ['expert', 'other'], true)),
                 Forms\Components\Toggle::make('is_active')->label(__('Active')),
                 Forms\Components\Textarea::make('notes')->label(__('Notes'))->columnSpanFull(),
             ]),

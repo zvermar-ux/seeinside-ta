@@ -12,7 +12,12 @@ class EditAccommodation extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [Actions\DeleteAction::make()];
+        return [
+            Actions\Action::make('calendar')->label(__('Availability calendar'))->icon('heroicon-o-calendar-days')->color('gray')
+                ->visible(fn () => \App\Filament\Pages\AvailabilityCalendar::canAccess())
+                ->url(fn () => \App\Filament\Pages\AvailabilityCalendar::getUrl(['accommodation' => $this->record->id])),
+            Actions\DeleteAction::make(),
+        ];
     }
 
     public function getContentTabLabel(): ?string

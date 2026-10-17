@@ -15,6 +15,7 @@ Route::middleware([AuthenticateApiClient::class, 'throttle:240,1'])->group(funct
     Route::get('meta', [CatalogController::class, 'meta']);
     Route::get('changes', [CatalogController::class, 'changes']);
     Route::get('last-minute', [CatalogController::class, 'lastMinute']);
+    Route::get('slider', [CatalogController::class, 'slider']);
 
     Route::get('tours', [CatalogController::class, 'tours']);
     Route::get('tours/{slug}', [CatalogController::class, 'tour']);
@@ -25,6 +26,7 @@ Route::middleware([AuthenticateApiClient::class, 'throttle:240,1'])->group(funct
     Route::get('accommodations', [CatalogController::class, 'accommodations']);
     Route::get('accommodations/{slug}', [CatalogController::class, 'accommodation']);
     Route::get('accommodations/{slug}/quote', [CatalogController::class, 'quote']);
+    Route::get('accommodations/{slug}/availability', [CatalogController::class, 'availability']);
 
     Route::get('visas', [CatalogController::class, 'visas']);
     Route::get('visas/{slug}', [CatalogController::class, 'visa']);
