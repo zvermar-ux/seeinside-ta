@@ -1372,6 +1372,384 @@ msgstr "слајдови"
 msgid "transport only"
 msgstr "само превоз"
 
+msgid "999 = pill"
+msgstr "999 = заоблено (пилула)"
+
+msgid "Arrow"
+msgstr "Стрелка"
+
+msgid "Arrow background"
+msgstr "Позадина на стрелките"
+
+msgid "Arrow hover / active"
+msgstr "Стрелка – hover / активна"
+
+msgid "Arrow icon"
+msgstr "Боја на иконата"
+
+msgid "Arrow icon in the buttons"
+msgstr "Стрелка во копчињата"
+
+msgid "Arrow only"
+msgstr "Само стрелка"
+
+msgid "Arrow size"
+msgstr "Големина на стрелките"
+
+msgid "Arrows"
+msgstr "Стрелки"
+
+msgid "Arrows & navigation"
+msgstr "Стрелки и навигација"
+
+msgid "Arrows look"
+msgstr "Изглед на стрелките"
+
+msgid "Arrows position"
+msgstr "Позиција на стрелките"
+
+msgid "Back to the design from the video?"
+msgstr "Да се врати дизајнот од видеото?"
+
+msgid "Blur in"
+msgstr "Појава од заматено"
+
+msgid "Both sides"
+msgstr "Од двете страни"
+
+msgid "Bottom"
+msgstr "Долу"
+
+msgid "Bottom centre"
+msgstr "Долу на средина"
+
+msgid "Bottom right"
+msgstr "Долу десно"
+
+msgid "Buttons"
+msgstr "Копчиња"
+
+msgid "Capitals"
+msgstr "Големи букви"
+
+msgid "Change duration"
+msgstr "Траење на промената"
+
+msgid "Change of slide"
+msgstr "Промена на слајд"
+
+msgid "Corners"
+msgstr "Заоблување"
+
+msgid "Cross-fade"
+msgstr "Претопување"
+
+msgid "Darker on the text side, clear on the other"
+msgstr "Потемно кон текстот, чисто од другата страна"
+
+msgid "Design, effects and fonts are set in SeeInside Travel → Slider. Fields left empty use those settings."
+msgstr "Дизајнот, ефектите и фонтовите се подесуваат во SeeInside Travel → Слајдер. Празните полиња ги користат тие подесувања."
+
+msgid "Distance from the edge"
+msgstr "Оддалеченост од работ"
+
+msgid "Dots"
+msgstr "Точки"
+
+msgid "Effect size"
+msgstr "Големина на ефектот"
+
+msgid "Effect strength"
+msgstr "Јачина на ефектот"
+
+msgid "Effects"
+msgstr "Ефекти"
+
+msgid "Effects also on phones (touch)"
+msgstr "Ефекти и на телефони (допир)"
+
+msgid "From settings"
+msgstr "Од подесувањата"
+
+msgid "Frosted glass"
+msgstr "Матирано стакло"
+
+msgid "Frosted glass circle"
+msgstr "Круг од матирано стакло"
+
+msgid "Full width"
+msgstr "Цела ширина"
+
+msgid "Gradient"
+msgstr "Преливање"
+
+msgid "Handwritten"
+msgstr "Ракопис"
+
+msgid "Height (computer)"
+msgstr "Висина (компјутер)"
+
+msgid "Height (e.g. 100vh or 640px)"
+msgstr "Висина (пр. 100vh или 640px)"
+
+msgid "Height (phone)"
+msgstr "Висина (телефон)"
+
+msgid "Instant"
+msgstr "Веднаш (без премин)"
+
+msgid "Ken Burns effect"
+msgstr "Ken Burns ефект"
+
+msgid "Large"
+msgstr "Големо"
+
+msgid "Left"
+msgstr "Лево"
+
+msgid "Left, vertical"
+msgstr "Лево, вертикално"
+
+msgid "Letter by letter"
+msgstr "Буква по буква"
+
+msgid "Line between the arrows shows the time to the next slide"
+msgstr "Линијата меѓу стрелките го покажува времето до следниот слајд"
+
+msgid "Lines"
+msgstr "Линии"
+
+msgid "Liquid glass trail (as in the video)"
+msgstr "Течно стакло (како на видеото)"
+
+msgid "Liquid morph"
+msgstr "Течно претопување"
+
+msgid "Main button"
+msgstr "Главно копче"
+
+msgid "Main button text"
+msgstr "Текст на главното копче"
+
+msgid "Main button – hover"
+msgstr "Главно копче – hover"
+
+msgid "Medium"
+msgstr "Средно"
+
+msgid "Middle"
+msgstr "Средина"
+
+msgid "Minimum height"
+msgstr "Минимална висина"
+
+msgid "Mouse effect"
+msgstr "Ефект на глувчето"
+
+msgid "Next"
+msgstr "Следен"
+
+msgid "Next slide after"
+msgstr "Следен слајд по"
+
+msgid "No animation"
+msgstr "Без анимација"
+
+msgid "No arrows"
+msgstr "Без стрелки"
+
+msgid "No effect"
+msgstr "Без ефект"
+
+msgid "No slides yet – they arrive from SeeInside."
+msgstr "Сè уште нема слајдови – пристигнуваат од SeeInside."
+
+msgid "None"
+msgstr "Нема"
+
+msgid "Numbers 01 / 03"
+msgstr "Броеви 01 / 03"
+
+msgid "Outline"
+msgstr "Контура"
+
+msgid "Outline circle"
+msgstr "Круг со контура"
+
+msgid "Overlay colour"
+msgstr "Боја на затемнувањето"
+
+msgid "Overlay strength"
+msgstr "Јачина на затемнувањето"
+
+msgid "Pause"
+msgstr "Пауза"
+
+msgid "Pause while the mouse is over the slider"
+msgstr "Пауза додека глувчето е над слајдерот"
+
+msgid "Phones"
+msgstr "Телефони"
+
+msgid "Photo overlay"
+msgstr "Затемнување на сликата"
+
+msgid "Preview"
+msgstr "Преглед"
+
+msgid "Previous"
+msgstr "Претходен"
+
+msgid "Progress line"
+msgstr "Линија на напредок"
+
+msgid "Regular"
+msgstr "Нормално"
+
+msgid "Restore default design"
+msgstr "Врати го основниот дизајн"
+
+msgid "Right"
+msgstr "Десно"
+
+msgid "Right, vertical (up / down)"
+msgstr "Десно, вертикално (горе / долу)"
+
+msgid "Rise & fade (as in the video)"
+msgstr "Издигнување (како на видеото)"
+
+msgid "Rounded corners"
+msgstr "Заоблени агли"
+
+msgid "Save and preview"
+msgstr "Зачувај и прегледај"
+
+msgid "Second button"
+msgstr "Второ копче"
+
+msgid "Second button colour"
+msgstr "Боја на второто копче"
+
+msgid "Second button link when the slide has none"
+msgstr "Линк на второто копче кога слајдот нема"
+
+msgid "Second button text when the slide has none (EN)"
+msgstr "Текст на второто копче кога слајдот нема (EN)"
+
+msgid "Second button text when the slide has none (MK)"
+msgstr "Текст на второто копче кога слајдот нема (MK)"
+
+msgid "Shadow"
+msgstr "Сенка"
+
+msgid "Size"
+msgstr "Големина"
+
+msgid "Size & layout"
+msgstr "Големина и распоред"
+
+msgid "Slide"
+msgstr "Лизгање"
+
+msgid "Slider"
+msgstr "Слајдер"
+
+msgid "Slides (photo, supertitle, title, subtitle, buttons) are entered in SeeInside → <b>Homepage slider</b>. Here you set how the slider looks. Use it with <code>[sta_slider]</code>, the Elementor widget „Travel: homepage slider“ or the Gutenberg block."
+msgstr "Слајдовите (слика, наднаслов, наслов, поднаслов, копчиња) се внесуваат во SeeInside → <b>Слајдер на почетна</b>. Тука се подесува како изгледа слајдерот. Се користи со <code>[sta_slider]</code>, Elementor виџетот „Travel: homepage slider“ или Gutenberg блокот."
+
+msgid "Slow zoom of the photo"
+msgstr "Бавно зумирање на сликата"
+
+msgid "Small"
+msgstr "Мало"
+
+msgid "Soft shadow under the text (better reading on bright photos)"
+msgstr "Мека сенка под текстот (подобро читање на светли слики)"
+
+msgid "Solid circle"
+msgstr "Полн круг"
+
+msgid "Solid white"
+msgstr "Полно бело"
+
+msgid "Stretch to the full browser width, even inside a narrower page container"
+msgstr "Рашири на целата ширина на прелистувачот, дури и во потесен контејнер"
+
+msgid "Subtitle colour"
+msgstr "Боја на поднасловот"
+
+msgid "Subtitle size"
+msgstr "Големина на поднасловот"
+
+msgid "Supertitle colour"
+msgstr "Боја на наднасловот"
+
+msgid "Supertitle font"
+msgstr "Фонт на наднасловот"
+
+msgid "Supertitle size"
+msgstr "Големина на наднасловот"
+
+msgid "Text animation"
+msgstr "Анимација на текстот"
+
+msgid "Text link"
+msgstr "Текст линк"
+
+msgid "Text position"
+msgstr "Позиција на текстот"
+
+msgid "Text width"
+msgstr "Ширина на текстот"
+
+msgid "Texts & fonts"
+msgstr "Текстови и фонтови"
+
+msgid "Theme font"
+msgstr "Фонт од темата"
+
+msgid "Title colour"
+msgstr "Боја на насловот"
+
+msgid "Title font"
+msgstr "Фонт на насловот"
+
+msgid "Title in capital letters"
+msgstr "Насловот со големи букви"
+
+msgid "Title size"
+msgstr "Големина на насловот"
+
+msgid "Title weight"
+msgstr "Дебелина на насловот"
+
+msgid "Top"
+msgstr "Горе"
+
+msgid "Transition"
+msgstr "Премин"
+
+msgid "Vertical position"
+msgstr "Вертикална позиција"
+
+msgid "Water ripples"
+msgstr "Бранови на вода"
+
+msgid "Zoom & fade"
+msgstr "Зум и претопување"
+
+msgid "bold"
+msgstr "задебелено"
+
+msgid "e.g. 100vh (full screen), 640px"
+msgstr "пр. 100vh (цел екран), 640px"
+
+msgid "light"
+msgstr "тенко"
+
+msgid "seconds (0 = off)"
+msgstr "секунди (0 = исклучено)"
+
 msgid "%d night"
 msgid_plural "%d nights"
 msgstr[0] "%d ноќевање"

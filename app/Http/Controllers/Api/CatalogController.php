@@ -105,6 +105,7 @@ class CatalogController extends Controller
                 'title' => $both($s, 'title'),
                 'subtitle' => $both($s, 'subtitle'),
                 'button' => ['label' => $both($s, 'button_label'), 'url' => $s->link, 'new_tab' => (bool) $s->open_in_new_tab],
+                'button2' => ['label' => $both($s, 'button2_label'), 'url' => $s->link2],
                 'updated_at' => $s->updated_at?->toIso8601String(),
             ])->values()->all();
     }

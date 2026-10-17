@@ -66,6 +66,9 @@ class SliderImageResource extends Resource
                 Forms\Components\TextInput::make('link')->label(__('Button link'))->placeholder('https://… или /grcija')
                     ->helperText(__('Without button text, the whole slide is a link.'))->maxLength(500),
                 Forms\Components\Toggle::make('open_in_new_tab')->label(__('Open in a new tab'))->inline(false),
+                Forms\Components\TextInput::make('button2_label')->label(__('Second button text'))->placeholder('Сите понуди')->maxLength(60),
+                Forms\Components\TextInput::make('link2')->label(__('Second button link'))->placeholder('/last-minute')->maxLength(500)
+                    ->helperText(__('Shown as an outlined button next to the first one.')),
             ]),
             Forms\Components\Section::make()->schema([
                 Forms\Components\Toggle::make('is_active')->label(__('Active'))->default(true),

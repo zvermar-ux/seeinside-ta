@@ -771,5 +771,8 @@
     "Sending started": "Праќањето започна",
     "Follow the progress in WordPress → SeeInside Travel → Sync.": "Напредокот го следиш во WordPress → SeeInside Travel → Синхронизација.",
     "App sends data (push)": "Апликацијата праќа (push)",
-    "Website reads the API": "Сајтот чита од API"
+    "Website reads the API": "Сајтот чита од API",
+    "Second button text": "Текст на второто копче",
+    "Second button link": "Линк на второто копче",
+    "Shown as an outlined button next to the first one.": "Се прикажува како проѕирно копче до првото."
 }

@@ -204,10 +204,18 @@ class STA_Widget_Slider extends STA_Simple_Widget
     public function get_icon(): string { return 'eicon-slider-push'; }
     protected function extra_controls(): void
     {
-        $this->add_control('height', ['label' => __('Height (px)', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => 560]);
-        $this->add_control('autoplay', ['label' => __('Change every (seconds, 0 = off)', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => 6]);
+        $this->add_control('note', ['type' => Controls_Manager::RAW_HTML, 'raw' => esc_html__('Design, effects and fonts are set in SeeInside Travel → Slider. Fields left empty use those settings.', 'seeinside-travel'), 'content_classes' => 'elementor-descriptor']);
+        $this->add_control('height', ['label' => __('Height (e.g. 100vh or 640px)', 'seeinside-travel'), 'type' => Controls_Manager::TEXT, 'default' => '']);
+        $this->add_control('autoplay', ['label' => __('Change every (seconds, 0 = off)', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => '']);
+        $o = STA_Slider::options();
+        $this->add_control('mouse_effect', ['label' => __('Mouse effect', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'options' => ['' => __('From settings', 'seeinside-travel')] + $o['mouse_effect'], 'default' => '']);
+        $this->add_control('transition', ['label' => __('Transition', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'options' => ['' => __('From settings', 'seeinside-travel')] + $o['transition'], 'default' => '']);
+        $this->add_control('arrows', ['label' => __('Arrows', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'options' => ['' => __('From settings', 'seeinside-travel')] + $o['arrows'], 'default' => '']);
     }
-    protected function html(array $s): string { return STA_Frontend::sc_slider(['height' => $s['height'] ?? 560, 'autoplay' => $s['autoplay'] ?? 6]); }
+    protected function html(array $s): string
+    {
+        return STA_Slider::render(array_intersect_key($s, array_flip(['height', 'autoplay', 'mouse_effect', 'transition', 'arrows'])));
+    }
 }
 
 class STA_Widget_Search extends STA_Simple_Widget

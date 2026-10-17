@@ -12,7 +12,7 @@ class SliderImage extends Model
 
     protected $guarded = ['id'];
 
-    public array $translatable = ['supertitle', 'title', 'subtitle', 'button_label'];
+    public array $translatable = ['supertitle', 'title', 'subtitle', 'button_label', 'button2_label'];
 
     /** Slider changes are pushed to the website as "slider.updated" / "slider.deleted" webhooks */
     public static function websiteType(): string

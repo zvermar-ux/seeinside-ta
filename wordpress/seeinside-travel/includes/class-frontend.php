@@ -227,37 +227,7 @@ class STA_Frontend
 
     public static function sc_slider($atts = []): string
     {
-        $a = shortcode_atts(['height' => '560', 'autoplay' => '6'], $atts, 'sta_slider');
-        $slides = get_option('sta_slider', []);
-        if (! $slides) {
-            return '';
-        }
-        $html = '<div class="sta sta-slider" style="--sta-slider-h:'.(int) $a['height'].'px" data-autoplay="'.(int) $a['autoplay'].'"><div class="sta-slides">';
-        foreach ($slides as $i => $s) {
-            $btn = sta_t($s['button']['label'] ?? null);
-            $url = $s['button']['url'] ?? '';
-            if ($url && str_starts_with($url, '/')) {
-                $url = home_url($url);
-            }
-            $target = ! empty($s['button']['new_tab']) ? ' target="_blank" rel="noopener"' : '';
-            $inner = '<div class="sta-slide-inner">'
-                .(sta_t($s['supertitle'] ?? null) ? '<div class="sta-slide-super">'.esc_html(sta_t($s['supertitle'])).'</div>' : '')
-                .(sta_t($s['title'] ?? null) ? '<h2 class="sta-slide-title">'.esc_html(sta_t($s['title'])).'</h2>' : '')
-                .(sta_t($s['subtitle'] ?? null) ? '<p class="sta-slide-sub">'.esc_html(sta_t($s['subtitle'])).'</p>' : '')
-                .($btn && $url ? '<a class="sta-btn sta-btn-lg" href="'.esc_url($url).'"'.$target.'>'.esc_html($btn).'</a>' : '')
-                .'</div>';
-            $slide = '<div class="sta-slide'.($i === 0 ? ' is-active' : '').'" style="background-image:url(\''.esc_url($s['image']).'\')">'.$inner.'</div>';
-            if (! $btn && $url) {
-                $slide = '<a class="sta-slide-link" href="'.esc_url($url).'"'.$target.'>'.$slide.'</a>';
-            }
-            $html .= $slide;
-        }
-        $html .= '</div>';
-        if (count($slides) > 1) {
-            $html .= '<button class="sta-slider-prev" aria-label="Prev">‹</button><button class="sta-slider-next" aria-label="Next">›</button><div class="sta-dots">'.str_repeat('<span></span>', count($slides)).'</div>';
-        }
-
-        return $html.'</div>';
+        return STA_Slider::render(is_array($atts) ? $atts : []);
     }
 
     public static function sc_search($atts = []): string

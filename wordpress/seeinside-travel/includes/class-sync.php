@@ -642,6 +642,9 @@ class STA_Sync
     {
         [$code, $body] = STA_Api::get('slider');
         if ($code === 200 && isset($body['data'])) {
+            foreach ($body['data'] as $sl) {
+                self::attach($sl['image'] ?? null);   // same-origin copy for the WebGL effects
+            }
             update_option('sta_slider', $body['data'], false);
         }
     }
