@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
 
 class VisaTypeResource extends Resource
 {
-    use GuardedByPermission;
+    use GuardedByPermission, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = VisaType::class;
 

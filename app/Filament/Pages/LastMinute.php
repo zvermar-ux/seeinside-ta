@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Auth;
 
 class LastMinute extends Page
 {
+    use \App\Filament\Concerns\CustomizableNavigation;
+
     protected static ?string $navigationIcon = 'heroicon-o-bolt';
 
     protected static ?string $navigationGroup = 'offer';
@@ -24,7 +26,7 @@ class LastMinute extends Page
 
     protected static string $view = 'filament.pages.last-minute';
 
-    public static function getNavigationLabel(): string
+    public static function defaultNavigationLabel(): string
     {
         return 'Last minute';
     }

@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class EventResource extends Resource
 {
-    use GuardedByPermission;
+    use GuardedByPermission, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = Event::class;
 

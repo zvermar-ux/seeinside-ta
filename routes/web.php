@@ -29,3 +29,23 @@ Route::get('/admin/visa-documents/{application}/{index}', function (\App\Models\
 
     return \Illuminate\Support\Facades\Storage::disk('local')->download($doc['path'], $doc['name'] ?? basename($doc['path']));
 })->name('admin.visa-document');
+
+// "Install as an app" on phones / desktop (name, colour and icon from Settings → Appearance)
+Route::get('/manifest.webmanifest', function () {
+    $b = \App\Support\Branding::class;
+    $icon = $b::url($b::get('app_icon'));
+
+    return response()->json(array_filter([
+        'name' => $b::get('app_name') ?: config('app.name'),
+        'short_name' => \Illuminate\Support\Str::limit($b::get('app_name') ?: config('app.name'), 12, ''),
+        'start_url' => '/admin',
+        'scope' => '/',
+        'display' => 'standalone',
+        'background_color' => '#ffffff',
+        'theme_color' => $b::primaryHex(),
+        'icons' => $icon ? [
+            ['src' => $icon, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+            ['src' => $icon, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any maskable'],
+        ] : null,
+    ]), 200, ['Content-Type' => 'application/manifest+json'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+})->name('app.manifest');

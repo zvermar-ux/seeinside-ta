@@ -11,7 +11,11 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Support\Colors\Color;
+use App\Support\Branding;
+use Filament\Support\Facades\FilamentColor;
+use Filament\Facades\Filament;
+use Filament\FontProviders\LocalFontProvider;
+use Filament\Enums\ThemeMode;
 use Filament\Support\Enums\MaxWidth;
 use Filament\SpatieLaravelTranslatablePlugin;
 use Filament\View\PanelsRenderHook;
@@ -25,6 +29,30 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
+    public function boot(): void
+    {
+        // Settings that are read while the page is rendered (after login, so agency colours apply)
+        Filament::serving(function () {
+            $panel = Filament::getCurrentPanel();
+            if (! $panel || $panel->getId() !== 'admin') {
+                return;
+            }
+
+            FilamentColor::register(Branding::colors());
+
+            $panel->font(Branding::fontFamily(), Branding::fontUrl(), LocalFontProvider::class);
+
+            $mode = Branding::get('theme_mode');
+            $panel->darkMode($mode !== 'light', $mode === 'dark');
+            $panel->defaultThemeMode(ThemeMode::tryFrom((string) Branding::get('default_theme')) ?? ThemeMode::System);
+
+            $panel->maxContentWidth(MaxWidth::tryFrom((string) Branding::get('content_width')) ?? MaxWidth::Full);
+            if ($w = Branding::get('sidebar_width')) {
+                $panel->sidebarWidth($w);
+            }
+        });
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel
@@ -34,26 +62,27 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->passwordReset()
             ->profile(isSimple: false)
-            ->brandName(fn () => config('app.name'))
-            ->colors([
-                'primary' => Color::Sky,
-                'gray' => Color::Slate,
-                'info' => Color::Indigo,
-                'success' => Color::Emerald,
-                'warning' => Color::Amber,
-                'danger' => Color::Rose,
-            ])
+            // Look & feel comes from Settings → Appearance (App\Support\Branding); see also boot() below
+            ->brandName(fn () => Branding::appName())
+            ->brandLogo(fn () => Branding::brandLogo())
+            ->darkModeBrandLogo(fn () => Branding::brandLogo(dark: true))
+            ->brandLogoHeight(fn () => Branding::get('logo_height') ?: '2.25rem')
+            ->favicon(fn () => Branding::url(Branding::get('favicon')))
+            ->colors(fn () => Branding::colors())
             ->font('Inter')
-            ->spa()
-            ->unsavedChangesAlerts()
-            ->sidebarCollapsibleOnDesktop()
+            ->spa(fn () => (bool) Branding::get('spa'))
+            ->unsavedChangesAlerts(fn () => (bool) Branding::get('unsaved_alerts'))
+            ->breadcrumbs(fn () => (bool) Branding::get('breadcrumbs'))
+            ->topNavigation(fn () => Branding::get('navigation') === 'top')
+            ->sidebarCollapsibleOnDesktop(fn () => Branding::get('sidebar_collapse') === 'icons')
+            ->sidebarFullyCollapsibleOnDesktop(fn () => Branding::get('sidebar_collapse') === 'full')
             ->maxContentWidth(MaxWidth::Full)
             ->navigationGroups([
-                'offer' => NavigationGroup::make()->label(fn () => __('Offer')),
-                'bookings' => NavigationGroup::make()->label(fn () => __('Bookings & requests')),
-                'partners' => NavigationGroup::make()->label(fn () => __('Partners')),
-                'settings' => NavigationGroup::make()->label(fn () => __('Settings'))->collapsed(),
-                'administration' => NavigationGroup::make()->label(fn () => __('Administration')),
+                'offer' => NavigationGroup::make()->label(fn () => Branding::groupLabel('offer', __('Offer'))),
+                'bookings' => NavigationGroup::make()->label(fn () => Branding::groupLabel('bookings', __('Bookings & requests'))),
+                'partners' => NavigationGroup::make()->label(fn () => Branding::groupLabel('partners', __('Partners'))),
+                'settings' => NavigationGroup::make()->label(fn () => Branding::groupLabel('settings', __('Settings')))->collapsed(),
+                'administration' => NavigationGroup::make()->label(fn () => Branding::groupLabel('administration', __('Administration'))),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -64,6 +93,10 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::USER_MENU_BEFORE, fn (): string => Blade::render('<x-locale-switcher />'))
             ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, fn (): string => Blade::render('<x-locale-switcher :center="true" />'))
             ->renderHook(PanelsRenderHook::STYLES_AFTER, fn () => view('filament.styles'))
+            ->renderHook(PanelsRenderHook::STYLES_AFTER, fn () => view('filament.branding-styles'))
+            ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.branding-head'))
+            ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_BEFORE, fn () => view('filament.login-intro'))
+            ->renderHook(PanelsRenderHook::FOOTER, fn () => view('filament.footer'))
             ->renderHook(PanelsRenderHook::SIDEBAR_FOOTER, fn (): string => Blade::render('<x-agency-badge />'))
             ->middleware([
                 EncryptCookies::class,

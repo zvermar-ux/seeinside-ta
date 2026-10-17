@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Auth;
 
 class AgencyResource extends Resource
 {
+    use \App\Filament\Concerns\CustomizableNavigation;
+
     protected static ?string $model = Agency::class;
 
     protected static bool $hasTitleCaseModelLabel = false;
@@ -77,6 +79,22 @@ class AgencyResource extends Resource
                     Forms\Components\Toggle::make('is_active')->label(__('Active'))->default(true)
                         ->visible($withAdminFields)->inline(false),
                     Forms\Components\Textarea::make('notes')->label(__('Notes'))->columnSpanFull()->visible($withAdminFields),
+                ]),
+            Forms\Components\Section::make(__('Look of the panel for this agency'))
+                ->description(__('Users of this agency see their own logo and main colour.'))
+                ->icon('heroicon-o-paint-brush')
+                ->visible(fn () => \App\Support\Branding::get('allow_agency_branding'))
+                ->collapsible()->collapsed()
+                ->columns(3)
+                ->schema([
+                    Forms\Components\ColorPicker::make('brand_color')->label(__('Main colour'))
+                        ->helperText(__('Empty = the colour of the application.')),
+                    Forms\Components\FileUpload::make('brand_logo')->label(__('Logo (light mode)'))
+                        ->image()->disk('public')->directory('agency-logos')->maxSize(4096)
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']),
+                    Forms\Components\FileUpload::make('brand_logo_dark')->label(__('Logo (dark mode)'))
+                        ->image()->disk('public')->directory('agency-logos')->maxSize(4096)
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']),
                 ]),
             Forms\Components\Section::make(__('Website, flights & payments'))
                 ->collapsible()->collapsed()

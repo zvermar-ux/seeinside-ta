@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Auth;
 
 class AmenityResource extends Resource
 {
+    use \App\Filament\Concerns\CustomizableNavigation;
+
     protected static ?string $model = Amenity::class;
 
     protected static bool $hasTitleCaseModelLabel = false;

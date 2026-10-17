@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class CharterResource extends Resource
 {
-    use GuardedByPermission;
+    use GuardedByPermission, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = Charter::class;
 

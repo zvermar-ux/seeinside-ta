@@ -16,7 +16,7 @@ use Filament\Tables\Table;
 
 class ApiClientResource extends Resource
 {
-    use GuardedByPermission;
+    use GuardedByPermission, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = ApiClient::class;
 

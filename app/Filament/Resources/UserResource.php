@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
+    use \App\Filament\Concerns\CustomizableNavigation;
     use GuardedByPermission {
         can as protected permissionCan;
     }

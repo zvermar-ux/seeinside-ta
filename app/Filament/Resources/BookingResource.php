@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Auth;
 
 class BookingResource extends Resource
 {
-    use GuardedByPermission;
+    use GuardedByPermission, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = Booking::class;
 

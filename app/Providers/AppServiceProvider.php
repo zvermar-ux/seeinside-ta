@@ -25,7 +25,26 @@ class AppServiceProvider extends ServiceProvider
     {
 
         // Every admin table: row actions (edit, duplicate, delete…) as compact icons at the start of the row
-        Table::configureUsing(fn (Table $table) => $table->actionsPosition(ActionsPosition::BeforeColumns));
+        Table::configureUsing(function (Table $table) {
+            $table->actionsPosition(ActionsPosition::BeforeColumns)
+                ->striped((bool) \App\Support\Branding::get('table_striped'));
+            $perPage = (int) \App\Support\Branding::get('per_page');
+            if (in_array($perPage, [10, 25, 50, 100], true)) {
+                $table->paginated([10, 25, 50, 100])->defaultPaginationPageOption($perPage);
+            }
+        });
+
+        // Where pop-up notifications appear (Settings → Appearance)
+        [$vertical, $horizontal] = explode('-', (string) \App\Support\Branding::get('notifications_position', 'top-right')) + [1 => 'right'];
+        \Filament\Notifications\Livewire\Notifications::verticalAlignment(match ($vertical) {
+            'bottom' => \Filament\Support\Enums\VerticalAlignment::End,
+            default => \Filament\Support\Enums\VerticalAlignment::Start,
+        });
+        \Filament\Notifications\Livewire\Notifications::alignment(match ($horizontal) {
+            'left' => \Filament\Support\Enums\Alignment::Start,
+            'center' => \Filament\Support\Enums\Alignment::Center,
+            default => \Filament\Support\Enums\Alignment::End,
+        });
         foreach ([TableActions\EditAction::class, TableActions\ViewAction::class, TableActions\DeleteAction::class, TableActions\ReplicateAction::class] as $action) {
             $action::configureUsing(function ($a) {
                 $label = $a->getLabel();

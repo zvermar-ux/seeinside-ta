@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Auth;
 /** Shared list for all agencies: everyone with catalog settings can view, only the super admin edits */
 class AirlineResource extends Resource
 {
+    use \App\Filament\Concerns\CustomizableNavigation;
+
     protected static ?string $model = Airline::class;
 
     protected static bool $hasTitleCaseModelLabel = false;

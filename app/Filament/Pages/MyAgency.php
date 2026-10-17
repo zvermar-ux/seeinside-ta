@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Auth;
 
 class MyAgency extends Page implements HasForms
 {
-    use InteractsWithForms;
+    use InteractsWithForms, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
 
@@ -26,7 +26,7 @@ class MyAgency extends Page implements HasForms
 
     public ?array $data = [];
 
-    public static function getNavigationLabel(): string
+    public static function defaultNavigationLabel(): string
     {
         return __('My agency');
     }
@@ -84,5 +84,6 @@ class MyAgency extends Page implements HasForms
         $this->agency()->update($data);
 
         Notification::make()->success()->title(__('Saved'))->send();
+        $this->redirect(static::getUrl(), navigate: false);   // own logo / colour applies right away
     }
 }

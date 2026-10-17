@@ -14,6 +14,8 @@ use Livewire\Attributes\Url;
 /** Occupancy calendar: rooms / apartments × nights, free or booked, with quick booking of a free period */
 class AvailabilityCalendar extends Page
 {
+    use \App\Filament\Concerns\CustomizableNavigation;
+
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
 
     protected static ?string $navigationGroup = 'bookings';
@@ -32,7 +34,7 @@ class AvailabilityCalendar extends Page
 
     public int $days = 31;
 
-    public static function getNavigationLabel(): string
+    public static function defaultNavigationLabel(): string
     {
         return __('Availability calendar');
     }

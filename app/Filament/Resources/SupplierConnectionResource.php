@@ -16,7 +16,7 @@ use Filament\Tables\Table;
 
 class SupplierConnectionResource extends Resource
 {
-    use GuardedByPermission;
+    use GuardedByPermission, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = SupplierConnection::class;
 

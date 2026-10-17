@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class TourResource extends Resource
 {
-    use GuardedByPermission;
+    use GuardedByPermission, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = Tour::class;
 

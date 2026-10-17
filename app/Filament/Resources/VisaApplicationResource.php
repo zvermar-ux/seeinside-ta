@@ -24,7 +24,7 @@ use Illuminate\Support\HtmlString;
 
 class VisaApplicationResource extends Resource
 {
-    use GuardedByPermission;
+    use GuardedByPermission, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = VisaApplication::class;
 

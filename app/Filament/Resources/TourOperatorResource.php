@@ -15,7 +15,7 @@ use Filament\Tables\Table;
 
 class TourOperatorResource extends Resource
 {
-    use GuardedByPermission;
+    use GuardedByPermission, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = TourOperator::class;
 

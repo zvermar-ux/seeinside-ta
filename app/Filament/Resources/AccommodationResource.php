@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AccommodationResource extends Resource
 {
-    use GuardedByPermission;
+    use GuardedByPermission, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = Accommodation::class;
 

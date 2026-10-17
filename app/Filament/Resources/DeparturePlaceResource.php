@@ -15,7 +15,7 @@ use Filament\Tables\Table;
 
 class DeparturePlaceResource extends Resource
 {
-    use GuardedByPermission;
+    use GuardedByPermission, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = DeparturePlace::class;
 

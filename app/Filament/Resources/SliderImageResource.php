@@ -16,7 +16,7 @@ use Filament\Tables\Table;
 
 class SliderImageResource extends Resource
 {
-    use GuardedByPermission, Translatable;
+    use GuardedByPermission, Translatable, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = SliderImage::class;
 

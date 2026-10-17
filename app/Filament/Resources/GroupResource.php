@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class GroupResource extends Resource
 {
-    use GuardedByPermission, Translatable;
+    use GuardedByPermission, Translatable, \App\Filament\Concerns\CustomizableNavigation;
 
     protected static ?string $model = Group::class;
 

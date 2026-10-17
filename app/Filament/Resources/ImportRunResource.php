@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ImportRunResource extends Resource
 {
+    use \App\Filament\Concerns\CustomizableNavigation;
     use GuardedByPermission {
         can as protected permissionCan;
     }
