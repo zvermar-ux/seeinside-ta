@@ -7,6 +7,24 @@ msgstr ""
 "Language: mk_MK\n"
 "Plural-Forms: nplurals=2; plural=(n % 10 == 1 && n % 100 != 11) ? 0 : 1;\n"
 
+msgid "Outgoing internet (google.com)"
+msgstr "Излезен интернет (google.com)"
+
+msgid "IP address of this website server"
+msgstr "IP адреса на серверот на овој сајт"
+
+msgid "Diagnose connection"
+msgstr "Дијагностика на врската"
+
+msgid "Connection diagnosis"
+msgstr "Дијагностика на врската"
+
+msgid "Diagnosis finished – see the table below."
+msgstr "Дијагностиката заврши – види ја табелата подолу."
+
+msgid "DNS and outgoing internet OK but TCP / HTTPS to SeeInside fails → the SeeInside server firewall blocks this website: allow the IP address shown above in aaPanel → Security. Outgoing internet fails too → the hosting blocks outgoing connections: ask the hosting support."
+msgstr "DNS и излезниот интернет се во ред, а TCP / HTTPS кон SeeInside не → firewall-от на серверот на SeeInside го блокира овој сајт: дозволи ја IP адресата погоре во aaPanel → Security. Ако и излезниот интернет не работи → хостингот ги блокира излезните врски: прашај ја поддршката на хостингот."
+
 msgid "Server IP (optional)"
 msgstr "IP на серверот (по избор)"
 

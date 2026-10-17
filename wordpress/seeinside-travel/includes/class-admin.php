@@ -105,8 +105,18 @@ class STA_Admin
         echo '<tr><th><label for="server_ip">'.esc_html__('Server IP (optional)', 'seeinside-travel').'</label></th><td><input class="regular-text code" id="server_ip" name="server_ip" value="'.esc_attr($s['server_ip'] ?? '').'" placeholder="123.45.67.89"><p class="description">'.esc_html__('Only if the test times out: the IP address of the SeeInside server (127.0.0.1 when the website is on the same server).', 'seeinside-travel').'</p></td></tr>';
         echo '</table>';
         submit_button(__('Save', 'seeinside-travel'), 'primary', 'submit', false);
-        echo ' '.self::button('test', __('Test connection', 'seeinside-travel'));
+        echo ' '.self::button('test', __('Test connection', 'seeinside-travel')).' '.self::button('diagnose', __('Diagnose connection', 'seeinside-travel'));
         echo '</div></form>';
+        $diag = get_transient('sta_diag');
+        if ($diag) {
+            delete_transient('sta_diag');
+            echo '<div class="sta-card"><h2>'.esc_html__('Connection diagnosis', 'seeinside-travel').'</h2><table class="widefat striped"><tbody>';
+            foreach ($diag as [$label, $state, $detail]) {
+                $icon = ['ok' => '✅', 'error' => '❌', 'info' => 'ℹ️'][$state] ?? '';
+                echo '<tr><td style="width:40%"><b>'.esc_html($label).'</b></td><td>'.$icon.' '.esc_html($detail).'</td></tr>';
+            }
+            echo '</tbody></table><p class="description">'.esc_html__('DNS and outgoing internet OK but TCP / HTTPS to SeeInside fails → the SeeInside server firewall blocks this website: allow the IP address shown above in aaPanel → Security. Outgoing internet fails too → the hosting blocks outgoing connections: ask the hosting support.', 'seeinside-travel').'</p></div>';
+        }
     }
 
     protected static function tab_sync(array $s): void
@@ -262,6 +272,10 @@ class STA_Admin
                 }
                 $hint = $code === 0 ? ' '.__('This server cannot reach SeeInside. If the website is on the same server, enter 127.0.0.1 as Server IP; otherwise ask the hosting to allow outgoing HTTPS to the SeeInside address.', 'seeinside-travel') : '';
                 self::back('connection', sprintf(__('Connection failed (HTTP %1$d): %2$s', 'seeinside-travel'), $code, $body['message'] ?? '').$hint, false);
+                // no break
+            case 'diagnose':
+                set_transient('sta_diag', STA_Api::diagnose(), 300);
+                self::back('connection', __('Diagnosis finished – see the table below.', 'seeinside-travel'));
                 // no break
             case 'templates':
             case 'templates_replace':
