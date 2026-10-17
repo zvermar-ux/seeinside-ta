@@ -6,6 +6,7 @@ use App\Filament\Concerns\GuardedByPermission;
 use App\Filament\Resources\CharterResource\Pages;
 use App\Filament\Support\AgencyField;
 use App\Models\Charter;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -87,8 +88,8 @@ class CharterResource extends Resource
                     ->query(fn (Builder $query) => $query->where(fn ($q) => $q->whereNull('departure_date')->orWhereDate('departure_date', '>=', today()))),
             ])
             ->actions([
-                Tables\Actions\ReplicateAction::make()->iconButton()->excludeAttributes(['external_source', 'external_id']),
-                Tables\Actions\EditAction::make()->iconButton(),
+                Tables\Actions\EditAction::make(),
+                Duplicate::action(),
             ])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])])
             ->defaultSort('departure_date');

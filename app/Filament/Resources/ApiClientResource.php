@@ -72,11 +72,11 @@ class ApiClientResource extends Resource
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active')),
             ])
             ->actions([
-                Tables\Actions\Action::make('key')->label(__('New API key'))->icon('heroicon-o-key')->color('warning')
+                Tables\Actions\Action::make('key')->label(__('New API key'))->icon('heroicon-o-key')->color('warning')->iconButton()->tooltip(__('New API key'))
                     ->requiresConfirmation()
                     ->modalDescription(__('The old key stops working immediately.'))
                     ->action(fn (ApiClient $record) => static::showKey($record)),
-                Tables\Actions\Action::make('ping')->label(__('Test webhook'))->icon('heroicon-o-signal')->color('gray')
+                Tables\Actions\Action::make('ping')->label(__('Test webhook'))->icon('heroicon-o-signal')->color('gray')->iconButton()->tooltip(__('Test webhook'))
                     ->visible(fn (ApiClient $r) => filled($r->webhook_url))
                     ->action(function (ApiClient $record) {
                         $status = WebsiteNotifier::send($record, ['event' => 'ping', 'type' => 'ping', 'id' => 0, 'slug' => null, 'updated_at' => now()->toIso8601String()]);

@@ -10,6 +10,7 @@ use App\Filament\Resources\TravelObjectResource\RelationManagers\ImagesRelationM
 use App\Filament\Support\AgencyField;
 use App\Models\TourOperator;
 use App\Models\TravelObject;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -208,7 +209,12 @@ class TravelObjectResource extends Resource
                         Notification::make()->success()->title(__('Created'))->send();
                         $livewire->redirect($url);
                     }),
-                Tables\Actions\EditAction::make()->iconButton(),
+                Tables\Actions\EditAction::make(),
+                Duplicate::action(function (TravelObject $from, TravelObject $to) {
+                    foreach ($from->images as $img) {
+                        \App\Models\ObjectImage::withoutEvents(fn () => $to->images()->create($img->only(['path', 'caption', 'is_main', 'sort_order'])));
+                    }
+                }, ['external_service_id', 'synced_at']),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

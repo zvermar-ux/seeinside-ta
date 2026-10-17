@@ -13,6 +13,7 @@ use App\Models\DeparturePlace;
 use App\Models\Event;
 use App\Models\Tour;
 use App\Models\User;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -179,11 +180,12 @@ class BookingResource extends Resource
                     ->options(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Hotel / apartment')]),
             ])
             ->actions([
-                Tables\Actions\Action::make('confirm')->label(__('Confirm'))->icon('heroicon-o-check')->color('success')->iconButton()
+                Tables\Actions\Action::make('confirm')->label(__('Confirm'))->icon('heroicon-o-check')->color('success')->iconButton()->tooltip(__('Confirm'))
                     ->visible(fn (Booking $r) => in_array($r->status, [BookingStatus::Inquiry, BookingStatus::Pending], true))
                     ->requiresConfirmation()
                     ->action(fn (Booking $r) => $r->update(['status' => BookingStatus::Confirmed])),
-                Tables\Actions\EditAction::make()->iconButton(),
+                Tables\Actions\EditAction::make(),
+                Duplicate::action(null, ['external_ref', 'confirmed_at', 'paid_amount', 'status', 'payment_status']),
             ])
             ->defaultSort('created_at', 'desc');
     }

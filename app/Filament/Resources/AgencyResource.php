@@ -132,7 +132,7 @@ class AgencyResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('users')
-                    ->label(__('Users'))->icon('heroicon-o-users')->color('gray')
+                    ->label(__('Users'))->icon('heroicon-o-users')->color('gray')->iconButton()->tooltip(__('Users'))
                     ->url(fn (Agency $r) => UserResource::getUrl('index', ['tableFilters' => ['agency_id' => ['value' => $r->id]]])),
                 Tables\Actions\EditAction::make(),
             ])

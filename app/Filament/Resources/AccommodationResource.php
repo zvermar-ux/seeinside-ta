@@ -15,6 +15,7 @@ use App\Filament\Support\Lang;
 use App\Models\Accommodation;
 use App\Models\Amenity;
 use App\Models\SupplierConnection;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -174,7 +175,19 @@ class AccommodationResource extends Resource
                 Tables\Filters\SelectFilter::make('stars')->label(__('Category'))->options([1 => '★', 2 => '★★', 3 => '★★★', 4 => '★★★★', 5 => '★★★★★']),
                 CatalogFields::lastMinuteFilter(),
             ])
-            ->actions([Tables\Actions\EditAction::make()->iconButton()])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Duplicate::action(function (Accommodation $from, Accommodation $to) {
+                    $to->amenities()->sync($from->amenities()->pluck('amenities.id'));
+                    foreach ($from->rooms()->with('rates')->get() as $room) {
+                        $newRoom = $to->rooms()->create($room->only(['name', 'room_type', 'board', 'max_adults', 'max_children', 'beds', 'size_m2', 'units', 'description', 'room_amenities', 'price', 'price_type', 'is_active', 'sort_order']));
+                        foreach ($room->rates as $rate) {
+                            $newRoom->rates()->create($rate->only(['date_from', 'date_to', 'price', 'price_type', 'board', 'min_nights', 'release_days', 'is_last_minute', 'note']));
+                        }
+                    }
+                    Duplicate::media($from, $to);
+                }, ['supplier_connection_id', 'provider_code']),
+            ])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])])
             ->defaultSort('name');
     }

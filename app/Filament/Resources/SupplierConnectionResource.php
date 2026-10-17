@@ -7,6 +7,7 @@ use App\Filament\Concerns\GuardedByPermission;
 use App\Filament\Resources\SupplierConnectionResource\Pages;
 use App\Filament\Support\AgencyField;
 use App\Models\SupplierConnection;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -71,7 +72,7 @@ class SupplierConnectionResource extends Resource
                 Tables\Columns\TextColumn::make('last_sync_at')->label(__('Last sync'))->since()->placeholder('—'),
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active')),
             ])
-            ->actions([Tables\Actions\EditAction::make()->iconButton(), Tables\Actions\DeleteAction::make()->iconButton()])
+            ->actions([Tables\Actions\EditAction::make(), Duplicate::action(), Tables\Actions\DeleteAction::make()])
             ->emptyStateDescription(__('Hotelbeds, Filos, Bros, Seayou, People of the World, Expert, GOL IBE… The live connection is built once the supplier gives API access.'));
     }
 

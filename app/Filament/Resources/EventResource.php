@@ -13,6 +13,7 @@ use App\Filament\Support\CatalogFields;
 use App\Filament\Support\Lang;
 use App\Models\Event;
 use App\Models\Tour;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -158,7 +159,15 @@ class EventResource extends Resource
                     ->query(fn (Builder $query) => $query->where(fn ($q) => $q->whereNull('starts_at')->orWhere('starts_at', '>=', now()->startOfDay()))),
                 CatalogFields::lastMinuteFilter(),
             ])
-            ->actions([Tables\Actions\EditAction::make()->iconButton()])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Duplicate::action(function (Event $from, Event $to) {
+                    foreach ($from->tickets as $t) {
+                        $to->tickets()->create($t->only(['name', 'description', 'price', 'quantity', 'is_active', 'sort_order']) + ['sold' => 0]);
+                    }
+                    Duplicate::media($from, $to);
+                }),
+            ])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])])
             ->defaultSort('starts_at');
     }

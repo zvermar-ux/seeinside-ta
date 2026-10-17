@@ -6,6 +6,7 @@ use App\Filament\Concerns\GuardedByPermission;
 use App\Filament\Resources\SliderImageResource\Pages;
 use App\Filament\Support\AgencyField;
 use App\Models\SliderImage;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Concerns\Translatable;
@@ -70,7 +71,7 @@ class SliderImageResource extends Resource
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active')),
             ])
             ->filters([AgencyField::filter()])
-            ->actions([Tables\Actions\EditAction::make()->iconButton(), Tables\Actions\DeleteAction::make()->iconButton()]);
+            ->actions([Tables\Actions\EditAction::make(), Duplicate::action(), Tables\Actions\DeleteAction::make()]);
     }
 
     public static function getPages(): array

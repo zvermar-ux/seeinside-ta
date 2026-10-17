@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Models\User;
+use Filament\Tables\Actions as TableActions;
+use Filament\Tables\Enums\ActionsPosition;
+use Filament\Tables\Table;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +23,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+
+        // Every admin table: row actions (edit, duplicate, delete…) as compact icons at the start of the row
+        Table::configureUsing(fn (Table $table) => $table->actionsPosition(ActionsPosition::BeforeColumns));
+        foreach ([TableActions\EditAction::class, TableActions\ViewAction::class, TableActions\DeleteAction::class, TableActions\ReplicateAction::class] as $action) {
+            $action::configureUsing(function ($a) {
+                $label = $a->getLabel();
+                $a->iconButton()->tooltip($label);
+            });
+        }
 
         // Short type names in polymorphic columns (bookings, gallery)
         Relation::morphMap([

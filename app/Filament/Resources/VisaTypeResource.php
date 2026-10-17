@@ -9,6 +9,7 @@ use App\Filament\Support\AgencyField;
 use App\Filament\Support\CatalogFields;
 use App\Filament\Support\Lang;
 use App\Models\VisaType;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -189,7 +190,7 @@ class VisaTypeResource extends Resource
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active')),
             ])
             ->filters([AgencyField::filter(), Tables\Filters\SelectFilter::make('category')->label(__('Visa type'))->options(VisaCategory::class)])
-            ->actions([Tables\Actions\ReplicateAction::make()->iconButton()->excludeAttributes(['slug', 'applications_count']), Tables\Actions\EditAction::make()->iconButton()])
+            ->actions([Tables\Actions\EditAction::make(), Duplicate::action(fn (VisaType $from, VisaType $to) => Duplicate::media($from, $to))])
             ->defaultSort('country');
     }
 

@@ -89,8 +89,18 @@ class RoomsRelationManager extends RelationManager
             ])
             ->headerActions([Tables\Actions\CreateAction::make()->label(__('Add room'))->icon('heroicon-o-plus')->modalWidth('6xl')])
             ->actions([
-                Tables\Actions\ReplicateAction::make()->iconButton()->excludeAttributes(['rates_count', 'rates_min_price']),
-                Tables\Actions\EditAction::make()->iconButton()->modalWidth('6xl'),
+                Tables\Actions\EditAction::make()->modalWidth('6xl'),
+                Tables\Actions\Action::make('duplicate')->label(__('Duplicate'))->tooltip(__('Duplicate'))
+                    ->icon('heroicon-o-document-duplicate')->color('gray')->iconButton()
+                    ->requiresConfirmation()
+                    ->action(function (AccommodationRoom $record) {
+                        $copy = $record->replicate(['rates_count', 'rates_min_price']);
+                        $copy->name = collect($record->name ?? [])->map(fn ($v, $locale) => filled($v) ? $v.($locale === 'en' ? ' (copy)' : ' (копија)') : $v)->all();
+                        $copy->save();
+                        foreach ($record->rates as $rate) {
+                            $copy->rates()->create($rate->only(['date_from', 'date_to', 'price', 'price_type', 'board', 'min_nights', 'release_days', 'is_last_minute', 'note']));
+                        }
+                    }),
                 Tables\Actions\DeleteAction::make()->iconButton(),
             ])
             ->emptyStateHeading(__('No rooms yet'))

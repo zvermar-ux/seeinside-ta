@@ -6,6 +6,7 @@ use App\Filament\Concerns\GuardedByPermission;
 use App\Filament\Resources\TourOperatorResource\Pages;
 use App\Filament\Support\AgencyField;
 use App\Models\TourOperator;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -76,7 +77,7 @@ class TourOperatorResource extends Resource
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active')),
             ])
             ->filters([AgencyField::filter()])
-            ->actions([Tables\Actions\EditAction::make()])
+            ->actions([Tables\Actions\EditAction::make(), Duplicate::action()])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])])
             ->defaultSort('name');
     }

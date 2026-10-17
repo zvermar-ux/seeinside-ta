@@ -11,6 +11,7 @@ use App\Filament\RelationManagers\MediaRelationManager;
 use App\Filament\Resources\TourResource\Pages;
 use App\Filament\Support\AgencyField;
 use App\Filament\Support\CatalogFields;
+use App\Filament\Support\Duplicate;
 use App\Filament\Support\Lang;
 use App\Models\Airline;
 use App\Models\DeparturePlace;
@@ -278,13 +279,8 @@ class TourResource extends Resource
                     ->query(fn (Builder $query) => $query->whereHas('departures', fn ($q) => $q->whereDate('start_date', '>=', today()))),
             ])
             ->actions([
-                Tables\Actions\Action::make('duplicate')->label(__('Duplicate'))->icon('heroicon-o-document-duplicate')->color('gray')->iconButton()
-                    ->requiresConfirmation()
-                    ->action(function (Tour $record, $livewire) {
-                        $copy = static::duplicate($record);
-                        $livewire->redirect(static::getUrl('edit', ['record' => $copy]));
-                    }),
-                Tables\Actions\EditAction::make()->iconButton(),
+                Tables\Actions\EditAction::make(),
+                Duplicate::action(fn (Tour $from, Tour $to) => static::copyRelations($from, $to), ['price_from']),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -302,11 +298,11 @@ class TourResource extends Resource
     /** Copy a tour with program, extras and departure places (not the dates) */
     public static function duplicate(Tour $tour): Tour
     {
-        $copy = $tour->replicate(['slug', 'price_from']);
-        $copy->title = collect($tour->title ?? [])->map(fn ($v) => $v ? $v.' (копија)' : $v)->all();
-        $copy->is_active = false;
-        $copy->save();
+        return Duplicate::copy($tour, fn (Tour $from, Tour $to) => static::copyRelations($from, $to), ['price_from']);
+    }
 
+    public static function copyRelations(Tour $tour, Tour $copy): void
+    {
         foreach ($tour->days as $d) {
             $copy->days()->create($d->only(['day_number', 'title', 'description', 'meals', 'overnight', 'sort_order']));
         }
@@ -316,11 +312,7 @@ class TourResource extends Resource
         foreach ($tour->departurePlaceLinks as $p) {
             $copy->departurePlaceLinks()->create($p->only(['departure_place_id', 'departure_time', 'surcharge']));
         }
-        foreach ($tour->media as $m) {
-            $copy->media()->create($m->only(['path', 'caption', 'is_main', 'sort_order']));
-        }
-
-        return $copy;
+        Duplicate::media($tour, $copy);
     }
 
     public static function getRelations(): array

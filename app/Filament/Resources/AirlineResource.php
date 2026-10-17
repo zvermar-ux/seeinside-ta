@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AirlineResource\Pages;
 use App\Models\Airline;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -63,7 +64,7 @@ class AirlineResource extends Resource
                 Tables\Columns\IconColumn::make('is_low_cost')->label(__('Low-cost'))->boolean(),
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active'))->disabled(fn () => ! Auth::user()->isSuperAdmin()),
             ])
-            ->actions([Tables\Actions\EditAction::make()->iconButton()])
+            ->actions([Tables\Actions\EditAction::make(), Duplicate::action()])
             ->defaultSort('name');
     }
 

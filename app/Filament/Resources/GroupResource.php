@@ -7,6 +7,7 @@ use App\Filament\Concerns\GuardedByPermission;
 use App\Filament\Resources\GroupResource\Pages;
 use App\Filament\Support\AgencyField;
 use App\Models\Group;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -131,11 +132,12 @@ class GroupResource extends Resource
                 Tables\Filters\TernaryFilter::make('show_on_homepage')->label(__('Show on homepage')),
             ])
             ->actions([
-                Tables\Actions\Action::make('objects')->label(__('Offer'))->icon('heroicon-o-list-bullet')->color('gray')
+                Tables\Actions\Action::make('objects')->label(__('Offer'))->icon('heroicon-o-list-bullet')->color('gray')->iconButton()->tooltip(__('Offer'))
                     ->url(fn (Group $r) => TravelObjectResource::getUrl('index', ['tableFilters' => [
                         $r->type === GroupType::Destination ? 'destination_id' : 'group_id' => ['value' => $r->id],
                     ]])),
                 Tables\Actions\EditAction::make(),
+                Duplicate::action(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -6,6 +6,7 @@ use App\Filament\Concerns\GuardedByPermission;
 use App\Filament\Resources\SubagentResource\Pages;
 use App\Filament\Support\AgencyField;
 use App\Models\Subagent;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -85,10 +86,11 @@ class SubagentResource extends Resource
                 Tables\Filters\TernaryFilter::make('no_balance_limit')->label(__('No balance limit')),
             ])
             ->actions([
-                Tables\Actions\Action::make('mail')->label('')->icon('heroicon-o-envelope')->color('gray')
+                Tables\Actions\Action::make('mail')->label(__('E-mail'))->icon('heroicon-o-envelope')->color('gray')->iconButton()->tooltip(__('E-mail'))
                     ->url(fn (Subagent $r) => $r->email ? 'mailto:'.$r->email : null)
                     ->visible(fn (Subagent $r) => filled($r->email)),
-                Tables\Actions\EditAction::make()->iconButton(),
+                Tables\Actions\EditAction::make(),
+                Duplicate::action(null, ['external_company_id']),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

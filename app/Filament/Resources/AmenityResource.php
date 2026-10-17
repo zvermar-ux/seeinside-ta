@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AmenityResource\Pages;
 use App\Models\Amenity;
+use App\Filament\Support\Duplicate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -68,7 +69,7 @@ class AmenityResource extends Resource
                     ->formatStateUsing(fn ($state) => __(self::CATEGORIES[$state] ?? $state)),
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active'))->disabled(fn () => ! Auth::user()->isSuperAdmin()),
             ])
-            ->actions([Tables\Actions\EditAction::make()->iconButton()]);
+            ->actions([Tables\Actions\EditAction::make(), Duplicate::action()]);
     }
 
     public static function getPages(): array
