@@ -28,10 +28,12 @@ class Media extends Model
         });
 
         static::deleted(function (Media $media) {
-            if ($media->path && ! static::where('path', $media->path)->exists()) {
+            $owner = $media->mediable;
+            $usedAsCover = $owner && $owner->getAttribute('cover_image') === $media->path;
+            if ($media->path && ! $usedAsCover && ! static::where('path', $media->path)->exists()) {
                 Storage::disk('public')->delete($media->path);
             }
-            $media->mediable?->refreshCover();
+            $owner?->refreshCover();
         });
     }
 

@@ -534,5 +534,10 @@
     "until": "до",
     "Dates": "Датуми",
     "Arrangements become organized tours, hotels and apartments become hotels / apartments. New records are inactive.": "Аранжманите стануваат организирани тури, а хотелите и апартманите – хотели/апартмани. Новите записи се неактивни.",
-    "Created :count records": "Креирани :count записи"
+    "Created :count records": "Креирани :count записи",
+    "Photos": "Фотографии",
+    "Main photo": "Главна фотографија",
+    "Shown in lists and as the featured image on the website.": "Се прикажува во листите и како главна (featured) слика на веб-страницата.",
+    "You can add more photos later in the \"Gallery\" tab.": "Подоцна можете да додадете уште слики во табот „Галерија“.",
+    "The main photo is in \"Basic information\"; all other photos are in the \"Gallery\" tab at the top.": "Главната фотографија е во „Основни податоци“, а сите останати слики се во табот „Галерија“ горе."
 }

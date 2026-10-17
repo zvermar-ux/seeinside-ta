@@ -13,8 +13,11 @@ trait HasMedia
         return $this->morphMany(Media::class, 'mediable')->orderByDesc('is_main')->orderBy('sort_order');
     }
 
+    /** The main photo chosen in the form wins; without one, the gallery's main image is used */
     public function refreshCover(): void
     {
-        $this->forceFill(['cover_image' => $this->media()->value('path')])->saveQuietly();
+        if (blank($this->cover_image)) {
+            $this->forceFill(['cover_image' => $this->media()->value('path')])->saveQuietly();
+        }
     }
 }

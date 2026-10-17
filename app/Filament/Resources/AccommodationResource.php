@@ -82,6 +82,7 @@ class AccommodationResource extends Resource
                             ]),
                         ]),
                         Forms\Components\Group::make()->columnSpan(1)->schema([
+                            CatalogFields::photos('accommodations'),
                             Forms\Components\Section::make(__('Stay'))->columns(2)->schema([
                                 Forms\Components\TextInput::make('check_in_time')->label(__('Check-in'))->placeholder('14:00'),
                                 Forms\Components\TextInput::make('check_out_time')->label(__('Check-out'))->placeholder('10:00'),

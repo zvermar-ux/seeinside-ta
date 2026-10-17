@@ -12,6 +12,22 @@ use Illuminate\Support\HtmlString;
 /** Building blocks shared by tours, events, accommodations and visas */
 class CatalogFields
 {
+    /** Main photo (WordPress featured image) + gallery upload while creating */
+    public static function photos(string $directory): Forms\Components\Section
+    {
+        return Forms\Components\Section::make(__('Photos'))->icon('heroicon-o-photo')->schema([
+            Forms\Components\FileUpload::make('cover_image')->label(__('Main photo'))
+                ->helperText(__('Shown in lists and as the featured image on the website.'))
+                ->image()->imageEditor()->imageEditorAspectRatios(['16:9', '4:3', '1:1', null])
+                ->disk('public')->directory($directory)->maxSize(10240),
+            Forms\Components\FileUpload::make('gallery_upload')->label(__('Gallery'))
+                ->helperText(__('You can add more photos later in the "Gallery" tab.'))
+                ->image()->multiple()->reorderable()->maxFiles(60)->maxSize(10240)
+                ->disk('public')->directory('gallery')
+                ->visibleOn('create'),
+        ]);
+    }
+
     public static function promotions(): Forms\Components\Section
     {
         return Forms\Components\Section::make(__('Last minute / First minute'))

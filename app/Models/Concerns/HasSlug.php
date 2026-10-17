@@ -17,10 +17,11 @@ trait HasSlug
                 $model->slug = Str::slug($source) ?: Str::lower(Str::random(8));
             }
 
+            $agencyId = $model->agency_id ?? \Illuminate\Support\Facades\Auth::user()?->agency_id;
             $base = $model->slug;
             $i = 2;
             while (static::withoutGlobalScopes()
-                ->where('agency_id', $model->agency_id)
+                ->where('agency_id', $agencyId)
                 ->where('slug', $model->slug)
                 ->when($model->exists, fn ($q) => $q->whereKeyNot($model->getKey()))
                 ->exists()) {

@@ -90,6 +90,7 @@ class TourResource extends Resource
                             ...CatalogFields::location(),
                         ]),
                         Forms\Components\Group::make()->columnSpan(1)->schema([
+                            CatalogFields::photos('tours'),
                             Forms\Components\Section::make(__('Tour details'))->columns(2)->schema([
                                 Forms\Components\TextInput::make('duration_days')->label(__('Days'))->numeric()->minValue(1),
                                 Forms\Components\TextInput::make('duration_nights')->label(__('Nights'))->numeric()->minValue(0),
@@ -118,7 +119,7 @@ class TourResource extends Resource
                 Forms\Components\Tabs\Tab::make(__('Program by days'))->icon('heroicon-o-calendar-days')
                     ->badge(fn (?Tour $record) => $record?->days()->count() ?: null)
                     ->schema([
-                        Forms\Components\Repeater::make('days')->hiddenLabel()->relationship()
+                        Forms\Components\Repeater::make('days')->hiddenLabel()->relationship()->defaultItems(0)
                             ->orderColumn('sort_order')->collapsible()->cloneable()
                             ->itemLabel(fn (array $state) => __('Day').' '.($state['day_number'] ?? '').(filled($state['title']['mk'] ?? null) ? ' — '.$state['title']['mk'] : ''))
                             ->addActionLabel(__('Add day'))
@@ -148,7 +149,7 @@ class TourResource extends Resource
                             ->content(fn (?Tour $record) => $record?->price_from ? number_format((float) $record->price_from, 2, ',', '.').' '.$record->currency : '—'),
                     ]),
                     Forms\Components\Section::make(__('Departure dates'))->description(__('Leave the price empty to use the base price.'))->schema([
-                        Forms\Components\Repeater::make('departures')->hiddenLabel()->relationship()
+                        Forms\Components\Repeater::make('departures')->hiddenLabel()->relationship()->defaultItems(0)
                             ->reorderable(false)->collapsible()->cloneable()
                             ->itemLabel(fn (array $state) => trim(($state['start_date'] ?? '').' → '.($state['end_date'] ?? ''), ' →') ?: null)
                             ->addActionLabel(__('Add departure date'))
@@ -169,7 +170,7 @@ class TourResource extends Resource
                             ]),
                     ]),
                     Forms\Components\Section::make(__('Departure places in Macedonia'))->schema([
-                        Forms\Components\Repeater::make('departurePlaceLinks')->hiddenLabel()->relationship()
+                        Forms\Components\Repeater::make('departurePlaceLinks')->hiddenLabel()->relationship()->defaultItems(0)
                             ->reorderable(false)->grid(2)->addActionLabel(__('Add departure place'))
                             ->columns(3)
                             ->schema([
@@ -183,7 +184,7 @@ class TourResource extends Resource
                             ]),
                     ]),
                     Forms\Components\Section::make(__('Additional services & optional excursions'))->schema([
-                        Forms\Components\Repeater::make('extras')->hiddenLabel()->relationship()
+                        Forms\Components\Repeater::make('extras')->hiddenLabel()->relationship()->defaultItems(0)
                             ->orderColumn('sort_order')->collapsible()
                             ->itemLabel(fn (array $state) => $state['name']['mk'] ?? null)
                             ->addActionLabel(__('Add service'))
@@ -221,14 +222,14 @@ class TourResource extends Resource
                     CatalogFields::videos(),
                     Forms\Components\FileUpload::make('program_pdf')->label(__('Program / price list (PDF)'))
                         ->disk('public')->directory('programs')->acceptedFileTypes(['application/pdf'])->downloadable()->openable(),
-                    Forms\Components\Repeater::make('links')->label(__('Links'))->columns(2)->defaultItems(0)
+                    Forms\Components\Repeater::make('links')->label(__('Links'))->defaultItems(0)->columns(2)->defaultItems(0)
                         ->addActionLabel(__('Add link'))
                         ->schema([
                             Forms\Components\TextInput::make('label')->label(__('Label'))->required(),
                             Forms\Components\TextInput::make('url')->label('URL')->url()->required(),
                         ]),
                     Forms\Components\Placeholder::make('gallery_hint')->hiddenLabel()
-                        ->content(__('Photos are added in the "Gallery" tab after saving.')),
+                        ->content(__('The main photo is in "Basic information"; all other photos are in the "Gallery" tab at the top.')),
                 ]),
 
                 Forms\Components\Tabs\Tab::make(__('Promotions & booking'))->icon('heroicon-o-bolt')->schema([
@@ -301,7 +302,7 @@ class TourResource extends Resource
     /** Copy a tour with program, extras and departure places (not the dates) */
     public static function duplicate(Tour $tour): Tour
     {
-        $copy = $tour->replicate(['slug', 'price_from', 'cover_image']);
+        $copy = $tour->replicate(['slug', 'price_from']);
         $copy->title = collect($tour->title ?? [])->map(fn ($v) => $v ? $v.' (копија)' : $v)->all();
         $copy->is_active = false;
         $copy->save();

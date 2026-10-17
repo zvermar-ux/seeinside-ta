@@ -292,6 +292,7 @@ class CatalogPresenter
             'online_payment' => $v->online_payment,
             'questionnaire' => array_values($v->questionnaire ?? []),
             'required_documents' => array_values($v->required_documents ?? []),
+            'gallery' => static::gallery($v),
             'seo' => ['title' => $v->trAll('seo_title'), 'description' => $v->trAll('seo_description')],
         ];
     }

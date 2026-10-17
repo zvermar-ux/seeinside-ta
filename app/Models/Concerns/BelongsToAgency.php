@@ -13,8 +13,9 @@ trait BelongsToAgency
     {
         static::addGlobalScope(new AgencyScope());
 
-        static::creating(function ($model) {
-            if (empty($model->agency_id) && Auth::hasUser() && Auth::user()->agency_id) {
+        // "saving" runs before "creating", so the agency is known for slug checks and other hooks
+        static::saving(function ($model) {
+            if (! $model->exists && empty($model->agency_id) && Auth::hasUser() && Auth::user()->agency_id) {
                 $model->agency_id = Auth::user()->agency_id;
             }
         });

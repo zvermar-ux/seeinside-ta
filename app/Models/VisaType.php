@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\VisaCategory;
 use App\Models\Concerns\BelongsToAgency;
+use App\Models\Concerns\HasMedia;
 use App\Models\Concerns\HasPromotions;
 use App\Models\Concerns\HasSlug;
 use App\Models\Concerns\Localized;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class VisaType extends Model
 {
-    use BelongsToAgency, HasPromotions, HasSlug, Localized, SyncsToWebsite;
+    use BelongsToAgency, HasMedia, HasPromotions, HasSlug, Localized, SyncsToWebsite;
 
     protected $guarded = ['id'];
 

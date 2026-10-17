@@ -81,6 +81,7 @@ class EventResource extends Resource
                             ...CatalogFields::location(),
                         ]),
                         Forms\Components\Group::make()->columnSpan(1)->schema([
+                            CatalogFields::photos('events'),
                             Forms\Components\Section::make(__('Date & time'))->columns(2)->schema([
                                 Forms\Components\DateTimePicker::make('starts_at')->label(__('Starts'))->native(false)->displayFormat('d.m.Y H:i')->seconds(false)->required()->columnSpanFull(),
                                 Forms\Components\DateTimePicker::make('ends_at')->label(__('Ends'))->native(false)->displayFormat('d.m.Y H:i')->seconds(false)->columnSpanFull(),
@@ -105,7 +106,7 @@ class EventResource extends Resource
                 ]),
                 Forms\Components\Tabs\Tab::make(__('Tickets'))->icon('heroicon-o-ticket')->schema([
                     Forms\Components\Select::make('currency')->label(__('Currency'))->options(['EUR' => 'EUR', 'MKD' => 'MKD', 'USD' => 'USD'])->default('EUR'),
-                    Forms\Components\Repeater::make('tickets')->label(__('Ticket types'))->relationship()
+                    Forms\Components\Repeater::make('tickets')->label(__('Ticket types'))->relationship()->defaultItems(0)
                         ->orderColumn('sort_order')->collapsible()->addActionLabel(__('Add ticket type'))
                         ->itemLabel(fn (array $state) => $state['name']['mk'] ?? null)
                         ->columns(4)

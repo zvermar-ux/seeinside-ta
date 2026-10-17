@@ -90,7 +90,7 @@ class VisaTypeResource extends Resource
                                 Forms\Components\TextInput::make('express_fee')->label(__('Express processing'))->numeric(),
                                 Forms\Components\Toggle::make('online_payment')->label(__('Online payment'))->columnSpanFull(),
                             ]),
-                            Forms\Components\FileUpload::make('cover_image')->label(__('Image'))->image()->disk('public')->directory('visas'),
+                            CatalogFields::photos('visas'),
                             CatalogFields::publishing(false),
                         ]),
                     ]),
@@ -104,7 +104,7 @@ class VisaTypeResource extends Resource
                             Forms\Components\Actions\Action::make('basic_questions')->label(__('Insert standard questions'))->icon('heroicon-o-sparkles')->color('gray')
                                 ->action(fn (Forms\Set $set, Get $get) => $set('questionnaire', array_merge((array) $get('questionnaire'), static::standardQuestions()))),
                         ]),
-                        Forms\Components\Repeater::make('questionnaire')->hiddenLabel()->collapsible()->cloneable()->reorderable()
+                        Forms\Components\Repeater::make('questionnaire')->hiddenLabel()->defaultItems(0)->collapsible()->cloneable()->reorderable()
                             ->itemLabel(fn (array $state) => ($state['label']['mk'] ?? '').(! empty($state['required']) ? ' *' : ''))
                             ->addActionLabel(__('Add question'))
                             ->columns(4)
@@ -126,7 +126,7 @@ class VisaTypeResource extends Resource
                 Forms\Components\Tabs\Tab::make(__('Documents'))->icon('heroicon-o-paper-clip')
                     ->badge(fn (Get $get) => count((array) $get('required_documents')) ?: null)
                     ->schema([
-                        Forms\Components\Repeater::make('required_documents')->hiddenLabel()->reorderable()
+                        Forms\Components\Repeater::make('required_documents')->hiddenLabel()->defaultItems(0)->reorderable()
                             ->itemLabel(fn (array $state) => ($state['label']['mk'] ?? '').(! empty($state['required']) ? ' *' : ''))
                             ->addActionLabel(__('Add document'))
                             ->columns(4)
@@ -175,6 +175,7 @@ class VisaTypeResource extends Resource
     {
         return $table
             ->columns([
+                CatalogFields::coverColumn(),
                 Tables\Columns\TextColumn::make('country')->label(__('Country'))->searchable()->sortable()->weight('semibold')
                     ->description(fn (VisaType $r) => $r->tr('name')),
                 Tables\Columns\TextColumn::make('category')->label(__('Visa type'))->badge(),
@@ -190,6 +191,11 @@ class VisaTypeResource extends Resource
             ->filters([AgencyField::filter(), Tables\Filters\SelectFilter::make('category')->label(__('Visa type'))->options(VisaCategory::class)])
             ->actions([Tables\Actions\ReplicateAction::make()->iconButton()->excludeAttributes(['slug', 'applications_count']), Tables\Actions\EditAction::make()->iconButton()])
             ->defaultSort('country');
+    }
+
+    public static function getRelations(): array
+    {
+        return [\App\Filament\RelationManagers\MediaRelationManager::class];
     }
 
     public static function getPages(): array

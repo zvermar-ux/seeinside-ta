@@ -14,4 +14,14 @@ class EditVisaType extends EditRecord
     {
         return [Actions\DeleteAction::make()];
     }
+
+    public function getContentTabLabel(): ?string
+    {
+        return __('Details');
+    }
+
+    public function hasCombinedRelationManagerTabsWithContent(): bool
+    {
+        return true;
+    }
 }
