@@ -102,6 +102,7 @@ class STA_Admin
         echo '<tr><th><label for="api_url">'.esc_html__('SeeInside address', 'seeinside-travel').'</label></th><td><input class="regular-text" id="api_url" name="api_url" value="'.esc_attr($s['api_url'] ?? 'https://ta.seeinsidesolution.com').'"></td></tr>';
         echo '<tr><th><label for="api_key">'.esc_html__('API key', 'seeinside-travel').'</label></th><td><input class="regular-text code" id="api_key" name="api_key" autocomplete="off" placeholder="'.(! empty($s['api_key']) ? esc_attr__('saved – leave empty to keep', 'seeinside-travel') : 'ta_xxxxxxxx_…').'"></td></tr>';
         echo '<tr><th><label for="webhook_secret">'.esc_html__('Webhook secret', 'seeinside-travel').'</label></th><td><input class="regular-text code" id="webhook_secret" name="webhook_secret" autocomplete="off" placeholder="'.(! empty($s['webhook_secret']) ? esc_attr__('saved – leave empty to keep', 'seeinside-travel') : '').'"></td></tr>';
+        echo '<tr><th><label for="server_ip">'.esc_html__('Server IP (optional)', 'seeinside-travel').'</label></th><td><input class="regular-text code" id="server_ip" name="server_ip" value="'.esc_attr($s['server_ip'] ?? '').'" placeholder="123.45.67.89"><p class="description">'.esc_html__('Only if the test times out: the IP address of the SeeInside server (127.0.0.1 when the website is on the same server).', 'seeinside-travel').'</p></td></tr>';
         echo '</table>';
         submit_button(__('Save', 'seeinside-travel'), 'primary', 'submit', false);
         echo ' '.self::button('test', __('Test connection', 'seeinside-travel'));
@@ -218,6 +219,8 @@ class STA_Admin
 
         if ($tab === 'connection') {
             $s['api_url'] = esc_url_raw(trim(wp_unslash($_POST['api_url'] ?? ''))) ?: 'https://ta.seeinsidesolution.com';
+            $ip = trim(sanitize_text_field(wp_unslash($_POST['server_ip'] ?? '')));
+            $s['server_ip'] = filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '';
             foreach (['api_key', 'webhook_secret'] as $k) {
                 $v = trim(sanitize_text_field(wp_unslash($_POST[$k] ?? '')));
                 if ($v !== '') {
@@ -257,7 +260,8 @@ class STA_Admin
                     STA_Sync::sync_meta();
                     self::back('connection', sprintf(__('Connected: %s', 'seeinside-travel'), $body['agency']['name'] ?? ''));
                 }
-                self::back('connection', sprintf(__('Connection failed (HTTP %1$d): %2$s', 'seeinside-travel'), $code, $body['message'] ?? ''), false);
+                $hint = $code === 0 ? ' '.__('This server cannot reach SeeInside. If the website is on the same server, enter 127.0.0.1 as Server IP; otherwise ask the hosting to allow outgoing HTTPS to the SeeInside address.', 'seeinside-travel') : '';
+                self::back('connection', sprintf(__('Connection failed (HTTP %1$d): %2$s', 'seeinside-travel'), $code, $body['message'] ?? '').$hint, false);
                 // no break
             case 'templates':
             case 'templates_replace':

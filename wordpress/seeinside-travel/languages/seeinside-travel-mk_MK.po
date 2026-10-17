@@ -7,6 +7,15 @@ msgstr ""
 "Language: mk_MK\n"
 "Plural-Forms: nplurals=2; plural=(n % 10 == 1 && n % 100 != 11) ? 0 : 1;\n"
 
+msgid "Server IP (optional)"
+msgstr "IP на серверот (по избор)"
+
+msgid "Only if the test times out: the IP address of the SeeInside server (127.0.0.1 when the website is on the same server)."
+msgstr "Само ако тестот истекува: IP адресата на серверот на SeeInside (127.0.0.1 кога сајтот е на истиот сервер)."
+
+msgid "This server cannot reach SeeInside. If the website is on the same server, enter 127.0.0.1 as Server IP; otherwise ask the hosting to allow outgoing HTTPS to the SeeInside address."
+msgstr "Овој сервер не може да стигне до SeeInside. Ако сајтот е на истиот сервер, внеси 127.0.0.1 како IP на серверот; инаку побарај од хостингот да дозволи излезен HTTPS кон адресата на SeeInside."
+
 msgid "January"
 msgstr "Јануари"
 

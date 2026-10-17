@@ -10,6 +10,23 @@ class STA_Api
         return rtrim((string) sta_setting('api_url', 'https://ta.seeinsidesolution.com'), '/').'/api/v1';
     }
 
+    /**
+     * Optional fixed IP for the SeeInside server (setting "server_ip"). Needed when the website runs on the
+     * same server / network and cannot reach the public address (hairpin NAT) or when DNS is wrong.
+     */
+    public static function init(): void
+    {
+        add_action('http_api_curl', function ($handle, $args, $url) {
+            $ip = trim((string) sta_setting('server_ip'));
+            $base = wp_parse_url((string) sta_setting('api_url', 'https://ta.seeinsidesolution.com'));
+            if (! $ip || empty($base['host']) || ! filter_var($ip, FILTER_VALIDATE_IP) || wp_parse_url($url, PHP_URL_HOST) !== $base['host']) {
+                return;
+            }
+            $port = $base['port'] ?? (($base['scheme'] ?? 'https') === 'https' ? 443 : 80);
+            curl_setopt($handle, CURLOPT_RESOLVE, [$base['host'].':'.$port.':'.$ip]);
+        }, 10, 3);
+    }
+
     public static function configured(): bool
     {
         return (bool) sta_setting('api_key');
