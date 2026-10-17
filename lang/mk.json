@@ -758,5 +758,10 @@
     "Restore the standard look": "Врати стандарден изглед",
     "The agency's changes are removed and its users see the standard look again.": "Промените на агенцијата се бришат и нејзините корисници повторно го гледаат стандардниот изглед.",
     "Super admin (my login) and login page": "Суперадмин (мојата најава) и страница за најава",
-    "WordPress plugin": "WordPress плагин"
+    "WordPress plugin": "WordPress плагин",
+    "Webhook secret": "Webhook тајна",
+    "Paste it in WordPress → SeeInside Travel → Connection → Webhook secret.": "Залепи ја во WordPress → SeeInside Travel → Врска → Webhook тајна.",
+    "Close": "Затвори",
+    "Copied": "Копирано",
+    "Copy": "Копирај"
 }
