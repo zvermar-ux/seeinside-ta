@@ -197,6 +197,7 @@ class TravelObjectResource extends Resource
             ])
             ->filtersFormColumns(3)
             ->persistFiltersInSession()
+            ->actionsPosition(Tables\Enums\ActionsPosition::BeforeColumns)
             ->actions([
                 Tables\Actions\Action::make('convert')->label(__('Create website offer'))->icon('heroicon-o-arrow-up-on-square')->color('success')->iconButton()
                     ->tooltip(fn (TravelObject $r) => $r->type === ObjectType::Arrangement ? __('Create an organized tour from this record') : __('Create a hotel / apartment from this record'))
@@ -232,6 +233,14 @@ class TravelObjectResource extends Resource
                             Forms\Components\TextInput::make('min_payment_percent')->label(__('Minimum advance payment'))->numeric()->suffix('%')->minValue(0)->maxValue(100),
                         ])
                         ->action(fn (Collection $records, array $data) => static::bulkUpdate($records, array_filter($data, fn ($v) => filled($v))))
+                        ->deselectRecordsAfterCompletion(),
+                    Tables\Actions\BulkAction::make('convert')->label(__('Create website offer'))->icon('heroicon-o-arrow-up-on-square')->color('success')
+                        ->requiresConfirmation()
+                        ->modalDescription(__('Arrangements become organized tours, hotels and apartments become hotels / apartments. New records are inactive.'))
+                        ->action(function (Collection $records) {
+                            $records->each(fn (TravelObject $r) => \App\Services\Aries\AriesConverter::convert($r));
+                            Notification::make()->success()->title(__('Created :count records', ['count' => $records->count()]))->send();
+                        })
                         ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),

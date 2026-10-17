@@ -14,7 +14,14 @@ class EditTravelObject extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [Actions\LocaleSwitcher::make(), Actions\DeleteAction::make()];
+        return [
+            Actions\Action::make('convert')->label(__('Create website offer'))->icon('heroicon-o-arrow-up-on-square')->color('success')
+                ->requiresConfirmation()
+                ->modalDescription(__('A new, inactive record is created with the name, description, location and photos. Prices and dates are added there.'))
+                ->action(fn () => $this->redirect(\App\Services\Aries\AriesConverter::convert($this->record))),
+            Actions\LocaleSwitcher::make(),
+            Actions\DeleteAction::make(),
+        ];
     }
 
     public function getContentTabLabel(): ?string

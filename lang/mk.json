@@ -532,5 +532,7 @@
     "per person": "по лице",
     "per room": "по соба",
     "until": "до",
-    "Dates": "Датуми"
+    "Dates": "Датуми",
+    "Arrangements become organized tours, hotels and apartments become hotels / apartments. New records are inactive.": "Аранжманите стануваат организирани тури, а хотелите и апартманите – хотели/апартмани. Новите записи се неактивни.",
+    "Created :count records": "Креирани :count записи"
 }
