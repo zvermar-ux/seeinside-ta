@@ -34,17 +34,6 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        // Where pop-up notifications appear (Settings → Appearance)
-        [$vertical, $horizontal] = explode('-', (string) \App\Support\Branding::get('notifications_position', 'top-right')) + [1 => 'right'];
-        \Filament\Notifications\Livewire\Notifications::verticalAlignment(match ($vertical) {
-            'bottom' => \Filament\Support\Enums\VerticalAlignment::End,
-            default => \Filament\Support\Enums\VerticalAlignment::Start,
-        });
-        \Filament\Notifications\Livewire\Notifications::alignment(match ($horizontal) {
-            'left' => \Filament\Support\Enums\Alignment::Start,
-            'center' => \Filament\Support\Enums\Alignment::Center,
-            default => \Filament\Support\Enums\Alignment::End,
-        });
         foreach ([TableActions\EditAction::class, TableActions\ViewAction::class, TableActions\DeleteAction::class, TableActions\ReplicateAction::class] as $action) {
             $action::configureUsing(function ($a) {
                 $label = $a->getLabel();

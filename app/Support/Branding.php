@@ -10,8 +10,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Look & feel of the whole application (super admin → "Appearance"), optionally overridden per agency
- * (logo / colour) when the super admin allows it.
+ * Look & feel (Administration → Appearance).
+ * - The super admin's settings apply to super admins and to the login page.
+ * - An agency admin's settings apply to him and the operators of his agency; agencies that did not
+ *   change anything see the standard look.
  */
 class Branding
 {
@@ -67,7 +69,7 @@ class Branding
         // footer & advanced
         'footer_text' => ['mk' => null, 'en' => null],
         'custom_css' => null,
-        'allow_agency_branding' => false,
+        'allow_agency_branding' => true,
         'agency_name_as_brand' => false,
     ];
 
@@ -115,17 +117,109 @@ class Branding
         'amber' => ['label' => 'Golden sand', 'primary' => '#f59e0b', 'gray' => 'stone', 'info' => '#14b8a6'],
     ];
 
-    protected static ?array $cache = null;
+    /** Settings an agency admin may change for the users of his agency */
+    public const AGENCY_KEYS = [
+        'app_name', 'show_name_with_logo', 'logo', 'logo_dark', 'logo_height', 'favicon',
+        'primary', 'gray', 'success', 'warning', 'danger', 'info',
+        'theme_mode', 'default_theme', 'font', 'heading_font', 'heading_weight', 'font_scale', 'radius', 'background',
+        'navigation', 'sidebar_style', 'sidebar_collapse', 'sidebar_width', 'content_width', 'spa', 'unsaved_alerts',
+        'breadcrumbs', 'table_striped', 'per_page', 'notifications_position', 'footer_text',
+        'icon_style', 'active_icon_solid', 'nav', 'groups',
+    ];
 
-    public static function all(): array
+    /** @var array<int, array> effective settings per agency id (0 = application) */
+    protected static array $cache = [];
+
+    protected static ?array $global = null;
+
+    /** Application-wide values (defaults + what the super admin saved) */
+    public static function global(): array
     {
-        if (static::$cache !== null) {
-            return static::$cache;
+        if (static::$global !== null) {
+            return static::$global;
         }
-
         $stored = Setting::get(self::KEY, []);
 
-        return static::$cache = array_replace(self::DEFAULTS, is_array($stored) ? $stored : []);
+        return static::$global = array_replace(self::DEFAULTS, is_array($stored) ? $stored : []);
+    }
+
+    /** Effective values for the logged-in user (application look + his agency's changes) */
+    public static function all(): array
+    {
+        $user = Auth::hasUser() ? Auth::user() : null;
+        if (! $user || $user->isSuperAdmin()) {
+            return static::global();      // super admins and the login page
+        }
+        if ($agency = static::agency()) {
+            return static::forAgency($agency->id);
+        }
+        if (! isset(static::$cache[-1])) {
+            static::$cache[-1] = static::agencyBase();
+        }
+
+        return static::$cache[-1];         // agency looks switched off / user without agency
+    }
+
+    public static function forAgency(?int $agencyId): array
+    {
+        $key = (int) $agencyId;
+        if (isset(static::$cache[$key])) {
+            return static::$cache[$key];
+        }
+
+        return static::$cache[$key] = $key ? array_replace(static::agencyBase(), static::agencyOverrides($key)) : static::global();
+    }
+
+    /**
+     * Starting point of an agency's look: the standard look (the super admin's own choices apply only to
+     * super admins), plus the application-wide parts such as the login page.
+     */
+    public static function agencyBase(): array
+    {
+        return array_replace(self::DEFAULTS, array_diff_key(static::global(), array_flip(self::AGENCY_KEYS)));
+    }
+
+    public static function agencyKey(int $agencyId): string
+    {
+        return self::KEY.'.agency.'.$agencyId;
+    }
+
+    /** Only what the agency changed compared to the application look */
+    public static function agencyOverrides(int $agencyId): array
+    {
+        $stored = Setting::get(static::agencyKey($agencyId), []);
+        $overrides = array_intersect_key(is_array($stored) ? $stored : [], array_flip(self::AGENCY_KEYS));
+
+        // older per-agency colour / logo fields
+        $agency = Agency::query()->withoutGlobalScopes()->find($agencyId);
+        foreach (['primary' => $agency?->brand_color, 'logo' => $agency?->brand_logo, 'logo_dark' => $agency?->brand_logo_dark] as $k => $v) {
+            if (filled($v) && ! array_key_exists($k, $overrides)) {
+                $overrides[$k] = $v;
+            }
+        }
+
+        return $overrides;
+    }
+
+    public static function saveForAgency(int $agencyId, array $values): void
+    {
+        $base = static::agencyBase();
+        $diff = [];
+        foreach (self::AGENCY_KEYS as $k) {
+            if (array_key_exists($k, $values) && $values[$k] != ($base[$k] ?? null)) {
+                $diff[$k] = $values[$k];
+            }
+        }
+        Setting::put(static::agencyKey($agencyId), $diff);
+        Agency::query()->withoutGlobalScopes()->whereKey($agencyId)->update(['brand_color' => null, 'brand_logo' => null, 'brand_logo_dark' => null]);
+        static::flush();
+    }
+
+    public static function resetAgency(int $agencyId): void
+    {
+        Setting::forget(static::agencyKey($agencyId));
+        Agency::query()->withoutGlobalScopes()->whereKey($agencyId)->update(['brand_color' => null, 'brand_logo' => null, 'brand_logo_dark' => null]);
+        static::flush();
     }
 
     public static function get(string $key, mixed $default = null): mixed
@@ -137,20 +231,21 @@ class Branding
     {
         $clean = array_intersect_key($values, self::DEFAULTS);
         Setting::put(self::KEY, $clean);
-        static::$cache = null;
+        static::flush();
     }
 
     /** Forget values kept in memory (long-running processes, tests) */
     public static function flush(): void
     {
-        static::$cache = null;
+        static::$cache = [];
+        static::$global = null;
         Setting::forgetMemo();
     }
 
     public static function reset(): void
     {
         Setting::forget(self::KEY);
-        static::$cache = null;
+        static::flush();
     }
 
     public static function url(?string $path): ?string
@@ -173,7 +268,7 @@ class Branding
 
     public static function agency(): ?Agency
     {
-        if (! static::get('allow_agency_branding')) {
+        if (! (static::global()['allow_agency_branding'] ?? false) || ! Auth::hasUser()) {
             return null;
         }
         $user = Auth::user();
@@ -183,7 +278,7 @@ class Branding
 
     public static function appName(): string
     {
-        if (static::get('agency_name_as_brand') && ($agency = static::agency())) {
+        if (static::global()['agency_name_as_brand'] && ($agency = static::agency()) && ! array_key_exists('app_name', static::agencyOverrides($agency->id))) {
             return $agency->name;
         }
 
@@ -192,12 +287,7 @@ class Branding
 
     public static function logo(bool $dark = false): ?string
     {
-        $agency = static::agency();
-        $path = $dark
-            ? ($agency?->brand_logo_dark ?: $agency?->brand_logo ?: static::get('logo_dark'))
-            : ($agency?->brand_logo ?: static::get('logo'));
-
-        return static::url($path);
+        return static::url($dark ? static::get('logo_dark') : static::get('logo'));
     }
 
     /** Logo for the panel header; with "show name" the name is printed next to the image */
@@ -242,7 +332,7 @@ class Branding
     public static function colors(): array
     {
         $grays = ['slate' => Color::Slate, 'gray' => Color::Gray, 'zinc' => Color::Zinc, 'neutral' => Color::Neutral, 'stone' => Color::Stone];
-        $primary = static::agency()?->brand_color ?: static::get('primary');
+        $primary = static::get('primary');
 
         return [
             'primary' => static::palette($primary, Color::Sky),
@@ -257,7 +347,7 @@ class Branding
     /** Hex of the primary colour (theme-color meta, manifest) */
     public static function primaryHex(): string
     {
-        $c = static::agency()?->brand_color ?: static::get('primary');
+        $c = static::get('primary');
 
         return preg_match('/^#[0-9a-f]{6}$/i', (string) $c) ? $c : '#0ea5e9';
     }

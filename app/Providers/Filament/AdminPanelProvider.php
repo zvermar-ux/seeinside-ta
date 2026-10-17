@@ -38,6 +38,7 @@ class AdminPanelProvider extends PanelProvider
                 return;
             }
 
+            \Illuminate\Support\Facades\Auth::user();   // agency's own look needs the user
             FilamentColor::register(Branding::colors());
 
             $panel->font(Branding::fontFamily(), Branding::fontUrl(), LocalFontProvider::class);
@@ -109,7 +110,7 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-            ->middleware([SetLocale::class], isPersistent: true)
+            ->middleware([SetLocale::class, \App\Http\Middleware\ApplyBranding::class], isPersistent: true)
             ->authMiddleware([
                 Authenticate::class,
             ]);

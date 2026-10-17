@@ -33,6 +33,10 @@ class Appearance extends Page implements HasForms
 
     public ?array $data = [];
 
+    /** Whose look is edited: null = the whole application (super admin), otherwise one agency */
+    #[\Livewire\Attributes\Url(as: 'agency')]
+    public ?int $agencyId = null;
+
     public static function defaultNavigationLabel(): string
     {
         return __('Appearance');
@@ -45,29 +49,82 @@ class Appearance extends Page implements HasForms
 
     public function getSubheading(): ?string
     {
-        return __('Logo, colours, fonts, dark mode, menu and icons for the whole application.');
+        return $this->agencyId
+            ? __('Applies to the admin and the operators of :agency.', ['agency' => $this->agencyName()])
+            : __('Applies to super admins and to the login page. Each agency admin sets the look for his own agency.');
     }
 
+    /** Super admin: whole application or any agency. Agency admin: his own agency (if the super admin allows it). */
     public static function canAccess(): bool
     {
-        return (bool) Auth::user()?->isSuperAdmin();
+        $user = Auth::user();
+        if (! $user) {
+            return false;
+        }
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        return $user->agency_id && $user->isAgencyAdmin() && (bool) Branding::global()['allow_agency_branding'];
+    }
+
+    public function isGlobal(): bool
+    {
+        return $this->agencyId === null;
+    }
+
+    protected function agencyName(): string
+    {
+        return \App\Models\Agency::query()->withoutGlobalScopes()->whereKey($this->agencyId)->value('name') ?? '';
     }
 
     public function mount(): void
     {
-        $this->form->fill(Branding::all());
+        $user = Auth::user();
+        if (! $user->isSuperAdmin()) {
+            $this->agencyId = (int) $user->agency_id;   // agency admins only edit their own agency
+        } elseif ($this->agencyId && ! \App\Models\Agency::query()->whereKey($this->agencyId)->exists()) {
+            $this->agencyId = null;
+        }
+
+        $this->fillForm();
+    }
+
+    protected function fillForm(): void
+    {
+        $this->form->fill($this->isGlobal() ? Branding::global() : Branding::forAgency($this->agencyId));
+    }
+
+    /** Super admin switches between the application and an agency */
+    public function updatedAgencyId(): void
+    {
+        if (! Auth::user()->isSuperAdmin()) {
+            $this->agencyId = (int) Auth::user()->agency_id;
+        }
+        $this->agencyId = $this->agencyId ?: null;
+        $this->fillForm();
+    }
+
+    public function getAgencyOptions(): array
+    {
+        return Auth::user()->isSuperAdmin()
+            ? \App\Models\Agency::query()->orderBy('name')->pluck('name', 'id')->all()
+            : [];
     }
 
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('reset')->label(__('Restore defaults'))->icon('heroicon-o-arrow-path')->color('gray')
+            Action::make('reset')->label(fn () => $this->isGlobal() ? __('Restore defaults') : __('Restore the standard look'))
+                ->icon('heroicon-o-arrow-path')->color('gray')
                 ->requiresConfirmation()
-                ->modalDescription(__('All appearance settings go back to the original look. Uploaded images stay on the server.'))
+                ->modalDescription(fn () => $this->isGlobal()
+                    ? __('All appearance settings go back to the original look. Uploaded images stay on the server.')
+                    : __('The agency\'s changes are removed and its users see the standard look again.'))
                 ->action(function () {
-                    Branding::reset();
+                    $this->isGlobal() ? Branding::reset() : Branding::resetAgency($this->agencyId);
                     Notification::make()->success()->title(__('Restored'))->send();
-                    $this->redirect(static::getUrl());
+                    $this->redirect(static::getUrl($this->isGlobal() ? [] : ['agency' => $this->agencyId]), navigate: false);
                 }),
         ];
     }
@@ -77,12 +134,12 @@ class Appearance extends Page implements HasForms
         return $form->statePath('data')->schema([
             Forms\Components\Tabs::make()->id('appearance-tabs')->persistTab()->contained(false)->tabs([
                 $this->brandTab(),
-                $this->loginTab(),
+                $this->loginTab()->visible(fn () => $this->isGlobal()),
                 $this->colorsTab(),
                 $this->typographyTab(),
                 $this->layoutTab(),
                 $this->menuTab(),
-                $this->advancedTab(),
+                $this->advancedTab()->visible(fn () => $this->isGlobal()),
             ]),
         ]);
     }
@@ -90,7 +147,7 @@ class Appearance extends Page implements HasForms
     protected function upload(string $name, string $label): Forms\Components\FileUpload
     {
         return Forms\Components\FileUpload::make($name)->label($label)
-            ->disk('public')->directory('branding')->visibility('public')
+            ->disk('public')->directory(fn () => $this->isGlobal() ? 'branding' : 'branding/agency-'.$this->agencyId)->visibility('public')
             ->maxSize(4096);
     }
 
@@ -122,7 +179,7 @@ class Appearance extends Page implements HasForms
                 $this->upload('favicon', __('Favicon'))
                     ->acceptedFileTypes(['image/x-icon', 'image/vnd.microsoft.icon', 'image/png', 'image/svg+xml'])
                     ->helperText(__('The small icon in the browser tab (ICO, PNG 32×32 or SVG).')),
-                $this->upload('app_icon', __('App icon'))->image()->imageEditor()->imageEditorAspectRatios(['1:1'])
+                $this->upload('app_icon', __('App icon'))->visible(fn () => $this->isGlobal())->image()->imageEditor()->imageEditorAspectRatios(['1:1'])
                     ->acceptedFileTypes(['image/png'])
                     ->helperText(__('Square PNG 512×512. Used when the panel is added to the home screen of a phone ("Install app").')),
             ]),
@@ -305,8 +362,8 @@ class Appearance extends Page implements HasForms
     {
         return Forms\Components\Tabs\Tab::make(__('Advanced'))->icon('heroicon-o-adjustments-horizontal')->schema([
             Forms\Components\Section::make(__('Agency branding'))->schema([
-                Forms\Components\Toggle::make('allow_agency_branding')->label(__('Agencies may use their own logo and main colour'))->live()
-                    ->helperText(__('Set in "My agency" (agency admin) or in Agencies. Users of that agency then see their own look.')),
+                Forms\Components\Toggle::make('allow_agency_branding')->label(__('Agency admins may set their own look'))->live()
+                    ->helperText(__('The agency admin opens Administration → Appearance and changes logo, colours, fonts, menu… only for the users of his agency. You can also edit any agency with the selector at the top.')),
                 Forms\Components\Toggle::make('agency_name_as_brand')->label(__('Show the agency name instead of the application name'))
                     ->visible(fn (Get $get) => $get('allow_agency_branding')),
             ]),
@@ -341,15 +398,23 @@ class Appearance extends Page implements HasForms
     public function save(): void
     {
         abort_unless(static::canAccess(), 403);
+        if (! Auth::user()->isSuperAdmin()) {
+            abort_unless((int) $this->agencyId === (int) Auth::user()->agency_id, 403);
+        }
 
         $data = $this->form->getState();
         $data['nav'] = collect($data['nav'] ?? [])->map(fn ($row) => array_filter((array) $row, fn ($v) => filled($v)))->filter()->all();
         $data['groups'] = collect($data['groups'] ?? [])->map(fn ($row) => array_filter((array) $row, fn ($v) => filled($v)))->filter()->all();
 
-        Branding::save($data);
+        if ($this->isGlobal()) {
+            // keep the values that are not on the form (login / advanced are always on it for the super admin)
+            Branding::save(array_replace(Branding::global(), $data));
+        } else {
+            Branding::saveForAgency($this->agencyId, $data);
+        }
 
         Notification::make()->success()->title(__('Appearance saved'))->send();
         // full reload so the new colours, fonts and menu are applied everywhere
-        $this->redirect(static::getUrl(), navigate: false);
+        $this->redirect(static::getUrl($this->isGlobal() ? [] : ['agency' => $this->agencyId]), navigate: false);
     }
 }

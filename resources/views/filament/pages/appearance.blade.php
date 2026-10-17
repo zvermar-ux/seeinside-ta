@@ -1,4 +1,22 @@
 <x-filament-panels::page>
+    @if (count($agencies = $this->getAgencyOptions()))
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:.75rem">
+            <span style="font-weight:600;font-size:.9rem">{{ __('You are editing the look of') }}:</span>
+            <div style="min-width:18rem">
+                <x-filament::input.wrapper>
+                    <x-filament::input.select wire:model.live="agencyId">
+                        <option value="">{{ __('Super admin (my login) and login page') }}</option>
+                        @foreach ($agencies as $id => $name)
+                            <option value="{{ $id }}">{{ __('Agency') }}: {{ $name }}</option>
+                        @endforeach
+                    </x-filament::input.select>
+                </x-filament::input.wrapper>
+            </div>
+            @if (! \App\Support\Branding::global()['allow_agency_branding'])
+                <span style="font-size:.85rem;color:rgb(var(--warning-600))">{{ __('Agency looks are switched off (tab Advanced).') }}</span>
+            @endif
+        </div>
+    @endif
     <x-filament-panels::form wire:submit="save">
         {{ $this->form }}
 

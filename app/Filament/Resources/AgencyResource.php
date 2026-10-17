@@ -80,22 +80,6 @@ class AgencyResource extends Resource
                         ->visible($withAdminFields)->inline(false),
                     Forms\Components\Textarea::make('notes')->label(__('Notes'))->columnSpanFull()->visible($withAdminFields),
                 ]),
-            Forms\Components\Section::make(__('Look of the panel for this agency'))
-                ->description(__('Users of this agency see their own logo and main colour.'))
-                ->icon('heroicon-o-paint-brush')
-                ->visible(fn () => \App\Support\Branding::get('allow_agency_branding'))
-                ->collapsible()->collapsed()
-                ->columns(3)
-                ->schema([
-                    Forms\Components\ColorPicker::make('brand_color')->label(__('Main colour'))
-                        ->helperText(__('Empty = the colour of the application.')),
-                    Forms\Components\FileUpload::make('brand_logo')->label(__('Logo (light mode)'))
-                        ->image()->disk('public')->directory('agency-logos')->maxSize(4096)
-                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']),
-                    Forms\Components\FileUpload::make('brand_logo_dark')->label(__('Logo (dark mode)'))
-                        ->image()->disk('public')->directory('agency-logos')->maxSize(4096)
-                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']),
-                ]),
             Forms\Components\Section::make(__('Website, flights & payments'))
                 ->collapsible()->collapsed()
                 ->columns(2)
@@ -149,10 +133,13 @@ class AgencyResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_active')->label(__('Active')),
             ])
             ->actions([
+                Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('users')
                     ->label(__('Users'))->icon('heroicon-o-users')->color('gray')->iconButton()->tooltip(__('Users'))
                     ->url(fn (Agency $r) => UserResource::getUrl('index', ['tableFilters' => ['agency_id' => ['value' => $r->id]]])),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('appearance')
+                    ->label(__('Appearance'))->icon('heroicon-o-paint-brush')->color('gray')->iconButton()->tooltip(__('Appearance'))
+                    ->url(fn (Agency $r) => \App\Filament\Pages\Appearance::getUrl(['agency' => $r->id])),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

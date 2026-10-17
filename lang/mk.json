@@ -748,5 +748,14 @@
     "{year} is replaced with the current year, e.g. © {year} Aries Travel.": "{year} се заменува со тековната година, на пр. © {year} Aries Travel.",
     "Regular": "Нормална",
     "Advanced": "Напредно",
-    "Tours": "Тури"
+    "Tours": "Тури",
+    "You are editing the look of": "Го уредуваш изгледот за",
+    "Agency looks are switched off (tab Advanced).": "Изгледот по агенција е исклучен (таб Напредно).",
+    "Agency admins may set their own look": "Админите на агенции можат да постават свој изглед",
+    "The agency admin opens Administration → Appearance and changes logo, colours, fonts, menu… only for the users of his agency. You can also edit any agency with the selector at the top.": "Админот на агенцијата отвора Администрација → Изглед и менува лого, бои, фонтови, мени… само за корисниците на својата агенција. Ти можеш да ја уредиш секоја агенција со изборот најгоре.",
+    "Applies to the admin and the operators of :agency.": "Важи за админот и операторите на :agency.",
+    "Applies to super admins and to the login page. Each agency admin sets the look for his own agency.": "Важи за суперадминот и за страницата за најава. Секој админ на агенција го поставува изгледот за својата агенција.",
+    "Restore the standard look": "Врати стандарден изглед",
+    "The agency's changes are removed and its users see the standard look again.": "Промените на агенцијата се бришат и нејзините корисници повторно го гледаат стандардниот изглед.",
+    "Super admin (my login) and login page": "Суперадмин (мојата најава) и страница за најава"
 }

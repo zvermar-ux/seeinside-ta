@@ -67,6 +67,15 @@ class MyAgency extends Page implements HasForms
             ->disabled(fn () => ! $this->canEdit());
     }
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('appearance')->label(__('Appearance'))->icon('heroicon-o-paint-brush')->color('gray')
+                ->visible(fn () => Appearance::canAccess())
+                ->url(fn () => Appearance::getUrl()),
+        ];
+    }
+
     protected function getFormActions(): array
     {
         return [
