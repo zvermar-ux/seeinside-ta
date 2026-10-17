@@ -13,6 +13,16 @@ use Illuminate\Support\Facades\Route;
 | additionally limits each visitor.
 */
 
+// Called from the visitor's browser (push mode): forms, prices, availability, booking status
+Route::prefix('public/{site}')->middleware([\App\Http\Middleware\AuthenticatePublicSite::class, 'throttle:website-visitor'])->group(function () {
+    Route::get('accommodations/{slug}/quote', [CatalogController::class, 'quote']);
+    Route::get('accommodations/{slug}/availability', [CatalogController::class, 'availability']);
+    Route::post('bookings', [BookingController::class, 'store']);
+    Route::post('visa-applications', [BookingController::class, 'visaApplication']);
+    Route::get('bookings/{reference}', [BookingController::class, 'status']);
+    Route::get('visa-applications/{reference}', [BookingController::class, 'visaStatus']);
+});
+
 Route::middleware([AuthenticateApiClient::class, 'throttle:website'])->group(function () {
     Route::get('meta', [CatalogController::class, 'meta']);
     Route::get('changes', [CatalogController::class, 'changes']);

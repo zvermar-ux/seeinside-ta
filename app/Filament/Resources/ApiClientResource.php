@@ -53,6 +53,9 @@ class ApiClientResource extends Resource
                 Forms\Components\TextInput::make('webhook_url')->label(__('Webhook address'))->url()
                     ->placeholder('https://aries.mk/wp-json/seeinside/v1/webhook')
                     ->helperText(__('The plugin shows this address. Changes are sent here instantly.')),
+                Forms\Components\Toggle::make('push_mode')->label(__('The website cannot connect to the app (hosting firewall)'))
+                    ->helperText(__('The app then sends full data and photos to the website, and the website forms go directly from the visitor\'s browser to the app.'))
+                    ->columnSpanFull(),
                 Forms\Components\Toggle::make('is_active')->label(__('Active'))->default(true),
             ]),
         ]);
@@ -69,6 +72,8 @@ class ApiClientResource extends Resource
                 Tables\Columns\TextColumn::make('last_webhook_status')->label(__('Last webhook'))->badge()
                     ->color(fn ($state) => $state >= 200 && $state < 300 ? 'success' : ($state === null ? 'gray' : 'danger'))
                     ->formatStateUsing(fn ($state, ApiClient $r) => $state === null ? '—' : $state.' · '.$r->last_webhook_at?->diffForHumans()),
+                Tables\Columns\IconColumn::make('push_mode')->label(__('Mode'))->icon(fn ($state) => $state ? 'heroicon-o-arrow-up-tray' : 'heroicon-o-arrows-right-left')
+                    ->tooltip(fn ($state) => $state ? __('App sends data (push)') : __('Website reads the API'))->color(fn ($state) => $state ? 'warning' : 'gray'),
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active')),
             ])
             ->actions([
@@ -82,6 +87,14 @@ class ApiClientResource extends Resource
                     ->modalDescription(__('Paste it in WordPress → SeeInside Travel → Connection → Webhook secret.'))
                     ->modalContent(fn (ApiClient $r) => static::copyBox(__('Webhook secret'), (string) $r->webhook_secret))
                     ->modalSubmitAction(false)->modalCancelActionLabel(__('Close')),
+                Tables\Actions\Action::make('push_all')->label(__('Send everything to the website'))->icon('heroicon-o-arrow-up-tray')->color('primary')->iconButton()->tooltip(__('Send everything to the website'))
+                    ->visible(fn (ApiClient $r) => $r->push_mode && filled($r->webhook_url))
+                    ->requiresConfirmation()
+                    ->modalDescription(__('All published tours, events, hotels, visas, destinations, slider and charters with photos are sent to the website. It continues in the background and can take a few minutes.'))
+                    ->action(function (ApiClient $record) {
+                        app()->terminating(fn () => \App\Services\Website\WebsitePush::pushAll($record));
+                        Notification::make()->success()->title(__('Sending started'))->body(__('Follow the progress in WordPress → SeeInside Travel → Sync.'))->send();
+                    }),
                 Tables\Actions\Action::make('ping')->label(__('Test webhook'))->icon('heroicon-o-signal')->color('gray')->iconButton()->tooltip(__('Test webhook'))
                     ->visible(fn (ApiClient $r) => filled($r->webhook_url))
                     ->action(function (ApiClient $record) {

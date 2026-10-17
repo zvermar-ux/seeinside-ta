@@ -31,6 +31,9 @@ class BookingController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if (filled($request->input('website'))) {   // hidden field on website forms: bots fill it
+            return response()->json(['data' => ['reference' => 'R0000-00000', 'status' => 'inquiry', 'total' => null, 'currency' => 'EUR', 'payment' => null]], 201);
+        }
         $data = $request->validate([
             'type' => 'required|in:tour,event,accommodation,charter',
             'slug' => 'required_unless:type,charter|nullable|string',
@@ -254,6 +257,9 @@ class BookingController extends Controller
     /** Multipart form: visa, first_name, last_name, email, phone, answers[key], documents[key] (file or files[]) */
     public function visaApplication(Request $request): JsonResponse
     {
+        if (filled($request->input('website'))) {   // hidden field on website forms: bots fill it
+            return response()->json(['data' => ['reference' => 'V0000-00000', 'status' => 'new']], 201);
+        }
         $base = $request->validate([
             'visa' => 'required|string',
             'first_name' => 'required|string|max:80',
@@ -266,6 +272,16 @@ class BookingController extends Controller
             'answers' => 'nullable|array',
             'locale' => 'nullable|in:mk,en',
         ]);
+
+        // name / e-mail / phone are asked once at the top of website forms; questionnaires may contain them too
+        $answers = (array) $request->input('answers', []);
+        foreach (['first_name', 'last_name', 'email', 'phone'] as $k) {
+            if (! isset($answers[$k]) && $request->filled($k)) {
+                $answers[$k] = $request->input($k);
+            }
+        }
+        $request->merge(['answers' => $answers]);
+        $base['answers'] = $answers;
 
         $agencyId = $this->agencyId($request);
         $visa = VisaType::query()->where('agency_id', $agencyId)->where('is_active', true)->where('slug', $base['visa'])->firstOrFail();

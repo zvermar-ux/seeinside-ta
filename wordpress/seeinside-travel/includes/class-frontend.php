@@ -27,6 +27,9 @@ class STA_Frontend
         wp_enqueue_script('sta', STA_URL.'assets/js/frontend.js', [], STA_VERSION, ['strategy' => 'defer', 'in_footer' => true]);
         wp_localize_script('sta', 'STA', [
             'rest' => esc_url_raw(rest_url('seeinside-travel/v1/')),
+            // push mode: this server cannot reach the app, so forms go straight from the browser to the app
+            'direct' => sta_push_mode() ? esc_url_raw(sta_public_api()) : '',
+            'site' => home_url('/'),
             'lang' => sta_lang(),
             'currency' => (get_option('sta_meta', [])['agency']['currency'] ?? 'EUR'),
             'i18n' => [

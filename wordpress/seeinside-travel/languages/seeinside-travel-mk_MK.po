@@ -7,6 +7,27 @@ msgstr ""
 "Language: mk_MK\n"
 "Plural-Forms: nplurals=2; plural=(n % 10 == 1 && n % 100 != 11) ? 0 : 1;\n"
 
+msgid "Connection mode"
+msgstr "Начин на поврзување"
+
+msgid "Normal – this site reads data from the app"
+msgstr "Нормално – сајтот ги чита податоците од апликацијата"
+
+msgid "The hosting blocks connections to the app – the app sends everything (also turn on the same option in the app)"
+msgstr "Хостингот ги блокира врските до апликацијата – апликацијата праќа сè (вклучи ја истата опција и во апликацијата)"
+
+msgid "In the second mode photos and data arrive from the app, and the website forms go straight from the visitor's browser to the app."
+msgstr "Во вториот режим сликите и податоците пристигнуваат од апликацијата, а формите од сајтот одат директно од прелистувачот на посетителот до апликацијата."
+
+msgid "The app sends the data to this site. In SeeInside open <b>Settings → Websites (WordPress)</b> and click the <b>upload icon</b> (Send everything to the website). Refresh this page to follow the progress."
+msgstr "Апликацијата ги праќа податоците на овој сајт. Во SeeInside отвори <b>Подесувања → Веб-страници (WordPress)</b> и кликни на <b>иконата за праќање</b> (Испрати сè на веб-страницата). Освежи ја оваа страница за да го следиш напредокот."
+
+msgid "Push mode: last message from the app %s. Use \"Test webhook\" in the app to check again."
+msgstr "Режим push: последна порака од апликацијата %s. Со „Тестирај webhook“ во апликацијата провери повторно."
+
+msgid "Push mode: no message from the app yet. In the app click \"Test webhook\" (signal icon)."
+msgstr "Режим push: сè уште нема порака од апликацијата. Во апликацијата кликни „Тестирај webhook“ (иконата сигнал)."
+
 msgid "Outgoing internet (google.com)"
 msgstr "Излезен интернет (google.com)"
 

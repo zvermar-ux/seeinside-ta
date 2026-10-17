@@ -12,6 +12,12 @@ use Spatie\Translatable\HasTranslations;
 
 class Group extends Model
 {
+    protected static function booted(): void
+    {
+        static::saved(fn ($m) => \App\Services\Website\WebsiteNotifier::metaChanged($m->agency_id));
+        static::deleted(fn ($m) => \App\Services\Website\WebsiteNotifier::metaChanged($m->agency_id));
+    }
+
     use BelongsToAgency, HasTranslations;
 
     protected $guarded = ['id'];

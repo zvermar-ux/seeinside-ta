@@ -24,6 +24,19 @@ class WebsiteNotifier
 
     public static bool $enabled = true;
 
+    /** Destinations, groups or agency data changed (website refreshes /meta) */
+    public static function metaChanged(?int $agencyId): void
+    {
+        if (! static::$enabled || ! $agencyId) {
+            return;
+        }
+        static::$pending['meta:0:'.$agencyId] = ['agency_id' => $agencyId, 'event' => 'meta.updated', 'type' => 'meta', 'id' => 0, 'slug' => null, 'updated_at' => now()->toIso8601String()];
+        if (! static::$registered) {
+            static::$registered = true;
+            app()->terminating(fn () => static::flush());
+        }
+    }
+
     public static function changed(Model $model): void
     {
         static::queue($model, 'updated');
@@ -75,18 +88,23 @@ class WebsiteNotifier
 
         foreach ($clients as $client) {
             foreach ($byAgency->get($client->agency_id, []) as $payload) {
-                static::send($client, collect($payload)->except('agency_id')->all());
+                if ($client->push_mode) {
+                    // the website cannot call the app: send the full record and its photos
+                    WebsitePush::pushItem($client, $payload['type'], $payload['id'], $payload['slug'], str_ends_with($payload['event'], '.deleted') ? 'deleted' : 'updated');
+                } else {
+                    static::send($client, collect($payload)->except('agency_id')->all());
+                }
             }
         }
     }
 
-    public static function send(ApiClient $client, array $payload): ?int
+    public static function send(ApiClient $client, array $payload, int $timeout = 5): ?int
     {
         $body = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $signature = 'sha256='.hash_hmac('sha256', $body, (string) $client->webhook_secret);
 
         try {
-            $status = Http::timeout(5)->connectTimeout(3)
+            $status = Http::timeout($timeout)->connectTimeout(3)
                 ->withHeaders(['X-TA-Signature' => $signature, 'X-TA-Event' => $payload['event'] ?? 'ping'])
                 ->withBody($body, 'application/json')
                 ->post($client->webhook_url)

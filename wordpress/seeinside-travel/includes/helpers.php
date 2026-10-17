@@ -159,3 +159,18 @@ function sta_icon(string $name): string
 
     return '<svg class="sta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$path.'</svg>';
 }
+
+/** "push": the app sends everything (this server cannot reach the app); "pull": the plugin reads the API */
+function sta_push_mode(): bool
+{
+    return sta_setting('mode', 'pull') === 'push';
+}
+
+/** Public form address of this site in the app (push mode): …/api/v1/public/<key prefix>/ */
+function sta_public_api(): string
+{
+    $key = (string) sta_setting('api_key');
+    $prefix = preg_match('/^ta_([a-z0-9]{8})_/', $key, $m) ? $m[1] : '';
+
+    return rtrim((string) sta_setting('api_url', 'https://ta.seeinsidesolution.com'), '/').'/api/v1/public/'.$prefix.'/';
+}

@@ -763,5 +763,13 @@
     "Paste it in WordPress → SeeInside Travel → Connection → Webhook secret.": "Залепи ја во WordPress → SeeInside Travel → Врска → Webhook тајна.",
     "Close": "Затвори",
     "Copied": "Копирано",
-    "Copy": "Копирај"
+    "Copy": "Копирај",
+    "The website cannot connect to the app (hosting firewall)": "Веб-страницата не може да се поврзе до апликацијата (firewall на хостингот)",
+    "The app then sends full data and photos to the website, and the website forms go directly from the visitor's browser to the app.": "Тогаш апликацијата сама ги праќа податоците и сликите на сајтот, а формите од сајтот одат директно од прелистувачот на посетителот до апликацијата.",
+    "Send everything to the website": "Испрати сè на веб-страницата",
+    "All published tours, events, hotels, visas, destinations, slider and charters with photos are sent to the website. It continues in the background and can take a few minutes.": "Сите објавени тури, настани, хотели, визи, дестинации, слајдерот и чартерите со слики се праќаат на сајтот. Продолжува во позадина и може да трае неколку минути.",
+    "Sending started": "Праќањето започна",
+    "Follow the progress in WordPress → SeeInside Travel → Sync.": "Напредокот го следиш во WordPress → SeeInside Travel → Синхронизација.",
+    "App sends data (push)": "Апликацијата праќа (push)",
+    "Website reads the API": "Сајтот чита од API"
 }

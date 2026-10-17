@@ -24,6 +24,8 @@ class Agency extends Model
 
     protected static function booted(): void
     {
+        static::saved(fn ($m) => \App\Services\Website\WebsiteNotifier::metaChanged($m->id));
+        static::deleted(fn ($m) => \App\Services\Website\WebsiteNotifier::metaChanged($m->id));
         static::saving(function (Agency $agency) {
             if (blank($agency->slug)) {
                 $base = Str::slug($agency->name) ?: 'agency';

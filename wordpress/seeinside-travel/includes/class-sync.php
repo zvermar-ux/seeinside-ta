@@ -91,6 +91,9 @@ class STA_Sync
     /** Everything changed since the last run (safety net for missed webhooks) */
     public static function pull_changes(): array
     {
+        if (sta_push_mode()) {
+            return ['skipped' => 'push mode'];
+        }
         if (! STA_Api::configured()) {
             return ['error' => 'not configured'];
         }
@@ -597,13 +600,15 @@ class STA_Sync
     }
 
     /** Destinations, groups, agency info, departure places, flights (from /meta) */
-    public static function sync_meta(): void
+    public static function sync_meta(?array $body = null): void
     {
-        [$code, $body] = STA_Api::get('meta');
-        if ($code !== 200 || ! is_array($body)) {
-            sta_log('meta: HTTP '.$code, 'error');
+        if ($body === null) {
+            [$code, $body] = STA_Api::get('meta');
+            if ($code !== 200 || ! is_array($body)) {
+                sta_log('meta: HTTP '.$code, 'error');
 
-            return;
+                return;
+            }
         }
         foreach (['destinations' => 'sta_destination', 'groups' => 'sta_group'] as $key => $tax) {
             $items = $body[$key] ?? [];
@@ -613,6 +618,10 @@ class STA_Sync
                 $termId = self::term($tax, ['id' => $g['id'], 'name' => $g['name'], 'parent_id' => $g['parent_id'] ?? null]);
                 if ($termId) {
                     update_term_meta($termId, 'sta_image', $g['image'] ?? '');
+                    $att = ! empty($g['image']) ? self::attach($g['image']) : null;   // local copy when available
+                    if ($att) {
+                        update_term_meta($termId, 'sta_image', wp_get_attachment_image_url($att, 'large'));
+                    }
                 }
             }
         }
@@ -660,6 +669,10 @@ class STA_Sync
             return (int) $found[0];
         }
 
+        if (sta_push_mode()) {
+            return null;   // photos arrive from the app (/media) before the record
+        }
+
         require_once ABSPATH.'wp-admin/includes/file.php';
         require_once ABSPATH.'wp-admin/includes/media.php';
         require_once ABSPATH.'wp-admin/includes/image.php';
@@ -682,6 +695,45 @@ class STA_Sync
         update_post_meta($id, '_sta_source_url', esc_url_raw($url));
 
         return (int) $id;
+    }
+
+    /** Photo sent by the app (push mode) */
+    public static function store_media(string $url, string $name, string $binary): ?int
+    {
+        $hash = md5($url);
+        $found = get_posts(['post_type' => 'attachment', 'post_status' => 'inherit', 'meta_key' => '_sta_source', 'meta_value' => $hash, 'fields' => 'ids', 'posts_per_page' => 1, 'no_found_rows' => true]);
+        if ($found) {
+            return (int) $found[0];
+        }
+        require_once ABSPATH.'wp-admin/includes/file.php';
+        require_once ABSPATH.'wp-admin/includes/media.php';
+        require_once ABSPATH.'wp-admin/includes/image.php';
+
+        $tmp = wp_tempnam($name);
+        file_put_contents($tmp, $binary);
+        $check = wp_check_filetype_and_ext($tmp, $name);
+        if (empty($check['type']) || ! str_starts_with((string) $check['type'], 'image/') && $check['type'] !== 'application/pdf') {
+            @unlink($tmp);
+            sta_log('media '.$name.': not an image', 'error');
+
+            return null;
+        }
+        $id = media_handle_sideload(['name' => sanitize_file_name($name), 'tmp_name' => $tmp], 0);
+        if (is_wp_error($id)) {
+            @unlink($tmp);
+            sta_log('media '.$name.': '.$id->get_error_message(), 'error');
+
+            return null;
+        }
+        update_post_meta($id, '_sta_source', $hash);
+        update_post_meta($id, '_sta_source_url', esc_url_raw($url));
+
+        return (int) $id;
+    }
+
+    public static function has_media(string $url): bool
+    {
+        return (bool) get_posts(['post_type' => 'attachment', 'post_status' => 'inherit', 'meta_key' => '_sta_source', 'meta_value' => md5($url), 'fields' => 'ids', 'posts_per_page' => 1, 'no_found_rows' => true]);
     }
 
     /* ======================== SEO plugins ======================== */

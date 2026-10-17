@@ -20,6 +20,8 @@ class ApiClient extends Model
         return [
             'webhook_secret' => 'encrypted',
             'is_active' => 'boolean',
+            'push_mode' => 'boolean',
+            'last_full_push_at' => 'datetime',
             'last_used_at' => 'datetime',
             'last_webhook_at' => 'datetime',
         ];

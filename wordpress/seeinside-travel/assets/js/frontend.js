@@ -32,8 +32,27 @@
     if (!ok) { var first = $('.is-invalid', form); first && first.focus(); }
     return ok;
   }
+  /* proxy path on this site → address in the app when forms go directly (push mode) */
+  function direct(path, opts) {
+    var u = new URL(path, 'http://x/'), q = u.searchParams, name = u.pathname.replace(/^\//, '');
+    opts = opts || {};
+    if (name === 'booking') {
+      var d = JSON.parse(opts.body || '{}'); d.locale = C.lang; d.message = ((d.message || '') + '\n\n[' + C.site + ']').trim();
+      return [C.direct + 'bookings', Object.assign({}, opts, { body: JSON.stringify(d), headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })];
+    }
+    if (name === 'visa') { opts.body.append('locale', C.lang); return [C.direct + 'visa-applications', Object.assign({}, opts, { headers: { Accept: 'application/json' } })]; }
+    var slug = q.get('slug'); q.delete('slug'); q.delete('website'); q.delete('sta_ts');
+    if (name === 'quote') return [C.direct + 'accommodations/' + encodeURIComponent(slug) + '/quote?' + q, { headers: { Accept: 'application/json' } }];
+    if (name === 'availability') return [C.direct + 'accommodations/' + encodeURIComponent(slug) + '/availability?' + q, { headers: { Accept: 'application/json' } }];
+    if (name === 'status') {
+      var ref = (q.get('reference') || '').toUpperCase();
+      return [C.direct + (ref.charAt(0) === 'V' ? 'visa-applications/' : 'bookings/') + encodeURIComponent(ref) + '?email=' + encodeURIComponent(q.get('email') || ''), { headers: { Accept: 'application/json' } }];
+    }
+    return [C.rest + path, opts];
+  }
   function api(path, opts) {
-    return fetch(C.rest + path, opts).then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); });
+    var target = C.direct ? direct(path, opts) : [C.rest + path, opts];
+    return fetch(target[0], target[1]).then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); });
   }
 
   /* ---------- lightbox ---------- */
