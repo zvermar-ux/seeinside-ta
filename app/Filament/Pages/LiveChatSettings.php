@@ -94,9 +94,15 @@ class LiveChatSettings extends Page implements HasForms
                 Forms\Components\Toggle::make('enabled')->label(__('Show the chat on the website'))->inline(false)->columnSpan(2)
                     ->helperText(__('Turn it off at any time – the widget disappears from the website within a minute.')),
                 Forms\Components\Placeholder::make('ai_state')->label(__('AI answers'))->columnSpan(2)
-                    ->content(fn () => new HtmlString(Ai::available($this->agencyId, 'chat')
-                        ? '<span style="color:rgb(var(--success-600));font-weight:600">● '.e(__('ready')).'</span>'
-                        : '<span style="color:rgb(var(--warning-600));font-weight:600">● '.e(__('not available – turn on the chatbot and add a key in AI settings & limits. Without AI the chat offers Viber / Messenger / phone and collects contacts.')).'</span>')),
+                    ->content(function () {
+                        $why = Ai::unavailableReason($this->agencyId, 'chat');
+                        $link = AiSettings::getUrl(Auth::user()->isSuperAdmin() ? ['agency' => $this->agencyId] : []);
+
+                        return new HtmlString($why === null
+                            ? '<span style="color:rgb(var(--success-600));font-weight:600">● '.e(__('ready')).'</span>'
+                            : '<span style="color:rgb(var(--warning-600));font-weight:600">● '.e($why).'</span><br><a href="'.e($link).'" style="text-decoration:underline;font-size:.875rem">'.e(__('Open AI settings & limits of this agency')).' →</a>'
+                              .'<br><span style="font-size:.8rem;color:rgb(var(--gray-500))">'.e(__('Without AI the chat still offers Viber / Messenger / phone and collects contacts.')).'</span>');
+                    }),
             ]),
             Forms\Components\Tabs::make('chat')->columnSpanFull()->persistTabInQueryString()->tabs([
                 Forms\Components\Tabs\Tab::make(__('Look'))->icon('heroicon-o-swatch')->columns(4)->schema([

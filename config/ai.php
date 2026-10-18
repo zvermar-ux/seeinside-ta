@@ -25,9 +25,10 @@ return [
             'gpt-4.1-mini' => [0.40, 1.60],
         ],
         'gemini' => [
-            'gemini-2.5-flash' => [0.30, 2.50],
-            'gemini-2.5-flash-lite' => [0.10, 0.40],
-            'gemini-2.5-pro' => [1.25, 10.00],
+            'gemini-3.5-flash-lite' => [0.15, 1.25],
+            'gemini-3.6-flash' => [0.50, 3.00],
+            'gemini-3.8-flash' => [0.50, 3.00],
+            'gemini-4-argon' => [2.00, 10.00],
         ],
     ],
 
@@ -35,13 +36,13 @@ return [
 
     'image_models' => [
         'openai' => ['gpt-image-1' => 0.07, 'gpt-image-1-mini' => 0.02],
-        'gemini' => ['gemini-2.5-flash-image' => 0.04],
+        'gemini' => ['gemini-3.1-flash-image' => 0.04, 'gemini-3.1-flash-lite-image' => 0.02, 'gemini-2.5-flash-image' => 0.04],
     ],
 
     'defaults' => [
-        'assistant' => ['anthropic' => 'claude-sonnet-5-5', 'openai' => 'gpt-5.4-mini', 'gemini' => 'gemini-2.5-flash'],
-        'chat' => ['anthropic' => 'claude-haiku-5-5', 'openai' => 'gpt-5.4-nano', 'gemini' => 'gemini-2.5-flash-lite'],
-        'image' => ['openai' => 'gpt-image-1', 'gemini' => 'gemini-2.5-flash-image'],
+        'assistant' => ['anthropic' => 'claude-sonnet-5-5', 'openai' => 'gpt-5.4-mini', 'gemini' => 'gemini-3.6-flash'],
+        'chat' => ['anthropic' => 'claude-haiku-5-5', 'openai' => 'gpt-5.4-nano', 'gemini' => 'gemini-3.5-flash-lite'],
+        'image' => ['openai' => 'gpt-image-1', 'gemini' => 'gemini-3.1-flash-image'],
     ],
 
     'endpoints' => [

@@ -52,7 +52,7 @@ class AiSettings extends Page implements HasForms
     {
         return $this->agencyId
             ? __('Keys, models and monthly limits of :agency. Operators use the assistant, website visitors the chatbot.', ['agency' => $this->agencyName()])
-            : __('Your own AI account. Agencies can be allowed to use these keys (with a monthly cap) – choose the agency above.');
+            : __('Your own AI account (super admin). Agencies do NOT use these keys automatically: choose the agency above and either enter its own keys or turn on "May use the platform keys".');
     }
 
     public static function canAccess(): bool
@@ -179,7 +179,8 @@ class AiSettings extends Page implements HasForms
             Forms\Components\Section::make(__('Live chat bot (website)'))->icon('heroicon-o-chat-bubble-left-right')
                 ->description(__('Answers visitors on the website. A cheaper, fast model is usually enough. The widget, channels and the bot\'s behaviour are set in AI & Live chat → Live chat settings.'))
                 ->columns(4)->schema([
-                    Forms\Components\Toggle::make('chat_enabled')->label(__('AI answers on'))->inline(false),
+                    Forms\Components\Toggle::make('chat_enabled')->label(__('AI answers on'))->inline(false)
+                        ->helperText(__('Must be on for the chatbot to answer.')),
                     Forms\Components\Select::make('chat_provider')->label(__('Provider'))->options($providers)->required()->live(),
                     $this->modelField('chat_model', 'chat_provider', 'chat'),
                     $usd('chat_limit', __('Monthly limit (USD)'))->helperText(__('When used up, the bot offers Viber / Messenger / phone instead.')),

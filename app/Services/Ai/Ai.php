@@ -43,7 +43,7 @@ class Ai
             default => [$acc->exists ? $acc->assistant_enabled : true, $acc->assistant_provider ?: 'anthropic', $acc->assistant_model],
         };
         if (! $enabled) {
-            throw new AiException($feature === 'chat' ? __('The AI chatbot is turned off.') : __('AI is turned off in Settings → AI.'));
+            throw new AiException($feature === 'chat' ? __('The AI chatbot is turned off: turn on "AI answers on" in AI settings & limits → Live chat bot.') : __('AI is turned off in Settings → AI.'));
         }
         $kind = $feature === 'image' ? 'image' : ($feature === 'chat' ? 'chat' : 'assistant');
         $model = $model ?: config("ai.defaults.{$kind}.{$provider}");
@@ -63,13 +63,25 @@ class Ai
 
     public static function available(?int $agencyId, string $feature): bool
     {
+        return static::unavailableReason($agencyId, $feature) === null;
+    }
+
+    /** Why a feature cannot be used right now (null = it can) */
+    public static function unavailableReason(?int $agencyId, string $feature): ?string
+    {
         try {
-            static::resolve($agencyId, $feature);
+            $r = static::resolve($agencyId, $feature);
             static::checkBudget($agencyId, $feature, null, false);
 
-            return true;
-        } catch (AiException) {
-            return false;
+            return null;
+        } catch (AiException $e) {
+            $msg = $e->getMessage();
+            // keys saved only on the super admin's own account are not used by agencies unless allowed
+            if ($agencyId && str_contains($msg, 'API') && AiAccount::platform()->exists && ! static::account($agencyId)->platform_allowed) {
+                $msg .= ' '.__('Keys entered for "Super admin (my account / platform keys)" are not used by agencies – enter the keys for the agency, or allow it to use the platform keys.');
+            }
+
+            return $msg;
         }
     }
 
@@ -417,7 +429,11 @@ class Ai
         if (! $key) {
             throw new AiException(__('No :provider API key. Add it in Settings → AI.', ['provider' => config("ai.providers.{$provider}")]));
         }
-        $model = $provider === $acc->assistant_provider && $acc->assistant_model ? $acc->assistant_model : (string) config("ai.defaults.chat.{$provider}");
+        $model = match (true) {
+            $provider === $acc->chat_provider && filled($acc->chat_model) => $acc->chat_model,
+            $provider === $acc->assistant_provider && filled($acc->assistant_model) => $acc->assistant_model,
+            default => (string) config("ai.defaults.chat.{$provider}"),
+        };
         $r = ['account' => $acc, 'provider' => $provider, 'model' => $model, 'key' => $key, 'platform' => false];
         [$text, $in, $out] = match ($provider) {
             'openai' => static::openaiText($r, 'Answer with one word.', [['role' => 'user', 'content' => 'Say OK']], 20, false),

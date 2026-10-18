@@ -1012,5 +1012,11 @@
     "not set": "не е поставен",
     "or": "или",
     "ready": "подготвено",
-    "saved – type a new one to replace it": "зачуван – внесете нов за замена"
+    "saved – type a new one to replace it": "зачуван – внесете нов за замена",
+    "Keys entered for \"Super admin (my account / platform keys)\" are not used by agencies – enter the keys for the agency, or allow it to use the platform keys.": "Клучевите внесени за „Суперадмин (моја сметка / клучеви од платформата)“ не ги користат агенциите – внесете клучеви за агенцијата или дозволете ѝ да ги користи клучевите од платформата.",
+    "Open AI settings & limits of this agency": "Отвори AI подесувања и лимити за оваа агенција",
+    "Without AI the chat still offers Viber / Messenger / phone and collects contacts.": "Без AI, четот и понатаму нуди Viber / Messenger / телефон и собира контакти.",
+    "Your own AI account (super admin). Agencies do NOT use these keys automatically: choose the agency above and either enter its own keys or turn on \"May use the platform keys\".": "Ваша AI сметка (суперадмин). Агенциите НЕ ги користат овие клучеви автоматски: изберете ја агенцијата погоре и внесете ѝ клучеви или вклучете „Смее да ги користи клучевите од платформата“.",
+    "Must be on for the chatbot to answer.": "Мора да е вклучено за ботот да одговара.",
+    "The AI chatbot is turned off: turn on \"AI answers on\" in AI settings & limits → Live chat bot.": "AI чет-ботот е исклучен: вклучете „AI одговорите вклучени“ во AI подесувања и лимити → Live chat бот."
 }

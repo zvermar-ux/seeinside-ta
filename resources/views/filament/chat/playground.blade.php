@@ -13,9 +13,10 @@
             </x-filament::input.select>
         </x-filament::input.wrapper>
         <x-filament::button color="gray" icon="heroicon-m-arrow-path" wire:click="restart">{{ __('New conversation') }}</x-filament::button>
-        @unless ($this->aiReady())
-            <span style="color:rgb(var(--warning-600));font-size:.85rem">● {{ __('AI is not available for the chat – check AI settings & limits.') }}</span>
-        @endunless
+        @if ($why = $this->aiReason())
+            <span style="color:rgb(var(--warning-600));font-size:.85rem">● {{ $why }}
+                <a href="{{ \App\Filament\Pages\AiSettings::getUrl(auth()->user()->isSuperAdmin() ? ['agency' => $this->agencyId] : []) }}" style="text-decoration:underline">{{ __('Open AI settings & limits of this agency') }} →</a></span>
+        @endif
     </div>
 
     <div class="ta-chat-thread" x-data x-effect="$nextTick(() => $el.scrollTop = $el.scrollHeight)">

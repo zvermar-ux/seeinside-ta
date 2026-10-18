@@ -84,6 +84,11 @@ class ChatPlayground extends Page
         return Ai::available($this->agencyId, 'chat');
     }
 
+    public function aiReason(): ?string
+    {
+        return Ai::unavailableReason($this->agencyId, 'chat');
+    }
+
     protected function conversation(): ChatConversation
     {
         $c = $this->conversationId ? ChatConversation::withoutGlobalScopes()->where('agency_id', $this->agencyId)->find($this->conversationId) : null;
