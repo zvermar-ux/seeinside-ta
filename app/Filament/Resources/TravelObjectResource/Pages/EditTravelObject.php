@@ -19,6 +19,7 @@ class EditTravelObject extends EditRecord
                 ->requiresConfirmation()
                 ->modalDescription(__('A new, inactive record is created with the name, description, location and photos. Prices and dates are added there.'))
                 ->action(fn () => $this->redirect(\App\Services\Aries\AriesConverter::convert($this->record))),
+            \App\Filament\Resources\TravelObjectResource::aiConvertAction(Actions\Action::class),
             Actions\LocaleSwitcher::make(),
             Actions\DeleteAction::make(),
         ];

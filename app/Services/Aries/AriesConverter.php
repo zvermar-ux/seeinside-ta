@@ -58,7 +58,7 @@ class AriesConverter
         return AccommodationResource::getUrl('edit', ['record' => $acc]);
     }
 
-    protected static function copyImages(TravelObject $from, $to): void
+    public static function copyImages(TravelObject $from, $to): void
     {
         foreach ($from->images as $i => $img) {
             $to->media()->create([

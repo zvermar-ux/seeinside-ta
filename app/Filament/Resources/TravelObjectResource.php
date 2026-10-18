@@ -209,6 +209,7 @@ class TravelObjectResource extends Resource
                         Notification::make()->success()->title(__('Created'))->send();
                         $livewire->redirect($url);
                     }),
+                static::aiConvertAction(Tables\Actions\Action::class),
                 Tables\Actions\EditAction::make(),
                 Duplicate::action(function (TravelObject $from, TravelObject $to) {
                     foreach ($from->images as $img) {
@@ -248,12 +249,79 @@ class TravelObjectResource extends Resource
                             Notification::make()->success()->title(__('Created :count records', ['count' => $records->count()]))->send();
                         })
                         ->deselectRecordsAfterCompletion(),
+                    Tables\Actions\BulkAction::make('aiConvert')->label(__('Create website offer with AI'))->icon('heroicon-o-sparkles')->color('info')
+                        ->modalHeading(__('Create website offers with AI'))
+                        ->modalDescription(__('AI reads every record and fills each field of the new tour / hotel: texts in MK and EN, type, stars, board, rooms, amenities, distances, program… New records are inactive. Up to 10 records at a time.'))
+                        ->form(static::aiConvertForm())
+                        ->action(function (Collection $records, array $data) {
+                            $ok = 0;
+                            $errors = [];
+                            foreach ($records->take(10) as $r) {
+                                try {
+                                    \App\Services\Aries\AriesAiConverter::convert($r, (string) ($data['extra'] ?? ''), $data['tone'] ?? 'friendly');
+                                    $ok++;
+                                } catch (\Throwable $e) {
+                                    $errors[] = $r->name.': '.$e->getMessage();
+                                    if ($e instanceof \App\Services\Ai\AiException && str_contains($e->getMessage(), '€')) {
+                                        break;   // budget reached – stop
+                                    }
+                                }
+                            }
+                            $n = Notification::make()->title(__('Created :count records', ['count' => $ok]));
+                            ($errors ? $n->warning()->body(implode("\n", array_slice($errors, 0, 5)))->persistent() : $n->success()->body(__('Check them and activate.')))->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('name')
             ->striped()
             ->paginated([25, 50, 100, 250]);
+    }
+
+    public static function aiConvertForm(): array
+    {
+        return [
+            Forms\Components\Textarea::make('extra')->label(__('Extra instructions for AI (optional)'))->rows(3)
+                ->placeholder(__('e.g. stress the beach and family rooms; title without the word "hotel"; departures from Skopje by bus')),
+            Forms\Components\Select::make('tone')->label(__('Tone'))->default('friendly')->selectablePlaceholder(false)->options([
+                'friendly' => __('Warm and friendly'), 'premium' => __('Elegant / premium'), 'short' => __('Short and factual'), 'fun' => __('Fun, for young people'),
+            ]),
+        ];
+    }
+
+    /** "✨" next to the green button: same conversion, but AI distributes the data into the right fields */
+    public static function aiConvertAction(string $class)
+    {
+        return $class::make('aiConvert')->label(__('Create website offer with AI'))->icon('heroicon-o-sparkles')->color('info')
+            ->when($class === Tables\Actions\Action::class, fn ($a) => $a->iconButton())
+            ->tooltip(fn (TravelObject $record) => $record->type === ObjectType::Arrangement ? __('Create an organized tour with AI – every field filled from this record') : __('Create a hotel / apartment with AI – every field, rooms and amenities filled from this record'))
+            ->modalHeading(fn (TravelObject $record) => __('Create with AI').': '.$record->name)
+            ->modalDescription(function (TravelObject $record) {
+                $why = \App\Services\Ai\Ai::unavailableReason($record->agency_id, 'assistant');
+
+                return $why ?: __('AI reads all imported data (and the other rooms of the same object) and puts each piece of information into the right field: texts in MK and EN, type, stars, board, rooms, amenities, distances, program by days, included / not included. Photos are copied. The new record is inactive – check it and activate.');
+            })
+            ->modalSubmitActionLabel(__('Create with AI'))
+            ->modalIcon('heroicon-o-sparkles')
+            ->form(static::aiConvertForm())
+            ->action(function (TravelObject $record, array $data, $livewire) {
+                try {
+                    $r = \App\Services\Aries\AriesAiConverter::convert($record, (string) ($data['extra'] ?? ''), $data['tone'] ?? 'friendly');
+                } catch (\Throwable $e) {
+                    report($e);
+                    Notification::make()->danger()->title(__('AI'))->body($e->getMessage())->persistent()->send();
+
+                    return;
+                }
+                Notification::make()->success()->title(__('Created with AI'))
+                    ->body(trim(trans_choice(':count field filled.|:count fields filled.', $r['filled'], ['count' => $r['filled']])
+                        .($r['rooms'] ? ' '.__(':count rooms', ['count' => $r['rooms']]).'.' : '')
+                        .($r['days'] ? ' '.__(':count days of the program.', ['count' => $r['days']]) : '')
+                        .' '.__('Check the texts and activate.')))
+                    ->persistent()->send();
+                $livewire->redirect($r['url']);
+            });
     }
 
     protected static function bulkUpdate(Collection $records, array $data): void

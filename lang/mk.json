@@ -1278,5 +1278,18 @@
     "to refund": "за враќање",
     "vs last month": "во однос на минатиот месец",
     "vs last year": "во однос на минатата година",
-    "who handled the booking; the offer cost is shared by sales": "кој ја обработил резервацијата; трошокот на понудата се дели според продажбата"
+    "who handled the booking; the offer cost is shared by sales": "кој ја обработил резервацијата; трошокот на понудата се дели според продажбата",
+    "Create website offer with AI": "Креирај веб-понуда со AI",
+    "Create website offers with AI": "Креирај веб-понуди со AI",
+    "AI reads every record and fills each field of the new tour / hotel: texts in MK and EN, type, stars, board, rooms, amenities, distances, program… New records are inactive. Up to 10 records at a time.": "AI го чита секој запис и го пополнува секое поле на новата тура / хотел: текстови на МК и EN, тип, ѕвезди, услуга, соби, погодности, оддалеченост, програма… Новите записи се неактивни. До 10 записи одеднаш.",
+    "Check them and activate.": "Проверете ги и активирајте ги.",
+    "Extra instructions for AI (optional)": "Дополнителни упатства за AI (по избор)",
+    "e.g. stress the beach and family rooms; title without the word \"hotel\"; departures from Skopje by bus": "пр. нагласи ја плажата и семејните соби; наслов без зборот „хотел“; поаѓање од Скопје со автобус",
+    "Create an organized tour with AI – every field filled from this record": "Креирај организирана тура со AI – секое поле пополнето од овој запис",
+    "Create a hotel / apartment with AI – every field, rooms and amenities filled from this record": "Креирај хотел / апартман со AI – секое поле, соби и погодности пополнети од овој запис",
+    "Created with AI": "Креирано со AI",
+    "AI reads all imported data (and the other rooms of the same object) and puts each piece of information into the right field: texts in MK and EN, type, stars, board, rooms, amenities, distances, program by days, included / not included. Photos are copied. The new record is inactive – check it and activate.": "AI ги чита сите увезени податоци (и другите соби на истиот објект) и секоја информација ја става во соодветното поле: текстови на МК и EN, тип, ѕвезди, услуга, соби, погодности, оддалеченост, програма по денови, вклучено / не е вклучено. Сликите се копираат. Новиот запис е неактивен – проверете го и активирајте го.",
+    ":count rooms": ":count соби",
+    "Check the texts and activate.": "Проверете ги текстовите и активирајте.",
+    "AI is not available.": "AI не е достапен."
 }
