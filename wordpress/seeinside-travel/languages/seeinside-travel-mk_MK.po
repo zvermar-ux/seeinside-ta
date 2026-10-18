@@ -1912,6 +1912,426 @@ msgstr "пишува…"
 msgid "Visa info cards"
 msgstr "Инфо картички за виза"
 
+msgid "\"+5\" with the other dates"
+msgstr "„+5“ со другите датуми"
+
+msgid "\"All offers\" first"
+msgstr "Прво „Сите понуди“"
+
+msgid "\"Show more\" button"
+msgstr "Копче „Прикажи повеќе“"
+
+msgid "Accent"
+msgstr "Акцент"
+
+msgid "Alignment"
+msgstr "Порамнување"
+
+msgid "All levels"
+msgstr "Сите нивоа"
+
+msgid "All lists"
+msgstr "Сите листи"
+
+msgid "All offers"
+msgstr "Сите понуди"
+
+msgid "Any list can also be written directly:"
+msgstr "Секоја листа може да се напише и директно:"
+
+msgid "Archive & category pages"
+msgstr "Архиви и страници на категории"
+
+msgid "Back to the standard design?"
+msgstr "Да се врати стандардниот дизајн?"
+
+msgid "Badges (last minute, first minute, best seller)"
+msgstr "Ознаки (last minute, first minute, best seller)"
+
+msgid "Board (BB, HB, AI…)"
+msgstr "Услуга (BB, HB, AI…)"
+
+msgid "Bus"
+msgstr "Автобус"
+
+msgid "Button"
+msgstr "Копче"
+
+msgid "Button \"View all\""
+msgstr "Копче „Види ги сите“"
+
+msgid "Button link"
+msgstr "Линк на копчето"
+
+msgid "Button look"
+msgstr "Изглед на копчето"
+
+msgid "Button text"
+msgstr "Текст на копчето"
+
+msgid "Card"
+msgstr "Картичка"
+
+msgid "Card designs"
+msgstr "Дизајн на картички"
+
+msgid "Card: %s"
+msgstr "Картичка: %s"
+
+msgid "Categories"
+msgstr "Категории"
+
+msgid "Changing it reloads the form."
+msgstr "Со промена формата се вчитува повторно."
+
+msgid "Charter"
+msgstr "Чартер"
+
+msgid "Charter flight"
+msgstr "Чартер лет"
+
+msgid "Charters"
+msgstr "Чартери"
+
+msgid "Choose a list."
+msgstr "Изберете листа."
+
+msgid "Classic – photo on top, price and button below"
+msgstr "Класична – слика горе, цена и копче долу"
+
+msgid "Click to copy"
+msgstr "Кликни за копирање"
+
+msgid "Coloured and underlined, e.g. \"патувања\"."
+msgstr "Обоен и подвлечен, пр. „патувања“."
+
+msgid "Computer"
+msgstr "Компјутер"
+
+msgid "Copied"
+msgstr "Копирано"
+
+msgid "Create"
+msgstr "Креирај"
+
+msgid "Dates (+ other dates)"
+msgstr "Датуми (+ други датуми)"
+
+msgid "Delete"
+msgstr "Избриши"
+
+msgid "Delete this list?"
+msgstr "Да се избрише листата?"
+
+msgid "Drag"
+msgstr "Влечи"
+
+msgid "Duplicate"
+msgstr "Дуплирај"
+
+msgid "Edit"
+msgstr "Уреди"
+
+msgid "Elements – tick, drag to change the order"
+msgstr "Елементи – штиклирајте, повлечете за редослед"
+
+msgid "Empty ones"
+msgstr "Празни"
+
+msgid "Endless (start again after the last)"
+msgstr "Бесконечно (по последната – повторно од почеток)"
+
+msgid "Every list can be placed anywhere with its shortcode or with the Elementor widget \"Travel: list (designed)\". Make as many lists as you need for each type – e.g. \"Tours – Europe carousel\" and \"Tours – Greece grid\"."
+msgstr "Секоја листа може да се постави каде било со нејзиниот шорткод или со Elementor виџетот „Travel: листа (дизајнирана)“. Направете колку листи ви требаат за секој тип – пр. „Тури – Европа карусел“ и „Тури – Грција грид“."
+
+msgid "Filters on the side"
+msgstr "Филтри од страна"
+
+msgid "Flag of the country"
+msgstr "Знаме на државата"
+
+msgid "From the list"
+msgstr "Од листата"
+
+msgid "Grid with filters (categories on the side)"
+msgstr "Грид со филтри (категории од страна)"
+
+msgid "Grid, masonry and carousel."
+msgstr "Грид, масонри и карусел."
+
+msgid "Heading above the list"
+msgstr "Наслов над листата"
+
+msgid "Heart badge on featured offers"
+msgstr "Ознака со срце на истакнати понуди"
+
+msgid "Hide categories without offers"
+msgstr "Скриј категории без понуди"
+
+msgid "Highlighted word in the title"
+msgstr "Истакнат збор во насловот"
+
+msgid "Homepage slider"
+msgstr "Слајдер на почетна"
+
+msgid "Horizontal – photo left, text right"
+msgstr "Хоризонтална – слика лево, текст десно"
+
+msgid "Hotel stars"
+msgstr "Ѕвезди на хотелот"
+
+msgid "Layout settings"
+msgstr "Подесувања на изгледот"
+
+msgid "Lift"
+msgstr "Подигни"
+
+msgid "List not found – check the id in SeeInside Travel → Lists & cards."
+msgstr "Листата не е пронајдена – проверете го id во SeeInside Travel → Листи и картички."
+
+msgid "Lists"
+msgstr "Листи"
+
+msgid "Lists & cards"
+msgstr "Листи и картички"
+
+msgid "Lists and card designs are made in SeeInside Travel → Lists & cards. Fields below are optional overrides."
+msgstr "Листите и дизајнот на картичките се прават во SeeInside Travel → Листи и картички. Полињата подолу се опционални промени."
+
+msgid "Masonry grid"
+msgstr "Масонри грид"
+
+msgid "Minimal – photo and title (category sliders)"
+msgstr "Минимална – слика и наслов (слајдери на категории)"
+
+msgid "More offers"
+msgstr "Повеќе понуди"
+
+msgid "Most offers"
+msgstr "Најмногу понуди"
+
+msgid "New list"
+msgstr "Нова листа"
+
+msgid "No lists yet."
+msgstr "Сè уште нема листи."
+
+msgid "None ticked = all."
+msgstr "Ништо штиклирано = сите."
+
+msgid "Nothing"
+msgstr "Ништо"
+
+msgid "Nothing of this type yet – sync from SeeInside first."
+msgstr "Сè уште нема ништо од овој тип – прво синхронизирајте од SeeInside."
+
+msgid "Number of offers"
+msgstr "Број на понуди"
+
+msgid "Number of offers and promo"
+msgstr "Број на понуди и промо"
+
+msgid "On a category page: show that category"
+msgstr "На страница на категорија: прикажи ја таа категорија"
+
+msgid "On mouse over"
+msgstr "При поминување со глувчето"
+
+msgid "Only"
+msgstr "Само"
+
+msgid "Only for the layout \"Grid with filters\"."
+msgstr "Само за изгледот „Грид со филтри“."
+
+msgid "Only for you (in the list of lists and in Elementor)."
+msgstr "Само за вас (во листата на листи и во Elementor)."
+
+msgid "Only main ones"
+msgstr "Само главните"
+
+msgid "Open"
+msgstr "Отвори"
+
+msgid "Page numbers"
+msgstr "Броеви на страници"
+
+msgid "Photo"
+msgstr "Слика"
+
+msgid "Photo shape"
+msgstr "Облик на сликата"
+
+msgid "Photo, flag and badges are always on the photo. Price followed by the button share one line."
+msgstr "Сликата, знамето и ознаките се секогаш на сликата. Цената и копчето по неа се во ист ред."
+
+msgid "Postage stamp – travel style (as in the example)"
+msgstr "Поштенска марка – патнички стил (како во примерот)"
+
+msgid "Postmark on the stamp"
+msgstr "Печат на марката"
+
+msgid "Rating (reviews)"
+msgstr "Оценка (рецензии)"
+
+msgid "Round arrow"
+msgstr "Кружна стрелка"
+
+msgid "Save card design"
+msgstr "Зачувај дизајн на картичка"
+
+msgid "Save list"
+msgstr "Зачувај листа"
+
+msgid "Shortcode"
+msgstr "Шорткод"
+
+msgid "Show more"
+msgstr "Прикажи повеќе"
+
+msgid "Shows"
+msgstr "Прикажува"
+
+msgid "Slider 1 – cards on an arc"
+msgstr "Слајдер 1 – картички во лак"
+
+msgid "Slider 2 – big card in the middle (coverflow)"
+msgstr "Слајдер 2 – голема картичка во средина (coverflow)"
+
+msgid "Sliders"
+msgstr "Слајдери"
+
+msgid "Small text"
+msgstr "Мал текст"
+
+msgid "Small text above"
+msgstr "Мал текст горе"
+
+msgid "Small text above the title (country / category)"
+msgstr "Мал текст над насловот (држава / категорија)"
+
+msgid "Soft"
+msgstr "Мека"
+
+msgid "Solid"
+msgstr "Полно"
+
+msgid "Space between cards"
+msgstr "Растојание меѓу картичките"
+
+msgid "Standard design"
+msgstr "Стандарден дизајн"
+
+msgid "Standard grid"
+msgstr "Стандарден грид"
+
+msgid "Strong"
+msgstr "Силна"
+
+msgid "Subtitle (route, performer, processing time)"
+msgstr "Поднаслов (маршрута, изведувач, рок)"
+
+msgid "Tablet"
+msgstr "Таблет"
+
+msgid "Text"
+msgstr "Текст"
+
+msgid "Text above the price"
+msgstr "Текст над цената"
+
+msgid "Text alignment"
+msgstr "Порамнување на текстот"
+
+msgid "Text in the heart badge"
+msgstr "Текст во ознаката со срце"
+
+msgid "Text on the photo (portrait)"
+msgstr "Текст на сликата (вертикално)"
+
+msgid "The card design of a type is used in all its lists, archives, [sta_list] and Elementor widgets (unless a list has its own design)."
+msgstr "Дизајнот на картичката на еден тип се користи во сите негови листи, архиви, [sta_list] и Elementor виџети (освен ако листата има свој дизајн)."
+
+msgid "This list has its own card design"
+msgstr "Оваа листа има свој дизајн на картичка"
+
+msgid "Tilt"
+msgstr "Наклони"
+
+msgid "Tip under the filters"
+msgstr "Совет под филтрите"
+
+msgid "Transport (plane / bus)"
+msgstr "Превоз (авион / автобус)"
+
+msgid "Travel: list (designed)"
+msgstr "Travel: листа (дизајнирана)"
+
+msgid "Under"
+msgstr "Под"
+
+msgid "Unsaved changes will be lost. Continue?"
+msgstr "Незачуваните промени ќе се изгубат. Продолжи?"
+
+msgid "Which"
+msgstr "Кои"
+
+msgid "Which list is shown on the automatic pages of each type and category (when the theme / Elementor has no own template). The list keeps its layout and filters; on a category page it shows only that category."
+msgstr "Која листа се прикажува на автоматските страници на секој тип и категорија (кога темата / Elementor нема свој шаблон). Листата го задржува изгледот и филтрите; на страница на категорија ја прикажува само таа категорија."
+
+msgid "Without saving a list"
+msgstr "Без зачувување листа"
+
+msgid "Word after the number"
+msgstr "Збор по бројот"
+
+msgid "Word after the number of offers"
+msgstr "Збор по бројот на понуди"
+
+msgid "Zoom the photo"
+msgstr "Зумирај ја сликата"
+
+msgid "computer"
+msgstr "компјутер"
+
+msgid "e.g. \"7 патувања\"."
+msgstr "пр. „7 патувања“."
+
+msgid "e.g. \"<b>Совет од експертот:</b> есента носи помали гужви…\""
+msgstr "пр. „<b>Совет од експертот:</b> есента носи помали гужви…“"
+
+msgid "featured offers"
+msgstr "истакнати понуди"
+
+msgid "last minute offers"
+msgstr "last minute понуди"
+
+msgid "lines at most"
+msgstr "реда најмногу"
+
+msgid "or edit the design for all lists of this type"
+msgstr "или уредете го дизајнот за сите листи од овој тип"
+
+msgid "phone"
+msgstr "телефон"
+
+msgid "px fixed height (0 = by shape)"
+msgstr "px фиксна висина (0 = според обликот)"
+
+msgid "seconds per slide (0 = no autoplay)"
+msgstr "секунди по слајд (0 = без автоматско лизгање)"
+
+msgid "source: tour, accommodation, event, visa, last_minute, charter, slide, destination, group, tour_type, event_category, hotel_type · layout: grid, filters, arc, coverflow, carousel, masonry · also: columns, autoplay, orderby, featured, group, tour_type, category, hotel_type, country, eyebrow, subtitle, link, link_text, id=\"3\" (+ overrides)"
+msgstr "source: tour, accommodation, event, visa, last_minute, charter, slide, destination, group, tour_type, event_category, hotel_type · layout: grid, filters, arc, coverflow, carousel, masonry · исто така: columns, autoplay, orderby, featured, group, tour_type, category, hotel_type, country, eyebrow, subtitle, link, link_text, id=\"3\" (+ промени)"
+
+msgid "tablet"
+msgstr "таблет"
+
+msgid "words"
+msgstr "зборови"
+
+msgid "– choose –"
+msgstr "– изберете –"
+
 msgid "%d night"
 msgid_plural "%d nights"
 msgstr[0] "%d ноќевање"

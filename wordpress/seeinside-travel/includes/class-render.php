@@ -549,44 +549,15 @@ class STA_Render
 
     /* ---------------- cards for listings ---------------- */
 
+    /** Card of one offer – drawn with the card design of its type (SeeInside Travel → Lists & cards) */
     public static function card(int $postId): string
     {
-        $d = sta_data($postId);
-        if (! $d) {
+        $it = STA_Items::from_post($postId);
+        if (! $it) {
             return '';
         }
-        $type = $d['type'];
-        $price = $type === 'visa' ? ($d['price'] ?? null) : ($d['price_from'] ?? null);
-        $lm = $d['promotions']['last_minute'] ?? null;
-        if ($lm && $price) {
-            $price = $lm['price'] ?? ($lm['discount_percent'] ? $price * (1 - $lm['discount_percent'] / 100) : $price);
-        }
-        $meta = match ($type) {
-            'tour' => implode(' · ', array_filter([
-                ! empty($d['duration']['days']) ? sprintf(_n('%d day', '%d days', $d['duration']['days'], 'seeinside-travel'), $d['duration']['days']) : null,
-                $d['is_flight'] ? __('Flight', 'seeinside-travel') : sta_t($d['tour_type']['label'] ?? null),
-                ! empty($d['next_departure']) ? sta_date($d['next_departure']) : null,
-            ])),
-            'event' => implode(' · ', array_filter([sta_date($d['starts_at'] ?? null), $d['city'] ?? null])),
-            'accommodation' => implode(' · ', array_filter([! empty($d['stars']) ? str_repeat('★', (int) $d['stars']) : null, $d['place'] ?? null])),
-            'visa' => sta_t($d['category']['label'] ?? null),
-            default => '',
-        };
-        $place = match ($type) {
-            'tour' => trim(($d['location'] ?? '').', '.($d['country'] ?? ''), ', '),
-            'accommodation' => $d['country'] ?? '',
-            'event' => $d['venue'] ?? '',
-            default => $d['country'] ?? '',
-        };
-        $title = sta_lang() === 'en' ? (get_post_meta($postId, 'title_en', true) ?: get_the_title($postId)) : get_the_title($postId);
+        STA_Listings::enqueue();
 
-        return '<article class="sta-card sta-card-'.esc_attr($type).'"><a href="'.esc_url(get_permalink($postId)).'" class="sta-card-link">'
-            .'<div class="sta-card-img">'.(has_post_thumbnail($postId) ? get_the_post_thumbnail($postId, 'medium_large', ['loading' => 'lazy']) : '<span class="sta-card-noimg"></span>')
-            .'<div class="sta-card-badges">'.self::promo_badges($d).'</div></div>'
-            .'<div class="sta-card-body">'.($place ? '<div class="sta-card-place">'.sta_icon('pin').esc_html($place).'</div>' : '')
-            .'<h3 class="sta-card-title">'.esc_html($title).'</h3>'.STA_Reviews::card_badge($postId)
-            .($meta ? '<div class="sta-card-meta">'.esc_html($meta).'</div>' : '')
-            .'<div class="sta-card-foot">'.($price !== null ? '<span><small>'.esc_html__('from', 'seeinside-travel').'</small> <b>'.esc_html(sta_money($price, $d['currency'] ?? 'EUR')).'</b></span>' : '<span></span>').'<span class="sta-card-more">'.esc_html__('Details', 'seeinside-travel').' →</span></div>'
-            .'</div></a></article>';
+        return STA_Cards::render($it, null, $it['type']);
     }
 }

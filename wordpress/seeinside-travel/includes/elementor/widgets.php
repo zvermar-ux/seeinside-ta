@@ -218,6 +218,36 @@ class STA_Widget_Slider extends STA_Simple_Widget
     }
 }
 
+class STA_Widget_Listing extends STA_Simple_Widget
+{
+    public function get_name(): string { return 'sta-listing'; }
+    public function get_title(): string { return __('Travel: list (designed)', 'seeinside-travel'); }
+    public function get_icon(): string { return 'eicon-posts-carousel'; }
+    public function get_script_depends(): array { return ['sta-listings']; }
+    public function get_style_depends(): array { return ['sta-listings']; }
+    protected function extra_controls(): void
+    {
+        $opts = ['' => __('– choose –', 'seeinside-travel')];
+        foreach (STA_Listings::all() as $id => $c) {
+            $opts[(string) $id] = ($c['name'] ?? '#'.$id).' · '.(STA_Listings::layouts()[$c['layout'] ?? 'grid'] ?? '');
+        }
+        $this->add_control('note', ['type' => Controls_Manager::RAW_HTML, 'raw' => esc_html__('Lists and card designs are made in SeeInside Travel → Lists & cards. Fields below are optional overrides.', 'seeinside-travel'), 'content_classes' => 'elementor-descriptor']);
+        $this->add_control('list', ['label' => __('List', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'options' => $opts, 'default' => (string) (array_key_first(STA_Listings::all()) ?? '')]);
+        $this->add_control('layout', ['label' => __('Layout', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'options' => ['' => __('From the list', 'seeinside-travel')] + STA_Listings::layouts(), 'default' => '']);
+        $this->add_control('limit', ['label' => __('Number', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => '']);
+        $this->add_control('columns', ['label' => __('Columns', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => '', 'min' => 1, 'max' => 6]);
+        $this->add_control('current', ['label' => __('On a category page: show that category', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => '']);
+    }
+    protected function html(array $s): string
+    {
+        if (empty($s['list'])) {
+            return '<div class="sta-empty">'.esc_html__('Choose a list.', 'seeinside-travel').'</div>';
+        }
+
+        return STA_Listings::shortcode(array_filter(['id' => $s['list'], 'layout' => $s['layout'] ?? '', 'limit' => $s['limit'] ?? '', 'columns' => $s['columns'] ?? '', 'current' => ! empty($s['current']) ? '1' : ''], fn ($v) => $v !== '' && $v !== null));
+    }
+}
+
 class STA_Widget_Reviews extends STA_Simple_Widget
 {
     public function get_name(): string { return 'sta-reviews'; }
@@ -292,5 +322,5 @@ class STA_Widget_Destinations extends STA_Simple_Widget
 
 function sta_elementor_widget_classes(): array
 {
-    return [STA_Widget_Section::class, STA_Widget_List::class, STA_Widget_Slider::class, STA_Widget_Reviews::class, STA_Widget_Search::class, STA_Widget_Flights::class, STA_Widget_Charters::class, STA_Widget_Status::class, STA_Widget_Destinations::class];
+    return [STA_Widget_Section::class, STA_Widget_List::class, STA_Widget_Slider::class, STA_Widget_Listing::class, STA_Widget_Reviews::class, STA_Widget_Search::class, STA_Widget_Flights::class, STA_Widget_Charters::class, STA_Widget_Status::class, STA_Widget_Destinations::class];
 }

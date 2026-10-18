@@ -145,10 +145,14 @@ class STA_Frontend
         if (! $q->have_posts()) {
             return '<div class="sta sta-empty">'.esc_html__('No offers at the moment.', 'seeinside-travel').'</div>';
         }
-        $html = '<div class="sta sta-grid" style="--sta-cols:'.max(1, min(6, (int) $a['columns'])).'">';
+        STA_Listings::enqueue();
+        $cols = max(1, min(6, (int) $a['columns']));
+        $html = '<div class="sta sta-l sta-l--grid" style="--l-cols:'.$cols.';--l-cols-t:'.min($cols, 2).';--l-cols-m:1"><div class="sta-l-items">';
         foreach ($q->posts as $p) {
-            $html .= STA_Render::card($p->ID);
+            $card = STA_Render::card($p->ID);
+            $html .= $card ? '<div class="sta-l-cell">'.$card.'</div>' : '';
         }
+        $html .= '</div>';
         $html .= '</div>';
         if ($a['pagination'] && $q->max_num_pages > 1) {
             $html .= '<nav class="sta sta-pagination">'.paginate_links(['total' => $q->max_num_pages, 'current' => max(1, (int) get_query_var('paged'), (int) ($_GET['sta_page'] ?? 1))]).'</nav>';
