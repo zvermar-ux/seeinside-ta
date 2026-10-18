@@ -23,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // media library: "From library" button on every image field, uploads go into the library
+        \App\Filament\Support\LibraryPicker::boot();
 
         // Every admin table: row actions (edit, duplicate, delete…) as compact icons at the start of the row
         Table::configureUsing(function (Table $table) {

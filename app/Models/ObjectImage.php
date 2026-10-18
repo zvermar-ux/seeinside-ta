@@ -27,7 +27,7 @@ class ObjectImage extends Model
         });
 
         static::deleted(function (ObjectImage $image) {
-            if ($image->path && ! static::where('path', $image->path)->exists()) {
+            if ($image->path && ! static::where('path', $image->path)->exists() && ! LibraryFile::where('path', $image->path)->exists()) {
                 Storage::disk('public')->delete($image->path);
             }
             $image->travelObject?->refreshCover();

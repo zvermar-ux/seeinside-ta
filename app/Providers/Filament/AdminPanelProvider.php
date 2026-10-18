@@ -97,6 +97,7 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::STYLES_AFTER, fn () => view('filament.styles'))
             ->renderHook(PanelsRenderHook::STYLES_AFTER, fn () => view('filament.branding-styles'))
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.branding-head'))
+            ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.library.assets'))
             ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_BEFORE, fn () => view('filament.login-intro'))
             ->renderHook(PanelsRenderHook::FOOTER, fn () => view('filament.footer'))
             ->renderHook(PanelsRenderHook::SIDEBAR_FOOTER, fn (): string => Blade::render('<x-agency-badge />'))

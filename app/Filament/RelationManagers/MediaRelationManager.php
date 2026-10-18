@@ -70,6 +70,25 @@ class MediaRelationManager extends RelationManager
                             ]);
                         }
                     }),
+                Tables\Actions\Action::make('fromLibrary')->label(__('Add from library'))->icon('heroicon-o-photo')->color('gray')
+                    ->modalHeading(__('Choose images from the library'))->modalWidth('6xl')->modalSubmitActionLabel(__('Add'))
+                    ->form(fn () => [
+                        Forms\Components\ViewField::make('picked')->hiddenLabel()->default([])->view('filament.library.picker')
+                            ->viewData(['multiple' => true, 'agency' => $this->getOwnerRecord()->getAttribute('agency_id') ?? $this->getOwnerRecord()->accommodation?->agency_id]),
+                    ])
+                    ->action(function (array $data) {
+                        $owner = $this->getOwnerRecord();
+                        $sort = (int) $owner->media()->max('sort_order');
+                        $hasMain = $owner->media()->where('is_main', true)->exists();
+                        $have = $owner->media()->pluck('path')->all();
+                        $i = 0;
+                        foreach (array_values(array_filter((array) ($data['picked'] ?? []), 'is_string')) as $path) {
+                            if (in_array($path, $have, true)) {
+                                continue;
+                            }
+                            $owner->media()->create(['path' => $path, 'sort_order' => ++$sort, 'is_main' => ! $hasMain && $i++ === 0]);
+                        }
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()->iconButton(),

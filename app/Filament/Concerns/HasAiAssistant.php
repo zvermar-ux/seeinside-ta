@@ -370,6 +370,7 @@ trait HasAiAssistant
                     $ext = str_starts_with($binary, "\x89PNG") ? 'png' : (str_starts_with($binary, "\xFF\xD8") ? 'jpg' : 'webp');
                     $path = 'ai/'.now()->format('Y/m').'/'.Str::slug(Str::limit($data['prompt'], 40, '')).'-'.Str::lower(Str::random(6)).'.'.$ext;
                     Storage::disk('public')->put($path, $binary);
+                    \App\Services\Media\MediaLibrary::register($path, $this->aiAgencyId(), 'ai', 'AI – '.Str::limit($data['prompt'], 60, ''))?->update(['folder' => 'ai']);
 
                     $target = $this->aiImageTarget();
                     if ($target === 'gallery') {

@@ -49,3 +49,7 @@ Route::get('/manifest.webmanifest', function () {
         ] : null,
     ]), 200, ['Content-Type' => 'application/manifest+json'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 })->name('app.manifest');
+
+// Media library picker (JSON for the "From library" button)
+Route::get('/admin/library/browse', [\App\Http\Controllers\Admin\LibraryController::class, 'browse'])
+    ->middleware(['web', 'auth'])->name('library.browse');

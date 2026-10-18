@@ -31,7 +31,7 @@ class Media extends Model
         static::deleted(function (Media $media) {
             $owner = $media->mediable;
             $usedAsCover = $owner && $owner->getAttribute('cover_image') === $media->path;
-            if ($media->path && ! $usedAsCover && ! static::where('path', $media->path)->exists()) {
+            if ($media->path && ! $usedAsCover && ! static::where('path', $media->path)->exists() && ! LibraryFile::where('path', $media->path)->exists()) {
                 Storage::disk('public')->delete($media->path);
             }
             $owner?->refreshCover();
