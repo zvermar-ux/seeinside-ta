@@ -23,13 +23,25 @@
     if (body && body.errors) { return Object.keys(body.errors).map(function (k) { return esc([].concat(body.errors[k]).join(' ')); }).join('<br>'); }
     return esc((body && body.message) || T.error);
   }
+  // clear the red mark as soon as the visitor fixes a field
+  document.addEventListener('change', function (e) {
+    var el = e.target; if (!el || !el.closest || !el.closest('.sta-form')) return;
+    if (el.classList.contains('is-invalid')) el.classList.remove('is-invalid');
+    var lbl = el.closest('.sta-check'); if (lbl && el.checked) lbl.classList.remove('is-invalid');
+  });
   function validate(form) {
     var ok = true;
     $$('[required]', form).forEach(function (el) {
       var bad = el.type === 'checkbox' ? !el.checked : el.type === 'radio' ? !$$('[name="' + el.name + '"]', form).some(function (r) { return r.checked; }) : !String(el.value || '').trim() || (el.validity && !el.validity.valid);
       el.classList.toggle('is-invalid', bad); if (bad) ok = false;
+      var lbl = el.type === 'checkbox' && el.closest('.sta-check'); if (lbl) lbl.classList.toggle('is-invalid', bad);
     });
-    if (!ok) { var first = $('.is-invalid', form); first && first.focus(); }
+    if (!ok) {
+      // say what is missing – a theme may hide checkboxes, so a silent focus is not enough
+      var miss = $$('.is-invalid', form), consent = miss.some(function (x) { return x.classList.contains('sta-consent'); });
+      msg(form, esc(consent && miss.length <= 2 ? T.needConsent : T.needFields), false);
+      var first = miss[0]; if (first) { first.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (first.focus) first.focus({ preventScroll: true }); }
+    }
     return ok;
   }
   /* proxy path on this site → address in the app when forms go directly (push mode) */

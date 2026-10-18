@@ -188,6 +188,14 @@
 .sta-form input:focus, .sta-form select:focus, .sta-form textarea:focus, .sta-search input:focus, .sta-search select:focus { outline: 2px solid color-mix(in srgb, var(--sta-primary) 45%, transparent); border-color: var(--sta-primary); }
 .sta-check { display: flex; gap: .5rem; align-items: flex-start; font-size: .92rem; cursor: pointer; }
 .sta-check input { margin-top: .2rem; accent-color: var(--sta-primary); }
+/* themes (Elementor, Tourm…) often hide native checkboxes – always show ours */
+.sta-form .sta-check input[type="checkbox"], .sta-form .sta-check input[type="radio"] {
+  -webkit-appearance: auto !important; appearance: auto !important; display: inline-block !important; position: static !important;
+  opacity: 1 !important; visibility: visible !important; width: 18px !important; height: 18px !important; min-width: 18px; margin: .2rem 0 0 !important;
+  clip: auto !important; clip-path: none !important; transform: none !important; flex: 0 0 auto; cursor: pointer; }
+.sta-form .sta-check input[type="checkbox"]::before, .sta-form .sta-check input[type="checkbox"]::after { content: none !important; display: none !important; }
+.sta-form .sta-check > span::before, .sta-form .sta-check > span::after { content: none !important; display: none !important; }
+.sta-form .sta-check.is-invalid { color: var(--sta-bad); padding: .5rem .65rem; border-radius: .6rem; background: color-mix(in srgb, var(--sta-bad) 8%, transparent); outline: 1px solid var(--sta-bad); }
 .sta-radios { display: flex; gap: 1rem; flex-wrap: wrap; }
 .sta-extras, .sta-fieldset { border: 1px solid var(--sta-line); border-radius: calc(var(--sta-radius) * .7); padding: .8rem 1rem; display: grid; gap: .5rem; margin: 0; }
 .sta-extras legend, .sta-fieldset legend { font-weight: 700; padding: 0 .3rem; }

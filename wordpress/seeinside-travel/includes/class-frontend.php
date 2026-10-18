@@ -54,6 +54,8 @@ class STA_Frontend
                 'reviewThanks' => __('Thank you! Your review will appear after the agency checks it.', 'seeinside-travel'),
                 'chooseRating' => __('Please choose a rating.', 'seeinside-travel'),
                 'close' => __('Close', 'seeinside-travel'),
+                'needConsent' => __('Please tick the consent box above the button.', 'seeinside-travel'),
+                'needFields' => __('Please fill in the fields marked in red.', 'seeinside-travel'),
                 'months' => [__('January', 'seeinside-travel'), __('February', 'seeinside-travel'), __('March', 'seeinside-travel'), __('April', 'seeinside-travel'), __('May', 'seeinside-travel'), __('June', 'seeinside-travel'), __('July', 'seeinside-travel'), __('August', 'seeinside-travel'), __('September', 'seeinside-travel'), __('October', 'seeinside-travel'), __('November', 'seeinside-travel'), __('December', 'seeinside-travel')],
                 'weekdays' => [__('Mo', 'seeinside-travel'), __('Tu', 'seeinside-travel'), __('We', 'seeinside-travel'), __('Th', 'seeinside-travel'), __('Fr', 'seeinside-travel'), __('Sa', 'seeinside-travel'), __('Su', 'seeinside-travel')],
             ],

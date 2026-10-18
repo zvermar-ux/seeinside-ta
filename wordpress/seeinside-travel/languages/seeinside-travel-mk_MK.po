@@ -2332,6 +2332,12 @@ msgstr "зборови"
 msgid "– choose –"
 msgstr "– изберете –"
 
+msgid "Please tick the consent box above the button."
+msgstr "Штиклирајте го полето за согласност над копчето."
+
+msgid "Please fill in the fields marked in red."
+msgstr "Пополнете ги полињата означени со црвено."
+
 msgid "%d night"
 msgid_plural "%d nights"
 msgstr[0] "%d ноќевање"
