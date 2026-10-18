@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\CatalogController;
+use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\ReviewController;
 use App\Http\Middleware\AuthenticateApiClient;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +23,19 @@ Route::prefix('public/{site}')->middleware([\App\Http\Middleware\AuthenticatePub
     Route::post('visa-applications', [BookingController::class, 'visaApplication']);
     Route::get('bookings/{reference}', [BookingController::class, 'status']);
     Route::get('visa-applications/{reference}', [BookingController::class, 'visaStatus']);
+    Route::post('reviews', [ReviewController::class, 'store']);
+
+});
+
+// Live chat widget (visitor's browser): own limits, chat messages are frequent
+Route::prefix('public/{site}/chat')->middleware([\App\Http\Middleware\AuthenticatePublicSite::class])->group(function () {
+    Route::get('config', [ChatController::class, 'config'])->middleware('throttle:chat-poll');
+    Route::get('poll', [ChatController::class, 'poll'])->middleware('throttle:chat-poll');
+    Route::post('start', [ChatController::class, 'start'])->middleware('throttle:chat');
+    Route::post('message', [ChatController::class, 'message'])->middleware('throttle:chat');
+    Route::post('questionnaire', [ChatController::class, 'questionnaire'])->middleware('throttle:chat');
+    Route::post('contact', [ChatController::class, 'contact'])->middleware('throttle:chat');
+    Route::post('close', [ChatController::class, 'close'])->middleware('throttle:chat');
 });
 
 Route::middleware([AuthenticateApiClient::class, 'throttle:website'])->group(function () {
@@ -29,6 +44,9 @@ Route::middleware([AuthenticateApiClient::class, 'throttle:website'])->group(fun
     Route::get('last-minute', [CatalogController::class, 'lastMinute']);
     Route::get('slider', [CatalogController::class, 'slider']);
     Route::get('charters', [CatalogController::class, 'charters']);
+    Route::get('reviews', [ReviewController::class, 'index']);
+    Route::get('chat', [CatalogController::class, 'chat']);
+    Route::post('reviews', [ReviewController::class, 'store'])->middleware('throttle:website-forms');
     Route::get('bookings/{reference}', [BookingController::class, 'status'])->middleware('throttle:website-forms');
     Route::get('visa-applications/{reference}', [BookingController::class, 'visaStatus'])->middleware('throttle:website-forms');
 

@@ -62,7 +62,9 @@ class STA_Sync
                 unset($queue[$key]);
                 update_option('sta_queue', $queue, false);
 
-                if ($item['type'] === 'slider') {
+                if (isset(self::LISTS[$item['type']])) {
+                    self::sync_list($item['type']);
+                } elseif ($item['type'] === 'slider') {
                     self::sync_slider();
                 } elseif ($item['type'] === 'charter') {
                     self::sync_charters();
@@ -118,6 +120,9 @@ class STA_Sync
         }
         self::enqueue('slider', 0, null);
         self::enqueue('charter', 0, null);
+        foreach (array_keys(self::LISTS) as $list) {
+            self::enqueue($list, 0, null);
+        }
         if (! $since || (time() - (int) get_option('sta_meta_synced', 0)) > HOUR_IN_SECONDS) {
             self::enqueue('meta', 0, null);
         }
@@ -146,6 +151,9 @@ class STA_Sync
             self::sync_meta();
             self::sync_slider();
             self::sync_charters();
+            foreach (array_keys(self::LISTS) as $list) {
+                self::sync_list($list);
+            }
 
             return ['type' => $types[0], 'page' => 1, 'stats' => $stats, 'message' => __('Destinations, groups and slider imported', 'seeinside-travel')];
         }
@@ -307,6 +315,9 @@ class STA_Sync
             $featured = self::attach($d['gallery'][0]['url'], $postId);
         }
         $featured ? set_post_thumbnail($postId, $featured) : delete_post_thumbnail($postId);
+        foreach ($d['info_cards'] ?? [] as $c) {
+            ! empty($c['image']) && self::attach($c['image'], $postId);   // local copy for the visa info cards
+        }
         $map['fields']['gallery'] = array_values(array_filter(array_map(fn ($g) => self::attach($g['url'], $postId, sta_t($g['caption'] ?? null)), $d['gallery'] ?? [])));
         if ($apiType === 'accommodation') {
             foreach ($map['fields']['rooms'] as $i => $room) {
@@ -647,6 +658,32 @@ class STA_Sync
             }
             update_option('sta_slider', $body['data'], false);
         }
+    }
+
+    /** Lists the website keeps in one option: type => [API path, option] */
+    public const LISTS = [
+        'reviews' => ['reviews', 'sta_reviews'],
+        'chat' => ['chat', 'sta_chat'],
+    ];
+
+    public static function sync_list(string $type): void
+    {
+        [$path, $option] = self::LISTS[$type];
+        [$code, $body] = STA_Api::get($path);
+        if ($code === 200 && isset($body['data'])) {
+            self::store_list($type, $body['data']);
+        }
+    }
+
+    public static function store_list(string $type, $data): void
+    {
+        update_option(self::LISTS[$type][1], is_array($data) ? $data : [], false);
+        if ($type === 'chat') {
+            foreach ((array) ($data['questionnaires'] ?? []) as $q) {
+                ! empty($q['image']) && self::attach($q['image']);
+            }
+        }
+        do_action('sta_list_updated', $type, $data);
     }
 
     /** Charter seats (shown with [sta_charters]) */

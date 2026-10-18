@@ -8,6 +8,7 @@ use Filament\Resources\Pages\CreateRecord;
 
 class CreateVisaType extends CreateRecord
 {
+    use \App\Filament\Concerns\HasAiAssistant;
     use CreatesGallery;
 
     protected function afterCreate(): void
@@ -20,5 +21,10 @@ class CreateVisaType extends CreateRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('edit', ['record' => $this->record]);
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [$this->aiActions()];
     }
 }

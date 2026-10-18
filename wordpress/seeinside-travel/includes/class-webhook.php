@@ -89,7 +89,7 @@ class STA_Webhook
 
         if ($type === 'meta') {
             STA_Sync::enqueue('meta', 0, null);
-        } elseif ($type === 'slider' || $type === 'charter') {
+        } elseif ($type === 'slider' || $type === 'charter' || isset(STA_Sync::LISTS[$type])) {
             STA_Sync::enqueue($type, 0, null);
         } elseif (STA_Schema::post_type($type)) {
             STA_Sync::enqueue($type, (int) ($p['id'] ?? 0), $p['slug'] ?? null, str_ends_with($event, '.deleted') ? 'delete' : 'update');
@@ -113,6 +113,8 @@ class STA_Webhook
                 update_option('sta_slider', (array) $data, false);
             } elseif ($type === 'charter') {
                 update_option('sta_charters', (array) $data, false);
+            } elseif (isset(STA_Sync::LISTS[$type])) {
+                STA_Sync::store_list($type, $data);
             } elseif (STA_Schema::post_type($type)) {
                 if (str_ends_with($event, '.deleted')) {
                     STA_Sync::remove($type, (int) ($p['id'] ?? 0));

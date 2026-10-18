@@ -31,6 +31,7 @@ class VisaType extends Model
             'category' => VisaCategory::class,
             'questionnaire' => 'array',
             'required_documents' => 'array',
+            'info_cards' => 'array',
             'online_payment' => 'boolean',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',

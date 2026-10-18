@@ -8,11 +8,12 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditTour extends EditRecord
 {
+    use \App\Filament\Concerns\HasAiAssistant;
     protected static string $resource = TourResource::class;
 
     protected function getHeaderActions(): array
     {
-        return [Actions\DeleteAction::make()];
+        return [$this->aiActions(), Actions\DeleteAction::make()];
     }
 
     public function getContentTabLabel(): ?string

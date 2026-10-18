@@ -40,6 +40,10 @@
       var d = JSON.parse(opts.body || '{}'); d.locale = C.lang; d.message = ((d.message || '') + '\n\n[' + C.site + ']').trim();
       return [C.direct + 'bookings', Object.assign({}, opts, { body: JSON.stringify(d), headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })];
     }
+    if (name === 'review') {
+      var rv = JSON.parse(opts.body || '{}'); rv.locale = C.lang; rv.page_url = location.href;
+      return [C.direct + 'reviews', Object.assign({}, opts, { body: JSON.stringify(rv), headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })];
+    }
     if (name === 'visa') { opts.body.append('locale', C.lang); return [C.direct + 'visa-applications', Object.assign({}, opts, { headers: { Accept: 'application/json' } })]; }
     var slug = q.get('slug'); q.delete('slug'); q.delete('website'); q.delete('sta_ts');
     if (name === 'quote') return [C.direct + 'accommodations/' + encodeURIComponent(slug) + '/quote?' + q, { headers: { Accept: 'application/json' } }];
@@ -294,4 +298,39 @@
     room.addEventListener('change', function () { draw(cache[iso(month)]); });
     load();
   });
+
+  /* ---------- reviews ---------- */
+  $$('[data-sta-review]').forEach(function (form) {
+    var opener = form.parentNode && $('[data-sta-review-open]', form.parentNode);
+    opener && opener.addEventListener('click', function () { form.classList.remove('is-collapsed'); form.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!$('[name="rating"]:checked', form)) { msg(form, esc(T.chooseRating), false); return; }
+      if (!validate(form)) return;
+      var data = {}; new FormData(form).forEach(function (v, k) { data[k] = v; });
+      data.rating = +data.rating; data.sta_ts = started;
+      var btn = $('[type=submit]', form), label = btn.textContent; btn.disabled = true; btn.textContent = T.sending;
+      api('review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function (r) {
+        if (r.ok) { form.reset(); $$('.sta-field, .sta-row, .sta-rate', form).forEach(function (el) { el.style.display = 'none'; }); btn.style.display = 'none'; msg(form, esc(T.reviewThanks), true); }
+        else msg(form, errors(r.body), false);
+      }).catch(function () { msg(form, esc(T.error), false); }).then(function () { btn.disabled = false; btn.textContent = label; });
+    });
+  });
+  $$('[data-sta-reviews-more]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var list = b.parentNode.previousElementSibling, step = +(list && list.dataset.step) || 6;
+      $$('.sta-review.is-hidden', list).slice(0, step).forEach(function (r) { r.classList.remove('is-hidden'); });
+      if (!$('.sta-review.is-hidden', list)) b.remove();
+    });
+  });
+
+  /* ---------- dialogs (visa info cards) ---------- */
+  document.addEventListener('click', function (e) {
+    var o = e.target.closest('[data-sta-dialog]');
+    if (o) { var d = document.getElementById(o.dataset.staDialog); if (d && d.showModal) { d.showModal(); document.documentElement.classList.add('sta-noscroll'); } return; }
+    var c = e.target.closest('[data-sta-dialog-close]');
+    if (c) { c.closest('dialog').close(); return; }
+    if (e.target.tagName === 'DIALOG' && e.target.classList.contains('sta-dialog')) e.target.close();   // click on the backdrop
+  });
+  $$('dialog.sta-dialog').forEach(function (d) { d.addEventListener('close', function () { document.documentElement.classList.remove('sta-noscroll'); }); });
 })();

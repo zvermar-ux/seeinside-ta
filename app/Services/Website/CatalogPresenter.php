@@ -293,6 +293,11 @@ class CatalogPresenter
             'online_payment' => $v->online_payment,
             'questionnaire' => array_values($v->questionnaire ?? []),
             'required_documents' => array_values($v->required_documents ?? []),
+            'info_cards' => collect($v->info_cards ?? [])->map(fn ($c) => [
+                'image' => static::url($c['image'] ?? null),
+                'title' => ['mk' => $c['title']['mk'] ?? null, 'en' => $c['title']['en'] ?? null],
+                'text' => ['mk' => $c['text']['mk'] ?? null, 'en' => $c['text']['en'] ?? null],
+            ])->filter(fn ($c) => $c['title']['mk'] || $c['title']['en'] || $c['text']['mk'] || $c['text']['en'])->values()->all(),
             'gallery' => static::gallery($v),
             'seo' => ['title' => $v->trAll('seo_title'), 'description' => $v->trAll('seo_description')],
         ];

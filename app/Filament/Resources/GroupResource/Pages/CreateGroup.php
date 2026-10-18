@@ -8,12 +8,13 @@ use Filament\Resources\Pages\CreateRecord;
 
 class CreateGroup extends CreateRecord
 {
+    use \App\Filament\Concerns\HasAiAssistant;
     use CreateRecord\Concerns\Translatable;
 
     protected static string $resource = GroupResource::class;
 
     protected function getHeaderActions(): array
     {
-        return [Actions\LocaleSwitcher::make()];
+        return [$this->aiActions(), Actions\LocaleSwitcher::make()];
     }
 }

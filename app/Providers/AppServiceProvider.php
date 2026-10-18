@@ -59,6 +59,12 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\RateLimiter::for('website-visitor', fn ($request) => $request->isMethod('GET')
             ? \Illuminate\Cache\RateLimiting\Limit::perMinute(60)->by('visitor:'.$request->ip())
             : \Illuminate\Cache\RateLimiting\Limit::perMinutes(10, 10)->by('visitor-post:'.$request->ip()));
+        // live chat: per visitor IP
+        \Illuminate\Support\Facades\RateLimiter::for('chat', fn ($request) => [
+            \Illuminate\Cache\RateLimiting\Limit::perMinute(15)->by('chat:'.$request->ip()),
+            \Illuminate\Cache\RateLimiting\Limit::perDay(300)->by('chat-day:'.$request->ip()),
+        ]);
+        \Illuminate\Support\Facades\RateLimiter::for('chat-poll', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(40)->by('chat-poll:'.$request->ip()));
         \Illuminate\Support\Facades\RateLimiter::for('website-forms', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(120)->by('forms:'.$client($request)));
 
         Route::prefix('api/v1')->middleware('api')->name('api.')->group(base_path('routes/api.php'));

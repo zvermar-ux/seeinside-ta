@@ -174,3 +174,27 @@ function sta_public_api(): string
 
     return rtrim((string) sta_setting('api_url', 'https://ta.seeinsidesolution.com'), '/').'/api/v1/public/'.$prefix.'/';
 }
+
+/** Local copy (media library) of a photo from SeeInside, or the original address */
+function sta_local_image(?string $url, string $size = 'full'): string
+{
+    if (! $url) {
+        return '';
+    }
+    static $cache = [];
+    $key = $url.'|'.$size;
+    if (! isset($cache[$key])) {
+        $found = get_posts(['post_type' => 'attachment', 'post_status' => 'inherit', 'meta_key' => '_sta_source', 'meta_value' => md5($url), 'fields' => 'ids', 'posts_per_page' => 1, 'no_found_rows' => true]);
+        $cache[$key] = $found ? (wp_get_attachment_image_url((int) $found[0], $size) ?: $url) : $url;
+    }
+
+    return $cache[$key];
+}
+
+/** ★★★★☆ */
+function sta_stars(float $rating, string $class = ''): string
+{
+    $pct = max(0, min(100, $rating / 5 * 100));
+
+    return '<span class="sta-stars '.esc_attr($class).'" role="img" aria-label="'.esc_attr(sprintf(__('%s out of 5', 'seeinside-travel'), number_format_i18n($rating, 1))).'"><span class="sta-stars-fill" style="width:'.round($pct, 1).'%"></span></span>';
+}

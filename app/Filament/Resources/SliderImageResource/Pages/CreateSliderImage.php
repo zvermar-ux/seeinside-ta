@@ -8,12 +8,13 @@ use Filament\Resources\Pages\CreateRecord;
 
 class CreateSliderImage extends CreateRecord
 {
+    use \App\Filament\Concerns\HasAiAssistant;
     use CreateRecord\Concerns\Translatable;
 
     protected static string $resource = SliderImageResource::class;
 
     protected function getHeaderActions(): array
     {
-        return [Actions\LocaleSwitcher::make()];
+        return [$this->aiActions(), Actions\LocaleSwitcher::make()];
     }
 }

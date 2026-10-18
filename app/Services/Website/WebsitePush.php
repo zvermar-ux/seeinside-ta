@@ -39,6 +39,8 @@ class WebsitePush
                 'slider' => $c->slider($request),
                 'charter' => $c->charters($request),
                 'meta' => $c->meta($request),
+                'reviews' => $c->reviews($request),
+                'chat' => $c->chat($request),
                 default => null,
             };
         } catch (ModelNotFoundException|NotFoundHttpException) {
@@ -94,6 +96,9 @@ class WebsitePush
         foreach ($data['slider'] ?? (array_is_list($data) ? $data : []) as $s) {
             $urls[] = is_array($s) ? ($s['image'] ?? null) : null;
         }
+        foreach ($data['info_cards'] ?? [] as $c) {
+            $urls[] = $c['image'] ?? null;
+        }
         foreach (['destinations', 'groups'] as $k) {
             foreach ($data[$k] ?? [] as $g) {
                 $urls[] = $g['image'] ?? null;
@@ -139,7 +144,7 @@ class WebsitePush
         }
 
         return (int) WebsiteNotifier::send($client, [
-            'event' => $type.'.'.($action === 'deleted' ? 'deleted' : ($data === null && ! in_array($type, ['slider', 'charter', 'meta'], true) ? 'unpublished' : 'updated')),
+            'event' => $type.'.'.($action === 'deleted' ? 'deleted' : ($data === null && ! in_array($type, ['slider', 'charter', 'meta', 'reviews', 'chat'], true) ? 'unpublished' : 'updated')),
             'type' => $type,
             'id' => $id,
             'slug' => $slug,
@@ -152,7 +157,7 @@ class WebsitePush
     public static function pushAll(ApiClient $client): array
     {
         @set_time_limit(0);
-        $stats = ['meta' => static::pushItem($client, 'meta', 0, null), 'slider' => static::pushItem($client, 'slider', 0, null), 'charter' => static::pushItem($client, 'charter', 0, null)];
+        $stats = ['meta' => static::pushItem($client, 'meta', 0, null), 'slider' => static::pushItem($client, 'slider', 0, null), 'charter' => static::pushItem($client, 'charter', 0, null), 'reviews' => static::pushItem($client, 'reviews', 0, null), 'chat' => static::pushItem($client, 'chat', 0, null)];
         foreach (['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class, 'visa' => VisaType::class] as $type => $class) {
             $ok = 0;
             foreach ($class::withoutGlobalScopes()->where('agency_id', $client->agency_id)->where('is_active', true)->get(['id', 'slug']) as $m) {

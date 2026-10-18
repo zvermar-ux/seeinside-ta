@@ -218,6 +218,28 @@ class STA_Widget_Slider extends STA_Simple_Widget
     }
 }
 
+class STA_Widget_Reviews extends STA_Simple_Widget
+{
+    public function get_name(): string { return 'sta-reviews'; }
+    public function get_title(): string { return __('Travel: reviews', 'seeinside-travel'); }
+    public function get_icon(): string { return 'eicon-review'; }
+    protected function extra_controls(): void
+    {
+        $this->add_control('rtype', ['label' => __('Which reviews', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => '', 'options' => [
+            '' => __('All (on an offer page: that offer)', 'seeinside-travel'), 'agency' => __('About the agency', 'seeinside-travel'),
+            'tour' => __('Tours', 'seeinside-travel'), 'event' => __('Events', 'seeinside-travel'), 'accommodation' => __('Hotels', 'seeinside-travel'), 'visa' => __('Visas', 'seeinside-travel'),
+        ]]);
+        $this->add_control('layout', ['label' => __('Layout', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'grid', 'options' => ['grid' => __('Grid', 'seeinside-travel'), 'slider' => __('Carousel', 'seeinside-travel'), 'list' => __('List', 'seeinside-travel')]]);
+        $this->add_control('limit', ['label' => __('Number of reviews', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => 6]);
+        $this->add_control('featured', ['label' => __('Only featured', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => '']);
+        $this->add_control('form', ['label' => __('Form for a new review', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => '']);
+    }
+    protected function html(array $s): string
+    {
+        return STA_Reviews::sc_reviews(['type' => $s['rtype'] ?? '', 'layout' => $s['layout'] ?? 'grid', 'limit' => $s['limit'] ?? 6, 'featured' => ! empty($s['featured']) ? 'yes' : 'no', 'form' => ! empty($s['form']) ? 'yes' : 'no']);
+    }
+}
+
 class STA_Widget_Search extends STA_Simple_Widget
 {
     public function get_name(): string { return 'sta-search'; }
@@ -270,5 +292,5 @@ class STA_Widget_Destinations extends STA_Simple_Widget
 
 function sta_elementor_widget_classes(): array
 {
-    return [STA_Widget_Section::class, STA_Widget_List::class, STA_Widget_Slider::class, STA_Widget_Search::class, STA_Widget_Flights::class, STA_Widget_Charters::class, STA_Widget_Status::class, STA_Widget_Destinations::class];
+    return [STA_Widget_Section::class, STA_Widget_List::class, STA_Widget_Slider::class, STA_Widget_Reviews::class, STA_Widget_Search::class, STA_Widget_Flights::class, STA_Widget_Charters::class, STA_Widget_Status::class, STA_Widget_Destinations::class];
 }

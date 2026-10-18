@@ -8,12 +8,13 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditSliderImage extends EditRecord
 {
+    use \App\Filament\Concerns\HasAiAssistant;
     use EditRecord\Concerns\Translatable;
 
     protected static string $resource = SliderImageResource::class;
 
     protected function getHeaderActions(): array
     {
-        return [Actions\LocaleSwitcher::make(), Actions\DeleteAction::make()];
+        return [$this->aiActions(), Actions\LocaleSwitcher::make(), Actions\DeleteAction::make()];
     }
 }

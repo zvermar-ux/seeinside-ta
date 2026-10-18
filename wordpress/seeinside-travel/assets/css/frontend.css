@@ -225,3 +225,72 @@
 /* archive */
 .sta-archive { max-width: 1240px; margin: 0 auto; padding: 2rem 1rem 4rem; }
 .sta-archive-title { margin: 0 0 1rem; }
+
+/* ---------- reviews ---------- */
+.sta-stars { position: relative; display: inline-block; font-size: 1rem; line-height: 1; letter-spacing: 2px; color: #d6dbe1; white-space: nowrap; }
+.sta-stars::before { content: "★★★★★"; }
+.sta-stars-fill { position: absolute; inset: 0 auto 0 0; overflow: hidden; color: #f5a623; }
+.sta-stars-fill::before { content: "★★★★★"; }
+.sta-card-rating { display: inline-block; margin: .1rem 0 .35rem; font-size: .85rem; font-weight: 600; color: #b7791f; }
+.sta-card-rating small { color: #6b7280; font-weight: 400; }
+.sta-reviews-summary { display: grid; grid-template-columns: auto 1fr auto; gap: 1.5rem; align-items: center; padding: 1.1rem 1.25rem; margin-bottom: 1.1rem; border-radius: var(--sta-radius); background: color-mix(in srgb, var(--sta-primary) 6%, #fff); }
+.sta-reviews-avg { display: grid; justify-items: center; gap: .25rem; min-width: 7rem; }
+.sta-reviews-avg > b { font-size: 2.4rem; line-height: 1; color: #111827; }
+.sta-reviews-avg .sta-stars { font-size: 1.15rem; }
+.sta-reviews-avg small { color: #6b7280; }
+.sta-reviews-bars { display: grid; gap: .3rem; max-width: 22rem; }
+.sta-rbar { display: grid; grid-template-columns: 2.2rem 1fr 2rem; gap: .5rem; align-items: center; font-size: .82rem; color: #4b5563; }
+.sta-rbar i { height: .45rem; border-radius: 99px; background: #e5e7eb; overflow: hidden; }
+.sta-rbar i b { display: block; height: 100%; background: #f5a623; border-radius: inherit; }
+.sta-reviews { display: grid; gap: 1rem; }
+.sta-reviews-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.sta-reviews-slider { grid-auto-flow: column; grid-auto-columns: minmax(min(85%, 340px), 1fr); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: .5rem; }
+.sta-reviews-slider .sta-review { scroll-snap-align: start; }
+.sta-reviews-slider .sta-review.is-hidden { display: flex; }
+.sta-review { display: flex; flex-direction: column; gap: .5rem; padding: 1.1rem 1.2rem; border: 1px solid #e5e7eb; border-radius: var(--sta-radius); background: #fff; }
+.sta-review.is-hidden { display: none; }
+.sta-review-head { display: flex; align-items: center; gap: .7rem; }
+.sta-review-head > div { display: grid; flex: 1; min-width: 0; }
+.sta-review-head small { color: #6b7280; font-size: .82rem; }
+.sta-review-avatar { flex: none; display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; background: var(--sta-primary); color: #fff; font-weight: 700; }
+.sta-review-title { margin: .2rem 0 0 !important; font-size: 1rem !important; }
+.sta-review-body p { margin: 0 0 .5rem; }
+.sta-review-body p:last-child { margin: 0; }
+.sta-review-item { font-size: .85rem; font-weight: 600; }
+.sta-review-item a { color: var(--sta-primary); text-decoration: none; }
+.sta-review-reply { padding: .7rem .9rem; border-left: 3px solid var(--sta-primary); background: #f8fafc; border-radius: 0 .5rem .5rem 0; font-size: .92rem; }
+.sta-review-reply p { margin: .25rem 0 0; }
+.sta-review-date { color: #9ca3af; font-size: .8rem; margin-top: auto; }
+.sta-center { text-align: center; margin-top: 1rem; }
+.sta-review-form { margin-top: 1.25rem; }
+.sta-review-form.is-collapsed { display: none; }
+.sta-rate { display: inline-flex !important; flex-direction: row-reverse; justify-content: flex-end; gap: .15rem; width: auto !important; }
+.sta-rate input { position: absolute; opacity: 0; pointer-events: none; }
+.sta-form .sta-rate label, .sta-rate label { display: inline-block !important; width: auto !important; margin: 0 !important; padding: 0 .05rem !important; font-size: 1.9rem; line-height: 1; color: #d6dbe1; cursor: pointer; transition: color .15s, transform .15s; }
+.sta-rate label:hover, .sta-rate label:hover ~ label, .sta-rate input:checked ~ label { color: #f5a623; }
+.sta-rate label:hover { transform: scale(1.12); }
+.sta-rate input:focus-visible + label { outline: 2px solid var(--sta-primary); outline-offset: 2px; border-radius: 4px; }
+@media (max-width: 640px) { .sta-reviews-summary { grid-template-columns: 1fr; justify-items: center; text-align: center; } .sta-reviews-bars { width: 100%; } }
+
+/* ---------- visa info cards + dialog ---------- */
+.sta-icards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 1rem; }
+.sta-icard { display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e5e7eb; border-radius: var(--sta-radius); background: #fff; transition: box-shadow .2s, transform .2s; }
+.sta-icard:hover { box-shadow: 0 12px 30px -18px rgba(15, 23, 42, .45); transform: translateY(-2px); }
+.sta-icard-img { aspect-ratio: 16 / 10; overflow: hidden; background: #f1f5f9; }
+.sta-icard-img img { width: 100% !important; height: 100% !important; object-fit: cover; display: block; }
+.sta-icard-body { display: flex; flex-direction: column; gap: .45rem; flex: 1; padding: 1rem 1.1rem 1.1rem; }
+.sta-icard-title { margin: 0 !important; font-size: 1.05rem !important; }
+.sta-icard-text { margin: 0; color: #4b5563; font-size: .93rem; }
+.sta .sta-icard-more, button.sta-icard-more { align-self: flex-start; margin-top: auto !important; padding: .2rem 0 !important; border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; color: var(--sta-primary) !important; font-size: .92rem !important; font-weight: 600; line-height: 1.3; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; }
+.sta-icard-more:hover { text-decoration: underline; }
+.sta-dialog { width: min(720px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); padding: 0; border: 0; border-radius: var(--sta-radius); box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .45); overflow: auto; }
+.sta-dialog::backdrop { background: rgba(15, 23, 42, .55); backdrop-filter: blur(3px); }
+.sta-dialog[open] { animation: sta-pop .25s ease-out; }
+@keyframes sta-pop { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+.sta-dialog[open] { position: fixed; }
+button.sta-dialog-close { position: absolute !important; top: .7rem; right: .7rem; z-index: 2; display: grid; place-items: center; width: 2.3rem !important; height: 2.3rem !important; padding: 0 !important; border: 0 !important; border-radius: 50% !important; background: rgba(255, 255, 255, .94) !important; box-shadow: 0 2px 8px rgba(0, 0, 0, .18) !important; font-size: 1.4rem !important; line-height: 1 !important; cursor: pointer; color: #111827 !important; }
+.sta-icard-dialog-img { display: block; width: 100%; max-height: 340px; object-fit: cover; }
+.sta-icard-dialog-body:first-child, .sta-dialog-close + .sta-icard-dialog-body { padding-top: 3rem; }
+.sta-icard-dialog-body { padding: 1.3rem 1.5rem 1.6rem; }
+.sta-icard-dialog-body h3 { margin: 0 0 .7rem; }
+html.sta-noscroll { overflow: hidden; }

@@ -27,10 +27,16 @@ class WebsiteNotifier
     /** Destinations, groups or agency data changed (website refreshes /meta) */
     public static function metaChanged(?int $agencyId): void
     {
+        static::listChanged($agencyId, 'meta');
+    }
+
+    /** A whole list the website keeps in one piece changed: meta, reviews, chat (live chat settings) */
+    public static function listChanged(?int $agencyId, string $type): void
+    {
         if (! static::$enabled || ! $agencyId) {
             return;
         }
-        static::$pending['meta:0:'.$agencyId] = ['agency_id' => $agencyId, 'event' => 'meta.updated', 'type' => 'meta', 'id' => 0, 'slug' => null, 'updated_at' => now()->toIso8601String()];
+        static::$pending[$type.':0:'.$agencyId] = ['agency_id' => $agencyId, 'event' => $type.'.updated', 'type' => $type, 'id' => 0, 'slug' => null, 'updated_at' => now()->toIso8601String()];
         if (! static::$registered) {
             static::$registered = true;
             app()->terminating(fn () => static::flush());
@@ -54,6 +60,7 @@ class WebsiteNotifier
         }
 
         $type = $model::websiteType();
+        \App\Services\Ai\ChatCatalog::forget((int) $model->agency_id);
         static::$pending["{$type}:{$model->getKey()}"] = [
             'agency_id' => $model->agency_id,
             'event' => "{$type}.{$action}",

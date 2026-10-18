@@ -175,6 +175,9 @@ class STA_Admin
         echo '<div class="sta-card"><h2>'.esc_html__('Layout', 'seeinside-travel').'</h2><table class="form-table">';
         echo '<tr><th>'.esc_html__('Single pages', 'seeinside-travel').'</th><td><label><input type="radio" name="layout_mode" value="auto"'.checked($layout, 'auto', false).'> '.esc_html__('Automatic layout when the builder has no template', 'seeinside-travel').'</label><br><label><input type="radio" name="layout_mode" value="off"'.checked($layout, 'off', false).'> '.esc_html__('Off – I build everything with widgets / shortcodes', 'seeinside-travel').'</label></td></tr>';
         echo '<tr><th>'.esc_html__('Lists (archives)', 'seeinside-travel').'</th><td><label><input type="radio" name="archive_mode" value="auto"'.checked($s['archive_mode'] ?? 'auto', 'auto', false).'> '.esc_html__('Plugin grid with search', 'seeinside-travel').'</label><br><label><input type="radio" name="archive_mode" value="theme"'.checked($s['archive_mode'] ?? 'auto', 'theme', false).'> '.esc_html__('Theme archive', 'seeinside-travel').'</label></td></tr>';
+        $chat = get_option('sta_chat', []);
+        echo '<tr><th>'.esc_html__('Live chat', 'seeinside-travel').'</th><td><label><input type="checkbox" name="chat_off" value="1"'.checked(! empty($s['chat_off']), true, false).'> '.esc_html__('Hide the live chat on this website', 'seeinside-travel').'</label><p class="description">'
+            .esc_html(! empty($chat['enabled']) ? __('The chat is turned on in SeeInside (AI & Live chat → Live chat settings).', 'seeinside-travel') : __('The chat is turned off in SeeInside. Turn it on in AI & Live chat → Live chat settings.', 'seeinside-travel')).'</p></td></tr>';
         echo '<tr><th>'.esc_html__('Offers per page', 'seeinside-travel').'</th><td><input type="number" min="3" max="60" name="per_page" value="'.esc_attr($s['per_page'] ?? 12).'"></td></tr>';
         echo '<tr><th>'.esc_html__('Colours', 'seeinside-travel').'</th><td><label>'.esc_html__('Main', 'seeinside-travel').' <input type="color" name="color_primary" value="'.esc_attr($s['color_primary'] ?? '#0ea5e9').'"></label> &nbsp; <label>'.esc_html__('Accent (badges)', 'seeinside-travel').' <input type="color" name="color_accent" value="'.esc_attr($s['color_accent'] ?? '#f97316').'"></label><p class="description">'.esc_html__('Elementor widgets also have their own colour settings.', 'seeinside-travel').'</p></td></tr>';
         echo '</table></div>';
@@ -200,6 +203,8 @@ class STA_Admin
             ['[sta_last_minute]', __('All last minute offers', 'seeinside-travel')],
             ['[sta_destinations taxonomy="sta_destination" limit="8"]', __('Destination tiles', 'seeinside-travel')],
             ['[sta_charters]', __('Charter seats with booking', 'seeinside-travel')],
+            ['[sta_reviews limit="6" layout="grid" form="yes"]', __('Reviews. type: tour, event, accommodation, visa, agency · layout: grid, slider, list · featured="yes" · on an offer page: that offer', 'seeinside-travel')],
+            ['[sta_review_form]', __('Only the form for a new review', 'seeinside-travel')],
             ['[sta_flight_search]', __('Flight search (GOL IBE widget from SeeInside)', 'seeinside-travel')],
             ['[sta_booking_status]', __('Customer checks a booking / visa application (number + e-mail)', 'seeinside-travel')],
             ['[sta_section name="program"]', __('One part of the current tour/hotel/event/visa page. Names:', 'seeinside-travel').' '.$sections],
@@ -255,6 +260,7 @@ class STA_Admin
             $s['color_primary'] = sanitize_hex_color(wp_unslash($_POST['color_primary'] ?? '')) ?: '';
             $s['color_accent'] = sanitize_hex_color(wp_unslash($_POST['color_accent'] ?? '')) ?: '';
             $s['delete_mode'] = ($_POST['delete_mode'] ?? '') === 'delete' ? 'delete' : 'trash';
+            $s['chat_off'] = ! empty($_POST['chat_off']);
             $s['slugs'] = array_map('sanitize_title', array_intersect_key((array) wp_unslash($_POST['slugs'] ?? []), STA_Schema::post_types()));
             update_option('sta_settings', $s);
             if ($old != $s['slugs']) {

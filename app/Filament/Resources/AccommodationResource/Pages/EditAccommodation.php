@@ -8,11 +8,12 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditAccommodation extends EditRecord
 {
+    use \App\Filament\Concerns\HasAiAssistant;
     protected static string $resource = AccommodationResource::class;
 
     protected function getHeaderActions(): array
     {
-        return [
+        return [$this->aiActions(), 
             Actions\Action::make('calendar')->label(__('Availability calendar'))->icon('heroicon-o-calendar-days')->color('gray')
                 ->visible(fn () => \App\Filament\Pages\AvailabilityCalendar::canAccess())
                 ->url(fn () => \App\Filament\Pages\AvailabilityCalendar::getUrl(['accommodation' => $this->record->id])),

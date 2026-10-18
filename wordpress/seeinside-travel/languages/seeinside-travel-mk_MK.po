@@ -1750,6 +1750,168 @@ msgstr "тенко"
 msgid "seconds (0 = off)"
 msgstr "секунди (0 = исклучено)"
 
+msgid "%s out of 5"
+msgstr "%s од 5"
+
+msgid "A few questions → offers for you"
+msgstr "Неколку прашања → понуди за вас"
+
+msgid "About the agency"
+msgstr "За агенцијата"
+
+msgid "Agent"
+msgstr "Агент"
+
+msgid "All (on an offer page: that offer)"
+msgstr "Сите (на страница на понуда: за таа понуда)"
+
+msgid "An agent has joined the conversation."
+msgstr "Агент се приклучи на разговорот."
+
+msgid "Answers right away, 24/7"
+msgstr "Одговара веднаш, 24/7"
+
+msgid "Back"
+msgstr "Назад"
+
+msgid "Call"
+msgstr "Јавете се"
+
+msgid "Call me back"
+msgstr "Јавете ми се"
+
+msgid "Carousel"
+msgstr "Лизгач"
+
+msgid "Chat with our assistant"
+msgstr "Разговор со нашиот асистент"
+
+msgid "Close"
+msgstr "Затвори"
+
+msgid "Form for a new review"
+msgstr "Форма за нова рецензија"
+
+msgid "Grid"
+msgstr "Мрежа"
+
+msgid "Help me choose"
+msgstr "Помогни ми да изберам"
+
+msgid "Hide the live chat on this website"
+msgstr "Скриј го live chat на оваа веб-страница"
+
+msgid "Leave your number, an agent will call"
+msgstr "Оставете број, агент ќе ви се јави"
+
+msgid "Live chat"
+msgstr "Live chat"
+
+msgid "More information"
+msgstr "Повеќе информации"
+
+msgid "New conversation"
+msgstr "Нов разговор"
+
+msgid "No reviews yet. Travelled with us? Be the first to write one."
+msgstr "Сè уште нема рецензии. Патувавте со нас? Бидете први што ќе напишете."
+
+msgid "Not published."
+msgstr "Не се објавува."
+
+msgid "Number of reviews"
+msgstr "Број на рецензии"
+
+msgid "Only the form for a new review"
+msgstr "Само формата за нова рецензија"
+
+msgid "Please choose a rating."
+msgstr "Ве молиме изберете оценка."
+
+msgid "Please enter a phone or an e-mail."
+msgstr "Ве молиме внесете телефон или е-пошта."
+
+msgid "Reply from the agency"
+msgstr "Одговор од агенцијата"
+
+msgid "Reviews"
+msgstr "Рецензии"
+
+msgid "Reviews are published after the agency checks them."
+msgstr "Рецензиите се објавуваат откако агенцијата ќе ги провери."
+
+msgid "Reviews. type: tour, event, accommodation, visa, agency · layout: grid, slider, list · featured=\"yes\" · on an offer page: that offer"
+msgstr "Рецензии. type: tour, event, accommodation, visa, agency · layout: grid, slider, list · featured=\"yes\" · на страница на понуда: за таа понуда"
+
+msgid "Send"
+msgstr "Испрати"
+
+msgid "Send review"
+msgstr "Испрати рецензија"
+
+msgid "Show more reviews"
+msgstr "Прикажи повеќе рецензии"
+
+msgid "Show offers"
+msgstr "Прикажи понуди"
+
+msgid "Skip"
+msgstr "Прескокни"
+
+msgid "Thank you! Your review will appear after the agency checks it."
+msgstr "Ви благодариме! Вашата рецензија ќе се појави откако агенцијата ќе ја провери."
+
+msgid "The chat is turned off in SeeInside. Turn it on in AI & Live chat → Live chat settings."
+msgstr "Четот е исклучен во SeeInside. Вклучете го во AI и Live chat → Подесувања за Live chat."
+
+msgid "The chat is turned on in SeeInside (AI & Live chat → Live chat settings)."
+msgstr "Четот е вклучен во SeeInside (AI и Live chat → Подесувања за Live chat)."
+
+msgid "Title"
+msgstr "Наслов"
+
+msgid "Travel: reviews"
+msgstr "Travel: рецензии"
+
+msgid "View"
+msgstr "Види"
+
+msgid "What are you interested in?"
+msgstr "Што ве интересира?"
+
+msgid "When did you travel?"
+msgstr "Кога патувавте?"
+
+msgid "Which reviews"
+msgstr "Кои рецензии"
+
+msgid "Write a message…"
+msgstr "Напишете порака…"
+
+msgid "Write a review"
+msgstr "Напишете рецензија"
+
+msgid "Your experience"
+msgstr "Вашето искуство"
+
+msgid "Your name"
+msgstr "Вашето име"
+
+msgid "Your rating"
+msgstr "Ваша оценка"
+
+msgid "e.g. August 2026"
+msgstr "пр. Август 2026"
+
+msgid "or write to us on"
+msgstr "или пишете ни на"
+
+msgid "typing…"
+msgstr "пишува…"
+
+msgid "Visa info cards"
+msgstr "Инфо картички за виза"
+
 msgid "%d night"
 msgid_plural "%d nights"
 msgstr[0] "%d ноќевање"
@@ -1769,4 +1931,9 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] "%d ден"
 msgstr[1] "%d дена"
+
+msgid "%d review"
+msgid_plural "%d reviews"
+msgstr[0] "%d рецензија"
+msgstr[1] "%d рецензии"
 

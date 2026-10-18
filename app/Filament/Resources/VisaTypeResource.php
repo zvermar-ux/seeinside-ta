@@ -142,6 +142,27 @@ class VisaTypeResource extends Resource
                                 Forms\Components\TextInput::make('help.mk')->label(__('Help text'))->columnSpan(2),
                             ]),
                     ]),
+                Forms\Components\Tabs\Tab::make(__('Info cards'))->icon('heroicon-o-rectangle-stack')
+                    ->badge(fn (Get $get) => count((array) $get('info_cards')) ?: null)
+                    ->schema([
+                        Forms\Components\Placeholder::make('cards_hint')->hiddenLabel()
+                            ->content(__('Cards with a photo, title and text (e.g. "Where to apply", "Appointment", "Insurance"). The visa page shows the photo, title and the start of the text; "More information" opens the whole card.')),
+                        Forms\Components\Repeater::make('info_cards')->hiddenLabel()->defaultItems(0)->collapsible()->cloneable()->reorderable()
+                            ->itemLabel(fn (array $state) => $state['title']['mk'] ?? null)
+                            ->addActionLabel(__('Add card'))
+                            ->columns(3)
+                            ->schema([
+                                Forms\Components\FileUpload::make('image')->label(__('Image'))->image()->imageEditor()
+                                    ->imageEditorAspectRatios(['16:9', '4:3', '1:1', null])
+                                    ->disk('public')->directory('visa-cards')->maxSize(8192)->columnSpan(1),
+                                Forms\Components\Group::make([
+                                    Lang::tabs(fn (string $l) => [
+                                        Lang::text('title', __('Title'), $l, true),
+                                        Lang::editor('text', __('Text'), $l),
+                                    ]),
+                                ])->columnSpan(2),
+                            ]),
+                    ]),
                 Forms\Components\Tabs\Tab::make(__('Promotions'))->icon('heroicon-o-bolt')->schema([
                     CatalogFields::promotions(),
                     CatalogFields::seo(),

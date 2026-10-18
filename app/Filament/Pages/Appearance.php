@@ -335,7 +335,7 @@ class Appearance extends Page implements HasForms
             Forms\Components\TextInput::make("nav.{$item['key']}.sort")->hiddenLabel()->placeholder(__('Order'))->numeric()->columnSpan(2),
         ]))->all();
 
-        $groups = collect(['offer' => __('Offer'), 'bookings' => __('Bookings & requests'), 'partners' => __('Partners'), 'settings' => __('Settings'), 'administration' => __('Administration')])
+        $groups = collect(['offer' => __('Offer'), 'bookings' => __('Bookings & requests'), 'ai' => __('AI & Live chat'), 'partners' => __('Partners'), 'settings' => __('Settings'), 'administration' => __('Administration')])
             ->map(fn ($label, $key) => Forms\Components\Grid::make(3)->schema([
                 Forms\Components\Placeholder::make('group_'.$key)->hiddenLabel()->content(new HtmlString('<div style="font-weight:600;padding-top:.5rem">'.e($label).'</div>')),
                 Forms\Components\TextInput::make("groups.{$key}.mk")->hiddenLabel()->placeholder(__('Name').' (МК)'),
@@ -379,7 +379,7 @@ class Appearance extends Page implements HasForms
     protected function menuItems(): \Illuminate\Support\Collection
     {
         $panel = Filament::getPanel('admin');
-        $groups = ['offer' => __('Offer'), 'bookings' => __('Bookings & requests'), 'partners' => __('Partners'), 'settings' => __('Settings'), 'administration' => __('Administration')];
+        $groups = ['offer' => __('Offer'), 'bookings' => __('Bookings & requests'), 'ai' => __('AI & Live chat'), 'partners' => __('Partners'), 'settings' => __('Settings'), 'administration' => __('Administration')];
 
         return collect(array_merge($panel->getResources(), $panel->getPages()))
             ->unique()

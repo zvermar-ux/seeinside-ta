@@ -24,6 +24,8 @@ class STA_Render
         'amenities' => 'Amenities',
         'tickets' => 'Tickets',
         'requirements' => 'Visa requirements',
+        'info_cards' => 'Visa info cards',
+        'reviews' => 'Reviews',
         'availability' => 'Availability calendar',
         'map' => 'Map',
         'videos' => 'Videos',
@@ -429,6 +431,48 @@ class STA_Render
         return $html;
     }
 
+    /** Visa info cards: photo, title, start of the text; "More information" opens the whole card */
+    protected static function s_info_cards(array $d, string $type): string
+    {
+        $cards = $d['info_cards'] ?? [];
+        if ($type !== 'visa' || ! $cards) {
+            return '';
+        }
+        $html = '<div class="sta-icards">';
+        foreach ($cards as $i => $c) {
+            $title = sta_t($c['title'] ?? null);
+            $text = (string) sta_t($c['text'] ?? null);
+            $img = sta_local_image($c['image'] ?? null, 'large');
+            $plain = trim(preg_replace('/\s+/u', ' ', wp_strip_all_tags(preg_replace('#</(p|li|h\d|div)>|<br\s*/?>#i', '$0 ', $text))));
+            $excerpt = wp_trim_words($plain, (int) apply_filters('sta_info_card_words', 26), '…');
+            $id = 'sta-icard-'.($d['id'] ?? 0).'-'.$i;
+            $html .= '<article class="sta-icard">'
+                .($img ? '<div class="sta-icard-img"><img src="'.esc_url($img).'" alt="'.esc_attr($title).'" loading="lazy"></div>' : '')
+                .'<div class="sta-icard-body">'.($title ? '<h4 class="sta-icard-title">'.esc_html($title).'</h4>' : '')
+                .($excerpt ? '<p class="sta-icard-text">'.esc_html($excerpt).'</p>' : '')
+                .($plain !== $excerpt || $img ? '<button type="button" class="sta-icard-more" data-sta-dialog="'.esc_attr($id).'">'.esc_html__('More information', 'seeinside-travel').' →</button>' : '')
+                .'</div>'
+                .'<dialog class="sta-dialog sta-icard-dialog" id="'.esc_attr($id).'" aria-label="'.esc_attr($title).'">'
+                .'<button type="button" class="sta-dialog-close" data-sta-dialog-close aria-label="'.esc_attr__('Close', 'seeinside-travel').'">×</button>'
+                .($img ? '<img class="sta-icard-dialog-img" src="'.esc_url($img).'" alt="">' : '')
+                .'<div class="sta-icard-dialog-body">'.($title ? '<h3>'.esc_html($title).'</h3>' : '').'<div class="sta-rich">'.wp_kses_post($text).'</div></div>'
+                .'</dialog></article>';
+        }
+
+        return $html.'</div>';
+    }
+
+    /** Approved reviews of this offer + form for a new one */
+    protected static function s_reviews(array $d, string $type, int $postId, array $args = []): string
+    {
+        if (! apply_filters('sta_show_reviews', true, $type, $postId)) {
+            return '';
+        }
+        $items = STA_Reviews::filter($type, (int) ($d['id'] ?? 0));
+
+        return self::heading(__('Reviews', 'seeinside-travel')).STA_Reviews::block($items, ['limit' => (int) ($args['limit'] ?? 4), 'layout' => 'list', 'form' => $args['form'] ?? true, 'type' => $type, 'slug' => $d['slug'] ?? '']);
+    }
+
     /** Month calendar with free / booked nights per room (live from SeeInside) */
     protected static function s_availability(array $d, string $type): string
     {
@@ -492,13 +536,13 @@ class STA_Render
     /** The whole page in a sensible order (used when no builder template exists) */
     protected static function s_layout(array $d, string $type, int $postId): string
     {
-        $main = ['gallery', 'facts', 'description', 'highlights', 'program', 'departures', 'rooms', 'availability', 'tickets', 'requirements', 'included', 'extras', 'amenities', 'info', 'videos', 'map'];
+        $main = ['gallery', 'facts', 'description', 'info_cards', 'highlights', 'program', 'departures', 'rooms', 'availability', 'tickets', 'requirements', 'included', 'extras', 'amenities', 'info', 'videos', 'map'];
         // aside first: on narrow screens the price / booking button comes before the details
         $html = '<div class="sta-page"><aside class="sta-aside"><div class="sta-sticky">'.self::section('price', $postId).'</div></aside><div class="sta-main">';
         foreach ($main as $s) {
             $html .= self::section($s, $postId);
         }
-        $html .= self::section('booking', $postId).'</div></div>';
+        $html .= self::section('booking', $postId).self::section('reviews', $postId).'</div></div>';
 
         return $html;
     }
@@ -540,7 +584,7 @@ class STA_Render
             .'<div class="sta-card-img">'.(has_post_thumbnail($postId) ? get_the_post_thumbnail($postId, 'medium_large', ['loading' => 'lazy']) : '<span class="sta-card-noimg"></span>')
             .'<div class="sta-card-badges">'.self::promo_badges($d).'</div></div>'
             .'<div class="sta-card-body">'.($place ? '<div class="sta-card-place">'.sta_icon('pin').esc_html($place).'</div>' : '')
-            .'<h3 class="sta-card-title">'.esc_html($title).'</h3>'
+            .'<h3 class="sta-card-title">'.esc_html($title).'</h3>'.STA_Reviews::card_badge($postId)
             .($meta ? '<div class="sta-card-meta">'.esc_html($meta).'</div>' : '')
             .'<div class="sta-card-foot">'.($price !== null ? '<span><small>'.esc_html__('from', 'seeinside-travel').'</small> <b>'.esc_html(sta_money($price, $d['currency'] ?? 'EUR')).'</b></span>' : '<span></span>').'<span class="sta-card-more">'.esc_html__('Details', 'seeinside-travel').' →</span></div>'
             .'</div></a></article>';

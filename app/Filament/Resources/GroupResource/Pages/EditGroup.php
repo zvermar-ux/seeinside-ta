@@ -8,12 +8,13 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditGroup extends EditRecord
 {
+    use \App\Filament\Concerns\HasAiAssistant;
     use EditRecord\Concerns\Translatable;
 
     protected static string $resource = GroupResource::class;
 
     protected function getHeaderActions(): array
     {
-        return [Actions\LocaleSwitcher::make(), Actions\DeleteAction::make()];
+        return [$this->aiActions(), Actions\LocaleSwitcher::make(), Actions\DeleteAction::make()];
     }
 }

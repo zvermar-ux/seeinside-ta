@@ -51,6 +51,9 @@ class STA_Frontend
                 'status' => __('Status', 'seeinside-travel'),
                 'payment' => __('Payment', 'seeinside-travel'),
                 'paid' => __('Paid', 'seeinside-travel'),
+                'reviewThanks' => __('Thank you! Your review will appear after the agency checks it.', 'seeinside-travel'),
+                'chooseRating' => __('Please choose a rating.', 'seeinside-travel'),
+                'close' => __('Close', 'seeinside-travel'),
                 'months' => [__('January', 'seeinside-travel'), __('February', 'seeinside-travel'), __('March', 'seeinside-travel'), __('April', 'seeinside-travel'), __('May', 'seeinside-travel'), __('June', 'seeinside-travel'), __('July', 'seeinside-travel'), __('August', 'seeinside-travel'), __('September', 'seeinside-travel'), __('October', 'seeinside-travel'), __('November', 'seeinside-travel'), __('December', 'seeinside-travel')],
                 'weekdays' => [__('Mo', 'seeinside-travel'), __('Tu', 'seeinside-travel'), __('We', 'seeinside-travel'), __('Th', 'seeinside-travel'), __('Fr', 'seeinside-travel'), __('Sa', 'seeinside-travel'), __('Su', 'seeinside-travel')],
             ],
@@ -384,6 +387,16 @@ class STA_Frontend
         set_transient($key, $n + 1, 10 * MINUTE_IN_SECONDS);
 
         return null;
+    }
+
+    public static function check(WP_REST_Request $r, bool $checkSpeed = true): ?WP_REST_Response
+    {
+        return self::guard($r, $checkSpeed);
+    }
+
+    public static function pass(array $res): WP_REST_Response
+    {
+        return self::relay($res);
     }
 
     protected static function relay(array $res): WP_REST_Response

@@ -8,6 +8,7 @@ use Filament\Resources\Pages\CreateRecord;
 
 class CreateAccommodation extends CreateRecord
 {
+    use \App\Filament\Concerns\HasAiAssistant;
     use CreatesGallery;
 
     protected static string $resource = AccommodationResource::class;
@@ -21,5 +22,10 @@ class CreateAccommodation extends CreateRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('edit', ['record' => $this->record]);
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [$this->aiActions()];
     }
 }

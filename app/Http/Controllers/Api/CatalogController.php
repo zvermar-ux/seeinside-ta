@@ -110,6 +110,18 @@ class CatalogController extends Controller
             ])->values()->all();
     }
 
+    /** Approved reviews (same list as /reviews; used by push mode) */
+    public function reviews(Request $request): JsonResponse
+    {
+        return response()->json(['data' => \App\Http\Controllers\Api\ReviewController::items($this->agencyId($request))]);
+    }
+
+    /** Live chat widget settings for the website (no secrets) */
+    public function chat(Request $request): JsonResponse
+    {
+        return response()->json(['data' => \App\Services\Ai\ChatConfig::forWebsite($this->agencyId($request))]);
+    }
+
     /* ---------------- tours ---------------- */
 
     public function tours(Request $request): JsonResponse

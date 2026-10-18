@@ -81,6 +81,7 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 'offer' => NavigationGroup::make()->label(fn () => Branding::groupLabel('offer', __('Offer'))),
                 'bookings' => NavigationGroup::make()->label(fn () => Branding::groupLabel('bookings', __('Bookings & requests'))),
+                'ai' => NavigationGroup::make()->label(fn () => Branding::groupLabel('ai', __('AI & Live chat'))),
                 'partners' => NavigationGroup::make()->label(fn () => Branding::groupLabel('partners', __('Partners'))),
                 'settings' => NavigationGroup::make()->label(fn () => Branding::groupLabel('settings', __('Settings')))->collapsed(),
                 'administration' => NavigationGroup::make()->label(fn () => Branding::groupLabel('administration', __('Administration'))),
