@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Charter extends Model
 {
-    use BelongsToAgency;
+    use \App\Models\Concerns\HasCosts, BelongsToAgency;
 
     protected $guarded = ['id'];
 

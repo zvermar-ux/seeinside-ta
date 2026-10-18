@@ -114,7 +114,9 @@ class EventResource extends Resource
                         ->schema([
                             Forms\Components\TextInput::make('name.mk')->label(__('Name').' (МК)')->required()->placeholder('Партер / VIP / Трибина'),
                             Forms\Components\TextInput::make('name.en')->label(__('Name').' (EN)'),
-                            Forms\Components\TextInput::make('price')->label(__('Price'))->numeric()->required(),
+                            Forms\Components\TextInput::make('price')->label(__('Sale price'))->numeric()->required(),
+                            Forms\Components\TextInput::make('cost_price')->label(__('Organizer price (cost)'))->numeric()
+                                ->helperText(__('What the agency pays per ticket – for the profit report')),
                             Forms\Components\Toggle::make('is_active')->label(__('Active'))->default(true)->inline(false),
                             Forms\Components\TextInput::make('quantity')->label(__('Quantity'))->numeric()->helperText(__('Empty = unlimited')),
                             Forms\Components\TextInput::make('sold')->label(__('Sold'))->numeric()->default(0),
@@ -163,7 +165,7 @@ class EventResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Duplicate::action(function (Event $from, Event $to) {
                     foreach ($from->tickets as $t) {
-                        $to->tickets()->create($t->only(['name', 'description', 'price', 'quantity', 'is_active', 'sort_order']) + ['sold' => 0]);
+                        $to->tickets()->create($t->only(['name', 'description', 'price', 'cost_price', 'quantity', 'is_active', 'sort_order']) + ['sold' => 0]);
                     }
                     Duplicate::media($from, $to);
                 }),
@@ -174,7 +176,7 @@ class EventResource extends Resource
 
     public static function getRelations(): array
     {
-        return [MediaRelationManager::class];
+        return [MediaRelationManager::class, \App\Filament\RelationManagers\CostsRelationManager::class];
     }
 
     public static function getPages(): array

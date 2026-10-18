@@ -317,7 +317,7 @@ class TourResource extends Resource
 
     public static function getRelations(): array
     {
-        return [MediaRelationManager::class];
+        return [MediaRelationManager::class, \App\Filament\RelationManagers\CostsRelationManager::class];
     }
 
     public static function getPages(): array

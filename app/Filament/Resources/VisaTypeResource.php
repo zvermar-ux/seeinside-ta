@@ -217,7 +217,7 @@ class VisaTypeResource extends Resource
 
     public static function getRelations(): array
     {
-        return [\App\Filament\RelationManagers\MediaRelationManager::class];
+        return [\App\Filament\RelationManagers\MediaRelationManager::class, \App\Filament\RelationManagers\CostsRelationManager::class];
     }
 
     public static function getPages(): array

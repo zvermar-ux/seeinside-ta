@@ -95,6 +95,11 @@ class CharterResource extends Resource
             ->defaultSort('departure_date');
     }
 
+    public static function getRelations(): array
+    {
+        return [\App\Filament\RelationManagers\CostsRelationManager::class];
+    }
+
     public static function getPages(): array
     {
         return [

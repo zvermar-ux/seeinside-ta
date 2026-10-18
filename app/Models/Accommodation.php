@@ -18,7 +18,7 @@ use Illuminate\Support\Carbon;
 
 class Accommodation extends Model
 {
-    use BelongsToAgency, HasMedia, HasPromotions, HasSlug, Localized, SyncsToWebsite;
+    use \App\Models\Concerns\HasCosts, BelongsToAgency, HasMedia, HasPromotions, HasSlug, Localized, SyncsToWebsite;
 
     protected $guarded = ['id'];
 

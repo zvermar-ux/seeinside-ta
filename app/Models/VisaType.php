@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class VisaType extends Model
 {
-    use BelongsToAgency, HasMedia, HasPromotions, HasSlug, Localized, SyncsToWebsite;
+    use \App\Models\Concerns\HasCosts, BelongsToAgency, HasMedia, HasPromotions, HasSlug, Localized, SyncsToWebsite;
 
     protected $guarded = ['id'];
 

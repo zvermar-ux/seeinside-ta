@@ -133,9 +133,12 @@ class BookingResource extends Resource
                 ]),
                 Forms\Components\Section::make(__('Processing'))->columnSpan(1)->schema([
                     Forms\Components\Select::make('status')->label(__('Status'))->options(BookingStatus::class)->required()->default(BookingStatus::Inquiry->value),
-                    Forms\Components\Select::make('payment_status')->label(__('Payment'))->options(PaymentStatus::class)->required()->default(PaymentStatus::Unpaid->value),
+                    Forms\Components\Select::make('payment_status')->label(__('Payment'))->options(PaymentStatus::class)->required()->default(PaymentStatus::Unpaid->value)
+                        ->helperText(fn (?Booking $record) => $record ? __('Set automatically from the payments below.') : null),
                     Forms\Components\TextInput::make('total')->label(__('Total'))->numeric(),
-                    Forms\Components\TextInput::make('paid_amount')->label(__('Paid'))->numeric()->default(0),
+                    Forms\Components\TextInput::make('paid_amount')->label(fn (?Booking $record) => $record ? __('Paid') : __('Paid now (first payment)'))->numeric()->default(0)
+                        ->disabled(fn (?Booking $record) => (bool) $record)->dehydrated(fn (?Booking $record) => ! $record)
+                        ->helperText(fn (?Booking $record) => $record ? __('Sum of the payments – add instalments in “Payments” below.') : null),
                     Forms\Components\Select::make('currency')->label(__('Currency'))->options(['EUR' => 'EUR', 'MKD' => 'MKD', 'USD' => 'USD'])->default('EUR'),
                     Forms\Components\TextInput::make('payment_method')->label(__('Payment method')),
                     Forms\Components\TextInput::make('external_ref')->label(__('Reference in Expert / supplier')),
@@ -224,6 +227,11 @@ class BookingResource extends Resource
                 Duplicate::action(null, ['external_ref', 'confirmed_at', 'paid_amount', 'status', 'payment_status']),
             ])
             ->defaultSort('created_at', 'desc');
+    }
+
+    public static function getRelations(): array
+    {
+        return [BookingResource\RelationManagers\PaymentsRelationManager::class];
     }
 
     public static function getPages(): array

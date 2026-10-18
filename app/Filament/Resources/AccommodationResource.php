@@ -89,6 +89,20 @@ class AccommodationResource extends Resource
                                 Forms\Components\TextInput::make('check_out_time')->label(__('Check-out'))->placeholder('10:00'),
                                 Forms\Components\CheckboxList::make('board_types')->label(__('Board'))->options(Board::class)->columns(2)->columnSpanFull(),
                             ]),
+                            Forms\Components\Section::make(__('Business model'))->icon('heroicon-o-key')->schema([
+                                Forms\Components\ToggleButtons::make('ownership')->hiddenLabel()->inline()->live()->default('contract')
+                                    ->options(['contract' => __('Contract / allotment'), 'lease' => __('Own annual lease'), 'own' => __('Owned')]),
+                                Forms\Components\Grid::make(2)->visible(fn (Get $get) => in_array($get('ownership'), ['lease', 'own'], true))->schema([
+                                    Forms\Components\DatePicker::make('lease_from')->label(__('Season / lease from'))->native(false)->displayFormat('d.m.Y'),
+                                    Forms\Components\DatePicker::make('lease_to')->label(__('Season / lease to'))->native(false)->displayFormat('d.m.Y')->afterOrEqual('lease_from'),
+                                ]),
+                                Forms\Components\Placeholder::make('break_even')->hiddenLabel()
+                                    ->visible(fn (Get $get, ?\App\Models\Accommodation $record) => $record && in_array($get('ownership'), ['lease', 'own'], true))
+                                    ->content(fn (?\App\Models\Accommodation $record) => $record ? new \Illuminate\Support\HtmlString(view('filament.reports.break-even', ['be' => (new \App\Services\Reports\OfferReport($record, \App\Services\Reports\OfferReport::leaseWindow($record)))->breakEven(), 'compact' => true])->render()) : null),
+                                Forms\Components\Placeholder::make('lease_help')->hiddenLabel()
+                                    ->visible(fn (Get $get) => in_array($get('ownership'), ['lease', 'own'], true))
+                                    ->content(__('Enter the lease, maintenance, utilities… in the “Costs” tab below. Every payment from a booking reduces what is left to cover.')),
+                            ]),
                             CatalogFields::publishing(),
                         ]),
                     ]),
@@ -202,7 +216,7 @@ class AccommodationResource extends Resource
 
     public static function getRelations(): array
     {
-        return [RoomsRelationManager::class, MediaRelationManager::class];
+        return [RoomsRelationManager::class, MediaRelationManager::class, \App\Filament\RelationManagers\CostsRelationManager::class];
     }
 
     public static function getPages(): array
