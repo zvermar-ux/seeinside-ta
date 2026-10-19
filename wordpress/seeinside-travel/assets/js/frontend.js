@@ -311,6 +311,45 @@
     load();
   });
 
+  /* ---------- testimonials carousel ---------- */
+  $$('[data-sta-tm]').forEach(function (root) {
+    var track = $('.sta-tm-track', root), orig = $$('.sta-tm-card', track), n = orig.length;
+    if (!n) return;
+    var vp = $('.sta-tm-viewport', root), dots = $$('.sta-tm-dot', root), per = 3, i = 0, timer = null, busy = false;
+    // clones on both sides make the loop endless
+    var before = orig.map(function (c) { var x = c.cloneNode(true); x.setAttribute('aria-hidden', 'true'); return x; });
+    var after = orig.map(function (c) { var x = c.cloneNode(true); x.setAttribute('aria-hidden', 'true'); return x; });
+    track.innerHTML = ''; before.concat(orig, after).forEach(function (c) { track.appendChild(c); });
+    var cards = $$('.sta-tm-card', track);
+    function perView() { var w = root.clientWidth, want = +root.dataset.per || 3; return Math.max(1, Math.min(want, n, w < 680 ? 1 : w < 1024 ? 2 : want)); }
+    function place(jump) {
+      per = perView(); root.style.setProperty('--tm-per', per);
+      var pos = n + i, vw = vp.clientWidth, w = vw / per;
+      // centre the active card
+      var offset = vw / 2 - w * (pos + .5);
+      track.classList.toggle('is-jump', !!jump);
+      track.style.transform = 'translate3d(' + offset + 'px,0,0)';
+      cards.forEach(function (c, k) { c.classList.toggle('is-active', k === pos); });
+      dots.forEach(function (d, k) { d.classList.toggle('is-on', k === ((i % n) + n) % n); });
+      if (jump) { void track.offsetWidth; track.classList.remove('is-jump'); }
+    }
+    function go(to) {
+      if (busy) return; i = to; place(false);
+      if (i < 0 || i >= n) { busy = true; setTimeout(function () { i = ((i % n) + n) % n; place(true); busy = false; }, 620); }
+    }
+    function auto() { var sec = +root.dataset.autoplay; clearInterval(timer); if (sec > 0 && n > 1) timer = setInterval(function () { go(i + 1); }, sec * 1000); }
+    $$('.sta-tm-arrow', root).forEach(function (b) { b.addEventListener('click', function () { go(i + (+b.dataset.dir)); auto(); }); });
+    dots.forEach(function (d, k) { d.addEventListener('click', function () { go(k); auto(); }); });
+    cards.forEach(function (c, k) { c.addEventListener('click', function () { var to = k - n; if (to !== i) { go(to); auto(); } }); });
+    root.addEventListener('mouseenter', function () { clearInterval(timer); });
+    root.addEventListener('mouseleave', auto);
+    var x0 = null;
+    root.addEventListener('pointerdown', function (e) { x0 = e.clientX; });
+    root.addEventListener('pointerup', function (e) { if (x0 === null) return; var dx = e.clientX - x0; x0 = null; if (Math.abs(dx) > 40) { go(i + (dx < 0 ? 1 : -1)); auto(); } });
+    window.addEventListener('resize', function () { place(true); });
+    place(true); auto();
+  });
+
   /* ---------- reviews ---------- */
   $$('[data-sta-review]').forEach(function (form) {
     var opener = form.parentNode && $('[data-sta-review-open]', form.parentNode);

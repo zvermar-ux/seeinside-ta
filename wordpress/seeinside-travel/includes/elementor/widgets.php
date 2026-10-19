@@ -259,14 +259,22 @@ class STA_Widget_Reviews extends STA_Simple_Widget
             '' => __('All (on an offer page: that offer)', 'seeinside-travel'), 'agency' => __('About the agency', 'seeinside-travel'),
             'tour' => __('Tours', 'seeinside-travel'), 'event' => __('Events', 'seeinside-travel'), 'accommodation' => __('Hotels', 'seeinside-travel'), 'visa' => __('Visas', 'seeinside-travel'),
         ]]);
-        $this->add_control('layout', ['label' => __('Layout', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'grid', 'options' => ['grid' => __('Grid', 'seeinside-travel'), 'slider' => __('Carousel', 'seeinside-travel'), 'list' => __('List', 'seeinside-travel')]]);
+        $this->add_control('layout', ['label' => __('Layout', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'grid', 'options' => [
+            'testimonials' => __('Testimonials carousel (centred)', 'seeinside-travel'), 'grid' => __('Grid', 'seeinside-travel'), 'slider' => __('Carousel', 'seeinside-travel'), 'list' => __('List', 'seeinside-travel')]]);
+        $this->add_control('subtitle', ['label' => __('Small title above', 'seeinside-travel'), 'type' => Controls_Manager::TEXT, 'default' => '']);
+        $this->add_control('heading', ['label' => __('Title', 'seeinside-travel'), 'type' => Controls_Manager::TEXT, 'default' => '']);
+        $this->add_control('per_view', ['label' => __('Cards visible', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => '3', 'options' => ['1' => '1', '2' => '2', '3' => '3', '4' => '4'], 'condition' => ['layout' => 'testimonials']]);
+        $this->add_control('autoplay', ['label' => __('Autoplay (seconds, 0 = off)', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => 6, 'condition' => ['layout' => 'testimonials']]);
+        $this->add_control('role', ['label' => __('Text under the name (when the review has no offer)', 'seeinside-travel'), 'type' => Controls_Manager::TEXT, 'default' => __('Traveller', 'seeinside-travel'), 'condition' => ['layout' => 'testimonials']]);
+        $this->add_control('min_rating', ['label' => __('Minimum rating', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => '0', 'options' => ['0' => __('All', 'seeinside-travel'), '4' => '4★+', '5' => '5★']]);
         $this->add_control('limit', ['label' => __('Number of reviews', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => 6]);
         $this->add_control('featured', ['label' => __('Only featured', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => '']);
         $this->add_control('form', ['label' => __('Form for a new review', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => '']);
     }
     protected function html(array $s): string
     {
-        return STA_Reviews::sc_reviews(['type' => $s['rtype'] ?? '', 'layout' => $s['layout'] ?? 'grid', 'limit' => $s['limit'] ?? 6, 'featured' => ! empty($s['featured']) ? 'yes' : 'no', 'form' => ! empty($s['form']) ? 'yes' : 'no']);
+        return STA_Reviews::sc_reviews(['type' => $s['rtype'] ?? '', 'layout' => $s['layout'] ?? 'grid', 'limit' => $s['limit'] ?? 6, 'featured' => ! empty($s['featured']) ? 'yes' : 'no', 'form' => ! empty($s['form']) ? 'yes' : 'no',
+            'title' => $s['heading'] ?? '', 'subtitle' => $s['subtitle'] ?? '', 'per_view' => $s['per_view'] ?? 3, 'autoplay' => $s['autoplay'] ?? 6, 'role' => $s['role'] ?? '', 'min_rating' => $s['min_rating'] ?? 0]);
     }
 }
 

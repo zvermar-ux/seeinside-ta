@@ -204,6 +204,7 @@ class STA_Admin
             ['[sta_destinations taxonomy="sta_destination" limit="8"]', __('Destination tiles', 'seeinside-travel')],
             ['[sta_charters]', __('Charter seats with booking', 'seeinside-travel')],
             ['[sta_reviews limit="6" layout="grid" form="yes"]', __('Reviews. type: tour, event, accommodation, visa, agency · layout: grid, slider, list · featured="yes" · on an offer page: that offer', 'seeinside-travel')],
+            ['[sta_reviews layout="testimonials" subtitle="Рецензии" title="Што велат нашите патници" limit="9" min_rating="4"]', __('Testimonials carousel: the middle card is raised; per_view="3", autoplay="6" (0 = off), role="Patnik" (text under the name), featured="yes"', 'seeinside-travel')],
             ['[sta_review_form]', __('Only the form for a new review', 'seeinside-travel')],
             ['[sta_flight_search]', __('Flight search (GOL IBE widget from SeeInside)', 'seeinside-travel')],
             ['[sta_booking_status]', __('Customer checks a booking / visa application (number + e-mail)', 'seeinside-travel')],

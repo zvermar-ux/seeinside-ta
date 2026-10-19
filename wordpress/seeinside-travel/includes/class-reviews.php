@@ -105,9 +105,71 @@ class STA_Reviews
             .'</article>';
     }
 
-    /** List + summary + form. $args: limit, layout (grid|list|slider), form (bool), show_item (bool), type, slug */
+    /** Testimonial card: avatar, name, who / what, stars, quote and the round quote mark at the bottom */
+    public static function testimonial_html(array $r, bool $showItem = true, string $role = ''): string
+    {
+        $sub = '';
+        if ($showItem && ! empty($r['item'])) {
+            $sub = sta_t($r['item']['title'] ?? null);
+        }
+        $sub = $sub ?: implode(' · ', array_filter([$r['city'] ?? null, $r['trip_date'] ?? null])) ?: $role;
+        $name = trim((string) $r['name']);
+        $parts = preg_split('/\s+/u', $name) ?: [];
+        $initials = mb_strtoupper(mb_substr($parts[0] ?? '', 0, 1).(count($parts) > 1 ? mb_substr(end($parts), 0, 1) : ''));
+        $hue = abs(crc32($name)) % 360;
+        $body = trim((string) ($r['body'] ?? ''));
+
+        return '<article class="sta-tm-card">'
+            .'<header class="sta-tm-head">'
+            .'<span class="sta-tm-avatar" style="--h:'.(int) $hue.'" aria-hidden="true">'.esc_html($initials).'</span>'
+            .'<div class="sta-tm-who"><b>'.esc_html($name).'</b>'.($sub ? '<small>'.esc_html($sub).'</small>' : '').'</div>'
+            .sta_stars((float) $r['rating'], 'sta-tm-stars')
+            .'</header>'
+            .(! empty($r['title']) ? '<h4 class="sta-tm-title">'.esc_html($r['title']).'</h4>' : '')
+            .'<blockquote class="sta-tm-text">“'.esc_html($body).'”</blockquote>'
+            .'<span class="sta-tm-quote" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M9.6 6C6.5 7.3 4.5 9.9 4.5 13.4V18h6v-6H7.6c.2-1.9 1.4-3.3 3.3-4.1L9.6 6Zm9 0c-3.1 1.3-5.1 3.9-5.1 7.4V18h6v-6h-2.9c.2-1.9 1.4-3.3 3.3-4.1L18.6 6Z"/></svg></span>'
+            .'</article>';
+    }
+
+    /** Centred testimonial carousel (the middle card is raised and highlighted) */
+    public static function testimonials(array $items, array $args = []): string
+    {
+        $items = array_slice($items, 0, max(1, (int) ($args['limit'] ?? 9)));
+        if (! $items) {
+            return '';
+        }
+        $cards = '';
+        foreach ($items as $r) {
+            $cards .= self::testimonial_html($r, ! empty($args['show_item']), (string) ($args['role'] ?? ''));
+        }
+        $dots = '';
+        foreach ($items as $i => $r) {
+            $dots .= '<button type="button" class="sta-tm-dot" aria-label="'.esc_attr(sprintf(__('Review %d', 'seeinside-travel'), $i + 1)).'"></button>';
+        }
+
+        return '<div class="sta-tm" data-sta-tm data-autoplay="'.esc_attr((string) max(0, (int) ($args['autoplay'] ?? 6))).'" data-per="'.esc_attr((string) max(1, min(4, (int) ($args['per_view'] ?? 3)))).'" aria-roledescription="carousel">'
+            .'<div class="sta-tm-viewport"><div class="sta-tm-track">'.$cards.'</div></div>'
+            .(count($items) > 1 ? '<div class="sta-tm-nav">'
+                .'<button type="button" class="sta-tm-arrow" data-dir="-1" aria-label="'.esc_attr__('Previous', 'seeinside-travel').'">‹</button>'
+                .'<div class="sta-tm-dots">'.$dots.'</div>'
+                .'<button type="button" class="sta-tm-arrow" data-dir="1" aria-label="'.esc_attr__('Next', 'seeinside-travel').'">›</button></div>' : '')
+            .'</div>';
+    }
+
+    /** List + summary + form. $args: limit, layout (grid|list|slider|testimonials), form (bool), show_item (bool), type, slug */
     public static function block(array $items, array $args = []): string
     {
+        if (($args['layout'] ?? '') === 'testimonials') {
+            $html = self::testimonials($items, $args);
+            if (! empty($args['form'])) {
+                $html .= '<div class="sta-center"><button type="button" class="sta-btn sta-btn-ghost" data-sta-review-open>'.esc_html__('Write a review', 'seeinside-travel').'</button></div>'
+                    .self::form($args['type'] ?? '', $args['slug'] ?? '', false);
+            } elseif (! $items) {
+                return '';
+            }
+
+            return $html;
+        }
         $limit = max(1, (int) ($args['limit'] ?? 6));
         $layout = in_array($args['layout'] ?? 'grid', ['grid', 'list', 'slider'], true) ? $args['layout'] : 'grid';
         $s = self::summary($items);
@@ -173,7 +235,8 @@ class STA_Reviews
     /** [sta_reviews type="tour|event|accommodation|visa|agency" slug="" limit="6" layout="grid|list|slider" form="no" featured="no" title=""] */
     public static function sc_reviews($atts = []): string
     {
-        $a = shortcode_atts(['type' => '', 'slug' => '', 'limit' => 6, 'layout' => 'grid', 'form' => 'no', 'featured' => 'no', 'title' => ''], $atts, 'sta_reviews');
+        $a = shortcode_atts(['type' => '', 'slug' => '', 'limit' => 6, 'layout' => 'grid', 'form' => 'no', 'featured' => 'no', 'title' => '', 'subtitle' => '',
+            'autoplay' => 6, 'per_view' => 3, 'role' => __('Traveller', 'seeinside-travel'), 'min_rating' => 0], $atts, 'sta_reviews');
         $yes = fn ($v) => in_array(strtolower((string) $v), ['1', 'yes', 'true', 'da', 'да'], true);
         $type = sanitize_key($a['type']);
         $slug = sanitize_title($a['slug']);
@@ -184,12 +247,20 @@ class STA_Reviews
             $slug = $d['slug'] ?? '';
         }
         $items = self::filter($type ?: null, null, $slug ?: null, $yes($a['featured']));
-        $html = self::block($items, ['limit' => (int) $a['limit'], 'layout' => $a['layout'], 'form' => $yes($a['form']), 'show_item' => ! $slug, 'type' => $type === 'agency' ? '' : $type, 'slug' => $slug]);
+        if ((int) $a['min_rating'] > 0) {
+            $items = array_values(array_filter($items, fn ($r) => (float) $r['rating'] >= (int) $a['min_rating']));
+        }
+        $html = self::block($items, ['limit' => (int) $a['limit'], 'layout' => $a['layout'], 'form' => $yes($a['form']), 'show_item' => ! $slug, 'type' => $type === 'agency' ? '' : $type, 'slug' => $slug,
+            'autoplay' => (int) $a['autoplay'], 'per_view' => (int) $a['per_view'], 'role' => (string) $a['role']]);
         if ($html === '') {
             return '';
         }
+        $head = '';
+        if ($a['subtitle'] || $a['title']) {
+            $head = '<div class="sta-tm-heading">'.($a['subtitle'] ? '<span class="sta-tm-sub">'.esc_html($a['subtitle']).'</span>' : '').($a['title'] ? '<h2 class="sta-h">'.esc_html($a['title']).'</h2>' : '').'</div>';
+        }
 
-        return '<div class="sta sta-reviews-wrap">'.($a['title'] ? '<h3 class="sta-h">'.esc_html($a['title']).'</h3>' : '').$html.'</div>';
+        return '<div class="sta sta-reviews-wrap'.($a['layout'] === 'testimonials' ? ' sta-reviews-wrap--tm' : '').'">'.$head.$html.'</div>';
     }
 
     public static function sc_form($atts = []): string

@@ -2338,6 +2338,36 @@ msgstr "Штиклирајте го полето за согласност на�
 msgid "Please fill in the fields marked in red."
 msgstr "Пополнете ги полињата означени со црвено."
 
+msgid "Traveller"
+msgstr "Патник"
+
+msgid "Review %d"
+msgstr "Рецензија %d"
+
+msgid "Testimonials carousel (centred)"
+msgstr "Карусел со рецензии (центриран)"
+
+msgid "Small title above"
+msgstr "Мал наслов горе"
+
+msgid "Cards visible"
+msgstr "Видливи картички"
+
+msgid "Autoplay (seconds, 0 = off)"
+msgstr "Автоматски (секунди, 0 = исклучено)"
+
+msgid "Text under the name (when the review has no offer)"
+msgstr "Текст под името (кога рецензијата нема понуда)"
+
+msgid "Minimum rating"
+msgstr "Минимална оцена"
+
+msgid "All"
+msgstr "Сите"
+
+msgid "Testimonials carousel: the middle card is raised; per_view=\"3\", autoplay=\"6\" (0 = off), role=\"Patnik\" (text under the name), featured=\"yes\""
+msgstr "Карусел со рецензии: средната картичка е подигната; per_view=\"3\", autoplay=\"6\" (0 = исклучено), role=\"Патник\" (текст под името), featured=\"yes\""
+
 msgid "%d night"
 msgid_plural "%d nights"
 msgstr[0] "%d ноќевање"
