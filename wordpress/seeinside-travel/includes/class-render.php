@@ -484,11 +484,16 @@ class STA_Render
             $opts .= '<option value="'.(int) $r['id'].'">'.esc_html(sta_t($r['name'])).'</option>';
         }
 
+        $quick = ! isset($d['booking']['enabled']) || ! empty($d['booking']['enabled']);
+
         return self::heading(__('Availability', 'seeinside-travel'))
-            .'<div class="sta-cal" data-sta-calendar data-slug="'.esc_attr($d['slug']).'">'
+            .'<div class="sta-cal'.($quick ? ' is-pickable' : '').'" data-sta-calendar data-slug="'.esc_attr($d['slug']).'" data-currency="'.esc_attr($d['currency'] ?? 'EUR').'">'
             .'<div class="sta-cal-head"><select class="sta-cal-room">'.$opts.'</select><div class="sta-cal-nav"><button type="button" data-dir="-1" aria-label="‹">‹</button><b class="sta-cal-month"></b><button type="button" data-dir="1" aria-label="›">›</button></div></div>'
+            .($quick ? '<p class="sta-cal-hint" data-sta-cal-hint>'.esc_html__('Click the day of arrival, then the day of departure.', 'seeinside-travel').'</p>' : '')
             .'<div class="sta-cal-grid"></div>'
-            .'<div class="sta-cal-legend"><span class="is-free"></span>'.esc_html__('Free', 'seeinside-travel').' <span class="is-booked"></span>'.esc_html__('Booked', 'seeinside-travel').'</div></div>';
+            .'<div class="sta-cal-legend"><span class="is-free"></span>'.esc_html__('Free', 'seeinside-travel').' <span class="is-booked"></span>'.esc_html__('Booked', 'seeinside-travel').($quick ? ' <span class="is-pick"></span>'.esc_html__('Your stay', 'seeinside-travel') : '').'</div>'
+            .($quick ? '<div class="sta-cal-pick" data-sta-cal-pick hidden></div>'.sta_part('quick-booking', ['d' => $d]) : '')
+            .'</div>';
     }
 
     protected static function s_map(array $d): string

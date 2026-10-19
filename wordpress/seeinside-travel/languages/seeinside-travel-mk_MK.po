@@ -224,7 +224,7 @@ msgid "Book"
 msgstr "Резервирај"
 
 msgid "Book now"
-msgstr "Резервирај сега"
+msgstr "Резервирај"
 
 msgid "Book this tour"
 msgstr "Резервирај го аранжманот"
@@ -2367,6 +2367,24 @@ msgstr "Сите"
 
 msgid "Testimonials carousel: the middle card is raised; per_view=\"3\", autoplay=\"6\" (0 = off), role=\"Patnik\" (text under the name), featured=\"yes\""
 msgstr "Карусел со рецензии: средната картичка е подигната; per_view=\"3\", autoplay=\"6\" (0 = исклучено), role=\"Патник\" (текст под името), featured=\"yes\""
+
+msgid "Quick booking"
+msgstr "Брза резервација"
+
+msgid "Change dates"
+msgstr "Промени датуми"
+
+msgid "This room is not free for all the chosen nights. Choose other dates."
+msgstr "Собата не е слободна за сите избрани ноќи. Изберете други датуми."
+
+msgid "Click the day of arrival, then the day of departure."
+msgstr "Кликнете на денот на пристигнување, па на денот на заминување."
+
+msgid "Now click the day of departure."
+msgstr "Сега кликнете на денот на заминување."
+
+msgid "Your stay"
+msgstr "Ваш престој"
 
 msgid "%d night"
 msgid_plural "%d nights"

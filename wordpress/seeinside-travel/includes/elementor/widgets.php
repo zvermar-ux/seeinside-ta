@@ -54,6 +54,42 @@ abstract class STA_Elementor_Widget extends Widget_Base
 
 class STA_Widget_Section extends STA_Elementor_Widget
 {
+    protected static array $reviewsIn = [];
+
+    /** Does the template being rendered already show reviews (section or reviews widget)? */
+    protected static function doc_has_reviews(): bool
+    {
+        try {
+            $doc = \Elementor\Plugin::$instance->documents->get_current();
+            if (! $doc) {
+                return false;
+            }
+            $id = (int) $doc->get_main_id();
+            if (isset(self::$reviewsIn[$id])) {
+                return self::$reviewsIn[$id];
+            }
+            $found = false;
+            $walk = function (array $els) use (&$walk, &$found) {
+                foreach ($els as $e) {
+                    $w = $e['widgetType'] ?? '';
+                    if ($w === 'sta-reviews' || ($w === 'sta-section' && (($e['settings']['section'] ?? '') === 'reviews'))) {
+                        $found = true;
+
+                        return;
+                    }
+                    if (! empty($e['elements'])) {
+                        $walk($e['elements']);
+                    }
+                }
+            };
+            $walk((array) $doc->get_elements_data());
+
+            return self::$reviewsIn[$id] = $found;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
     public function get_name(): string { return 'sta-section'; }
     public function get_title(): string { return __('Travel: section', 'seeinside-travel'); }
     public function get_icon(): string { return 'eicon-post-content'; }
@@ -101,6 +137,10 @@ class STA_Widget_Section extends STA_Elementor_Widget
             $html = preg_replace('#<h3 class="sta-h">.*?</h3>#s', '', $html, 1);
         } elseif (isset($args['title']) && $args['title'] === false) {
             $html = preg_replace('#<h3 class="sta-h">.*?</h3>#s', '', $html, 1);
+        }
+        // templates made before reviews existed end with the booking form: add the reviews after it
+        if (($s['section'] ?? '') === 'booking' && ! self::doc_has_reviews() && apply_filters('sta_auto_reviews', true, $postId)) {
+            $html .= STA_Render::section('reviews', $postId);
         }
         if ($html === '' && $this->is_editor()) {
             $html = '<div class="sta-empty">'.esc_html(sprintf(__('"%s" is empty for this item.', 'seeinside-travel'), __(STA_Render::SECTIONS[$s['section']] ?? '', 'seeinside-travel'))).'</div>';

@@ -223,7 +223,7 @@
   document.addEventListener('click', function (e) {
     var a = e.target.closest('[data-sta-departure],[data-sta-room]');
     if (!a) return;
-    var form = $('[data-sta-booking]'); if (!form) return;
+    var form = $('form[data-sta-booking]:not([data-quick])'); if (!form) return;
     if (a.dataset.staDeparture) { var s = $('[name="departure_id"]', form); if (s) { s.value = a.dataset.staDeparture; s.dispatchEvent(new Event('change', { bubbles: true })); } }
     if (a.dataset.staRoom) { var r = $('[name="room_id"]', form); if (r) r.value = a.dataset.staRoom; }
   });
@@ -280,34 +280,106 @@
     });
   });
 
-  /* ---------- availability calendar ---------- */
+  /* ---------- availability calendar + quick booking (pick arrival → departure, like Booking) ---------- */
   $$('[data-sta-calendar]').forEach(function (cal) {
     var grid = $('.sta-cal-grid', cal), label = $('.sta-cal-month', cal), room = $('.sta-cal-room', cal), cache = {};
-    var now = new Date(), month = new Date(now.getFullYear(), now.getMonth(), 1);
+    var pickable = cal.classList.contains('is-pickable'), pickBox = $('[data-sta-cal-pick]', cal), hint = $('[data-sta-cal-hint]', cal);
+    var dlg = $('[data-sta-quick-dialog]', cal), qform = dlg && $('form', dlg), cur = cal.dataset.currency || 'EUR';
+    var now = new Date(), month = new Date(now.getFullYear(), now.getMonth(), 1), start = null, end = null, hover = null, quote = null;
     function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-    function draw(data) {
-      var rows = (data && data.rooms) || [], r = rows.filter(function (x) { return String(x.room_id) === room.value; })[0];
+    function parse(k) { var p = k.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+    function addDays(k, n) { var d = parse(k); d.setDate(d.getDate() + n); return iso(d); }
+    function nights(a, b) { return Math.round((parse(b) - parse(a)) / 864e5); }
+    function fmt(k) { var d = parse(k); return d.getDate() + '.' + (d.getMonth() + 1) + '.' + d.getFullYear(); }
+    function info(k) {
+      var c = cache[k.slice(0, 7) + '-01'], rows = (c && c.rooms) || [], r = rows.filter(function (x) { return String(x.room_id) === room.value; })[0];
+      return r && r.days ? r.days[k] : undefined;
+    }
+    // every night from a to b-1 must be free (unknown months are checked by the price request)
+    function rangeFree(a, b) { for (var k = a; k < b; k = addDays(k, 1)) { var i = info(k); if (i && !(i.free > 0)) return false; } return true; }
+    function draw() {
+      var data = cache[iso(month)], rows = (data && data.rooms) || [], r = rows.filter(function (x) { return String(x.room_id) === room.value; })[0];
       var days = (r && r.days) || {}, first = (month.getDay() + 6) % 7, last = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate(), today = iso(now);
+      var to = end || (start && hover && hover > start ? hover : null);
       var html = (T.weekdays || []).map(function (w) { return '<div class="wd">' + esc(w) + '</div>'; }).join('');
       for (var k = 0; k < first; k++) html += '<div></div>';
       for (var d = 1; d <= last; d++) {
-        var key = iso(new Date(month.getFullYear(), month.getMonth(), d)), info = days[key], cls = 'd';
-        if (key < today) cls += ' is-past'; else if (info) cls += info.free > 0 ? ' is-free' : ' is-booked';
-        html += '<div class="' + cls + '" title="' + (info ? (info.free > 0 ? esc(T.free) + ' ' + info.free + (info.price ? ' · ' + money(info.price) : '') : esc(T.booked)) : '') + '">' + d + '</div>';
+        var key = iso(new Date(month.getFullYear(), month.getMonth(), d)), i = days[key], cls = 'd';
+        if (key < today) cls += ' is-past'; else if (i) cls += i.free > 0 ? ' is-free' : ' is-booked';
+        if (start && key === start) cls += ' is-start';
+        if (to && key === to) cls += ' is-end';
+        if (start && to && key > start && key < to) cls += ' is-range';
+        html += '<div class="' + cls + '" data-day="' + key + '" title="' + (i ? (i.free > 0 ? esc(T.free) + ' ' + i.free + (i.price ? ' · ' + money(i.price, cur) : '') : esc(T.booked)) : '') + '">' + d
+          + (pickable && i && i.price && i.free > 0 && key >= today ? '<small>' + money(i.price, cur) + '</small>' : '') + '</div>';
       }
       grid.innerHTML = html;
     }
     function load() {
       label.textContent = (T.months || [])[month.getMonth()] + ' ' + month.getFullYear();
       var from = iso(month), to = iso(new Date(month.getFullYear(), month.getMonth() + 1, 0));
-      if (cache[from]) { draw(cache[from]); return; }
+      if (cache[from] !== undefined) { draw(); return; }
       grid.style.opacity = .5;
       api('availability?' + new URLSearchParams({ slug: cal.dataset.slug, from: from, to: to })).then(function (r) {
-        cache[from] = r.ok ? r.body.data : null; draw(cache[from]);
-      }).catch(function () { draw(null); }).then(function () { grid.style.opacity = 1; });
+        cache[from] = r.ok ? r.body.data : null; draw();
+      }).catch(function () { cache[from] = null; draw(); }).then(function () { grid.style.opacity = 1; });
     }
+    function reset() { start = end = hover = quote = null; if (pickBox) { pickBox.hidden = true; pickBox.innerHTML = ''; } if (hint) hint.hidden = false; draw(); }
+    function panel(html) { if (!pickBox) return; pickBox.hidden = false; pickBox.innerHTML = html; if (hint) hint.hidden = true; }
+    function roomName() { var o = room.selectedOptions[0]; return o ? o.textContent : ''; }
+    function priceFor(a, b) {
+      quote = null;
+      var adults = qform ? +$('[name="adults"]', qform).value || 2 : 2, kids = qform ? +$('[name="children"]', qform).value || 0 : 0;
+      panel('<div class="sta-cal-pick-in"><div><b>' + esc(fmt(a)) + ' → ' + esc(fmt(b)) + '</b><small>' + nights(a, b) + ' ' + esc(T.nights) + ' · ' + esc(roomName()) + '</small></div><span class="sta-muted">' + esc(T.checking) + '</span></div>');
+      return api('quote?' + new URLSearchParams({ slug: cal.dataset.slug, from: a, to: b, adults: adults, children: kids })).then(function (r) {
+        var offers = (r.ok && r.body && r.body.data) || [], o = offers.filter(function (x) { return String(x.room_id) === room.value; })[0];
+        if (!r.ok) { panel('<div class="sta-cal-pick-in is-bad">' + errors(r.body) + '<button type="button" class="sta-btn sta-btn-ghost" data-cal-reset>' + esc(T.change) + '</button></div>'); return; }
+        if (!o) { panel('<div class="sta-cal-pick-in is-bad"><span>' + esc(T.notFree) + '</span><button type="button" class="sta-btn sta-btn-ghost" data-cal-reset>' + esc(T.change) + '</button></div>'); return; }
+        quote = o;
+        panel('<div class="sta-cal-pick-in"><div><b>' + esc(fmt(a)) + ' → ' + esc(fmt(b)) + '</b><small>' + o.nights + ' ' + esc(T.nights) + ' · ' + esc(o.room) + (o.board ? ' · ' + esc(o.board) : '') + '</small></div>'
+          + '<div class="sta-cal-price"><small>' + esc(T.total) + '</small><b>' + money(o.total, o.currency || cur) + '</b></div>'
+          + '<div class="sta-cal-acts"><button type="button" class="sta-btn sta-btn-ghost" data-cal-reset>' + esc(T.change) + '</button>'
+          + (qform ? '<button type="button" class="sta-btn" data-cal-book>' + esc(T.quickBook) + '</button>' : '') + '</div></div>');
+      }).catch(function () { panel('<div class="sta-cal-pick-in is-bad">' + esc(T.error) + '</div>'); });
+    }
+    function fillSum() {
+      var sum = $('[data-sta-quick-sum]', qform);
+      sum.classList.toggle('is-selected', !!quote);
+      if (!quote) { sum.dataset.total = ''; sum.innerHTML = '<span class="sta-muted">' + esc(T.notFree) + '</span>'; qform.dispatchEvent(new Event('change')); return; }
+      sum.dataset.total = quote.total;
+      sum.innerHTML = '<span><b style="color:inherit;font-size:1rem">' + esc(quote.room) + '</b><br><small class="sta-muted">' + esc(fmt(start)) + ' → ' + esc(fmt(end)) + ' · ' + quote.nights + ' ' + esc(T.nights) + (quote.board ? ' · ' + esc(quote.board) : '') + '</small></span><b>' + money(quote.total, quote.currency || cur) + '</b>';
+      qform.dispatchEvent(new Event('change'));
+    }
+    function openDialog() {
+      if (!qform || !quote) return;
+      $('[name="date_from"]', qform).value = start; $('[name="date_to"]', qform).value = end; $('[name="room_id"]', qform).value = room.value;
+      fillSum();
+      $('[data-sta-msg]', qform).className = 'sta-msg';
+      dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', '');
+    }
+    grid.addEventListener('click', function (e) {
+      var c = e.target.closest('.d[data-day]'); if (!pickable || !c) return;
+      var k = c.dataset.day, today = iso(now), i = info(k);
+      if (k < today) return;
+      if (!start || end || k <= start) {
+        if (i && !(i.free > 0)) return;           // can't arrive on a booked night
+        start = k; end = null; quote = null; if (pickBox) pickBox.hidden = true; if (hint) { hint.hidden = false; hint.textContent = T.pickDeparture; }
+      } else if (!rangeFree(start, k)) {
+        start = (i && i.free > 0) ? k : null; end = null; if (hint) { hint.hidden = false; hint.textContent = T.notFree; }
+      } else { end = k; priceFor(start, end); }
+      draw();
+    });
+    grid.addEventListener('mouseover', function (e) { var c = e.target.closest('.d[data-day]'); if (start && !end && c && c.dataset.day !== hover) { hover = c.dataset.day; draw(); } });
+    cal.addEventListener('click', function (e) {
+      if (e.target.closest('[data-cal-reset]')) { if (hint) hint.textContent = T.pickArrival; reset(); }
+      if (e.target.closest('[data-cal-book]')) openDialog();
+    });
+    if (dlg) dlg.addEventListener('click', function (e) { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close ? dlg.close() : dlg.removeAttribute('open'); });
+    // after a booking from this page: fresh availability
+    document.addEventListener('sta:booked', function () { cache = {}; reset(); load(); });
     $$('.sta-cal-nav button', cal).forEach(function (b) { b.addEventListener('click', function () { month = new Date(month.getFullYear(), month.getMonth() + (+b.dataset.dir), 1); load(); }); });
-    room.addEventListener('change', function () { draw(cache[iso(month)]); });
+    room.addEventListener('change', function () { reset(); });
+    // more people → new price (and the room may not fit)
+    if (qform) ['adults', 'children'].forEach(function (n) { $('[name="' + n + '"]', qform).addEventListener('change', function () { if (start && end) priceFor(start, end).then(function () { fillSum(); }); }); });
     load();
   });
 
