@@ -208,23 +208,14 @@ class STA_Items
         $it['country'] = (string) ($d['country'] ?? '');
         $it['country_code'] = strtolower((string) ($d['country_code'] ?? '')) ?: STA_Countries::code($it['country']);
 
-        // price (last minute: new price, old one crossed out)
-        $price = $type === 'visa' ? ($d['price'] ?? null) : ($d['price_from'] ?? null);
-        $lm = $d['promotions']['last_minute'] ?? null;
-        if ($lm && $price) {
-            $new = $lm['price'] ?? (! empty($lm['discount_percent']) ? $price * (1 - $lm['discount_percent'] / 100) : $price);
-            if ($new < $price) {
-                $it['old_price'] = (float) $price;
-            }
-            $price = $new;
-        }
-        $it['price'] = $price !== null ? (float) $price : null;
-        if ($lm) {
-            $it['badges'][] = ['lm', 'Last minute'.(! empty($lm['discount_percent']) ? ' −'.(float) $lm['discount_percent'].'%' : '')];
-        }
-        if (! empty($d['promotions']['first_minute'])) {
-            $fm = $d['promotions']['first_minute'];
-            $it['badges'][] = ['fm', 'First minute '.(($fm['type'] ?? '') === 'percent' ? '−'.(float) $fm['discount'].'%' : '')];
+        // price: promotional price with the regular one crossed out
+        [$price, $old, $promo] = sta_price_info($d, $type);
+        $it['price'] = $price;
+        $it['old_price'] = $old;
+        if (! empty($d['promotions']['last_minute'])) {
+            $it['badges'][] = ['lm', $promo];
+        } elseif (! empty($d['promotions']['first_minute'])) {
+            $it['badges'][] = ['fm', $promo];
         }
 
         $reviews = class_exists('STA_Reviews') ? STA_Reviews::summary(STA_Reviews::filter($type, (int) ($d['id'] ?? 0))) : ['count' => 0, 'average' => 0];

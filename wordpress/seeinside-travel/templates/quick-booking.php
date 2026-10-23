@@ -3,7 +3,7 @@
  * Quick booking from the availability calendar (hotels / apartments).
  * Override: copy to your-theme/seeinside-travel/quick-booking.php
  *
- * @var array $d synced item
+ * @var array $d synced item   @var bool $terms opened from the terms table
  */
 defined('ABSPATH') || exit;
 $privacy = get_privacy_policy_url();
@@ -16,12 +16,14 @@ $privacy = get_privacy_policy_url();
         <input type="hidden" name="date_from" value="">
         <input type="hidden" name="date_to" value="">
         <input type="hidden" name="room_id" value="">
+        <input type="hidden" name="term_id" value="">
         <div class="sta-offer is-selected sta-quick-sum" data-total="0" data-sta-quick-sum></div>
         <div class="sta-row">
             <label class="sta-field"><span><?php esc_html_e('Adults', 'seeinside-travel'); ?></span><input type="number" name="adults" min="1" max="20" value="2"></label>
             <label class="sta-field"><span><?php esc_html_e('Children', 'seeinside-travel'); ?></span><input type="number" name="children" min="0" max="10" value="0"></label>
         </div>
         <div class="sta-row sta-ages" data-sta-ages></div>
+        <?php echo sta_part('passengers'); // phpcs:ignore ?>
         <div class="sta-row">
             <label class="sta-field sta-col-2"><span><?php esc_html_e('Full name', 'seeinside-travel'); ?> *</span><input name="customer[name]" required autocomplete="name"></label>
             <label class="sta-field"><span><?php esc_html_e('Phone', 'seeinside-travel'); ?> *</span><input type="tel" name="customer[phone]" required autocomplete="tel"></label>

@@ -2386,6 +2386,86 @@ msgstr "Сега кликнете на денот на заминување."
 msgid "Your stay"
 msgstr "Ваш престој"
 
+msgid "%1$s price valid for bookings paid by %2$s"
+msgstr "%1$s цена важи за резервации уплатени до %2$s"
+
+msgid "Additional photo galleries"
+msgstr "Дополнителни фотогалерии"
+
+msgid "Choose a term"
+msgstr "Изберете термин"
+
+msgid "Click a price to book."
+msgstr "Кликнете на цена за резервација."
+
+msgid "Date of birth"
+msgstr "Датум на раѓање"
+
+msgid "Itinerary"
+msgstr "Итинерер"
+
+msgid "Itinerary map"
+msgstr "Мапа на итинерерот"
+
+msgid "Name and date of birth of every passenger, as in the passport – they are written in the travel contract."
+msgstr "Име, презиме и датум на раѓање на секој патник, како во пасошот – се впишуваат во договорот за патување."
+
+msgid "New terms coming soon – send an inquiry."
+msgstr "Наскоро нови термини – испратете барање."
+
+msgid "Passenger"
+msgstr "Патник"
+
+msgid "Passengers"
+msgstr "Патници"
+
+msgid "Passport no."
+msgstr "Број на пасош"
+
+msgid "Photos"
+msgstr "Фотографии"
+
+msgid "Prices per person for the whole term."
+msgstr "Цените се по лице за целиот термин."
+
+msgid "Prices per room / apartment for the whole term."
+msgstr "Цените се по соба / апартман за целиот термин."
+
+msgid "Term"
+msgstr "Термин"
+
+msgid "Terms & prices"
+msgstr "Термини и цени"
+
+msgid "Terms & prices (fixed stays)"
+msgstr "Термини и цени (фиксни престои)"
+
+msgid "This room is not free in the chosen term any more."
+msgstr "Оваа соба повеќе не е слободна во избраниот термин."
+
+msgid "You save %s"
+msgstr "Заштедувате %s"
+
+msgid "adult"
+msgstr "возрасен"
+
+msgid "child"
+msgstr "дете"
+
+msgid "free"
+msgstr "слободни"
+
+msgid "per person / term"
+msgstr "по лице / термин"
+
+msgid "per term"
+msgstr "за термин"
+
+msgid "%d free"
+msgid_plural "%d free"
+msgstr[0] "%d слободна"
+msgstr[1] "%d слободни"
+
 msgid "%d night"
 msgid_plural "%d nights"
 msgstr[0] "%d ноќевање"

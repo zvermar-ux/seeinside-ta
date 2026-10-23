@@ -53,3 +53,7 @@ Route::get('/manifest.webmanifest', function () {
 // Media library picker (JSON for the "From library" button)
 Route::get('/admin/library/browse', [\App\Http\Controllers\Admin\LibraryController::class, 'browse'])
     ->middleware(['web', 'auth'])->name('library.browse');
+
+// Printable documents: contract, voucher, invoice, cash receipt, rooming list
+Route::get('/admin/docs/{type}/{id}', [\App\Http\Controllers\Admin\DocumentController::class, 'show'])
+    ->middleware(['web', 'auth'])->whereNumber('id')->name('docs.show');

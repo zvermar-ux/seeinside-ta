@@ -70,6 +70,7 @@ trait HasPromotions
                 'discount' => (float) $this->first_minute_discount,
                 'type' => $this->first_minute_discount_type,
                 'until' => $this->first_minute_until?->toDateString(),
+                'label' => $this->first_minute_label ?: 'Early Booking',
             ] : null,
         ];
     }

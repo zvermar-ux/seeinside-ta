@@ -228,6 +228,14 @@ class CatalogController extends Controller
         return response()->json(['data' => $a->quote($data['from'], $data['to'], (int) ($data['adults'] ?? 2), (int) ($data['children'] ?? 0))]);
     }
 
+    /** Fixed terms of an accommodation with price and free units per room (website term table) */
+    public function terms(Request $request, string $slug): JsonResponse
+    {
+        $a = $this->published(Accommodation::class, $request)->where('slug', $slug)->firstOrFail();
+
+        return response()->json(['data' => $a->book_by_terms ? $a->termTable() : ['terms' => [], 'rooms' => []]]);
+    }
+
     /** Free units per room and night (for the calendar on the website); bookings are not exposed */
     public function availability(Request $request, string $slug): JsonResponse
     {

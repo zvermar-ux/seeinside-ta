@@ -139,6 +139,11 @@ class AccommodationResource extends Resource
                             ->options(['request' => __('On request (agency confirms)'), 'instant' => __('Instant confirmation')])->default('request'),
                         Forms\Components\Placeholder::make('price_from_info')->label(__('Price from (website)'))
                             ->content(fn (?Accommodation $record) => $record?->price_from ? number_format((float) $record->price_from, 2, ',', '.').' '.$record->currency : '—'),
+                        Forms\Components\Toggle::make('book_by_terms')->label(__('Booking only in fixed terms (e.g. 15–22.05, 22–29.05…)'))->live()->columnSpan(2)
+                            ->helperText(__('Terms and their prices per room are defined in the “Terms” tab below (generator + price matrix).')),
+                        Forms\Components\Select::make('term_price_type')->label(__('Term price is'))->selectablePlaceholder(false)->default('per_room')
+                            ->options(['per_room' => __('per room / apartment for the whole term'), 'per_person' => __('per person for the whole term')])
+                            ->visible(fn (Get $get) => (bool) $get('book_by_terms')),
                         Forms\Components\FileUpload::make('price_list_pdf')->label(__('Price list (PDF)'))->columnSpanFull()
                             ->disk('public')->directory('price-lists')->acceptedFileTypes(['application/pdf'])->downloadable()->openable(),
                         Forms\Components\Placeholder::make('rooms_hint')->hiddenLabel()->columnSpanFull()
@@ -156,6 +161,7 @@ class AccommodationResource extends Resource
                     ]),
                 ]),
                 Forms\Components\Tabs\Tab::make(__('Media & promotions'))->icon('heroicon-o-bolt')->schema([
+                    CatalogFields::galleries('accommodations'),
                     CatalogFields::videos(),
                     CatalogFields::promotions(),
                     CatalogFields::seo(),
@@ -216,7 +222,7 @@ class AccommodationResource extends Resource
 
     public static function getRelations(): array
     {
-        return [RoomsRelationManager::class, MediaRelationManager::class, \App\Filament\RelationManagers\CostsRelationManager::class];
+        return [RoomsRelationManager::class, AccommodationResource\RelationManagers\StayTermsRelationManager::class, MediaRelationManager::class, \App\Filament\RelationManagers\CostsRelationManager::class];
     }
 
     public static function getPages(): array
@@ -225,6 +231,7 @@ class AccommodationResource extends Resource
             'index' => Pages\ListAccommodations::route('/'),
             'create' => Pages\CreateAccommodation::route('/create'),
             'edit' => Pages\EditAccommodation::route('/{record}/edit'),
+            'term-prices' => Pages\TermPrices::route('/{record}/term-prices'),
         ];
     }
 }

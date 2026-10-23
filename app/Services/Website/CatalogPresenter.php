@@ -33,6 +33,15 @@ class CatalogPresenter
         return $g ? ['id' => $g->id, 'name' => ['mk' => $g->getTranslation('name', 'mk', false) ?: $g->display_name, 'en' => $g->getTranslation('name', 'en', false) ?: null]] : null;
     }
 
+    /** Extra galleries: [{title:{mk,en}, images:[{url}]}] */
+    public static function galleries($model): array
+    {
+        return collect((array) $model->galleries)->filter(fn ($g) => is_array($g) && ! empty($g['images']))->map(fn ($g) => [
+            'title' => ['mk' => $g['title']['mk'] ?? null, 'en' => $g['title']['en'] ?? null],
+            'images' => collect((array) $g['images'])->filter()->map(fn ($p) => ['url' => static::url($p)])->values()->all(),
+        ])->values()->all();
+    }
+
     protected static function money($v): ?float
     {
         return $v === null ? null : (float) $v;
@@ -58,6 +67,7 @@ class CatalogPresenter
             'group' => static::group($t->group),
             'duration' => ['days' => $t->duration_days, 'nights' => $t->duration_nights],
             'price_from' => static::money($t->price_from),
+            'price_regular' => $t->price_regular !== null && (float) $t->price_regular > (float) $t->price_from ? (float) $t->price_regular : null,
             'currency' => $t->currency,
             'next_departure' => $next?->start_date->toDateString(),
             'image' => static::url($t->cover_image),
@@ -85,6 +95,8 @@ class CatalogPresenter
             'cancellation_policy' => $t->trAll('cancellation_policy'),
             'group_size' => ['min' => $t->group_size_min, 'max' => $t->group_size_max],
             'map' => $t->map_location,
+            'route_map' => ($embed = \App\Support\RouteMap::embedUrl($t->route_map)) ? ['embed' => $embed, 'stops' => \App\Support\RouteMap::stops($t->route_map)] : null,
+            'galleries' => static::galleries($t),
             'airline' => $t->airline ? ['name' => $t->airline->name, 'iata' => $t->airline->iata_code, 'logo' => static::url($t->airline->logo)] : null,
             'prices' => [
                 'adult' => static::money($t->price_adult),
@@ -98,6 +110,7 @@ class CatalogPresenter
                 'start_date' => $d->start_date->toDateString(),
                 'end_date' => $d->end_date?->toDateString(),
                 'price_adult' => $d->adultPrice(),
+                'price_adult_regular' => ($reg = $d->price_adult ?? $t->price_adult) !== null && (float) $reg > (float) $d->adultPrice() ? (float) $reg : null,
                 'price_child' => $d->childPrice(),
                 'seats_left' => $d->seatsLeft(),
                 'status' => $d->status?->value,
@@ -154,6 +167,7 @@ class CatalogPresenter
             'country' => $e->country,
             'starts_at' => $e->starts_at?->toIso8601String(),
             'price_from' => static::money($e->price_from),
+            'price_regular' => $e->price_regular !== null && (float) $e->price_regular > (float) $e->price_from ? (float) $e->price_regular : null,
             'currency' => $e->currency,
             'image' => static::url($e->cover_image),
             'is_featured' => $e->is_featured,
@@ -206,6 +220,7 @@ class CatalogPresenter
             'short_description' => $a->trAll('short_description'),
             'board_types' => array_values($a->board_types ?? []),
             'price_from' => static::money($a->price_from),
+            'price_regular' => $a->price_regular !== null && (float) $a->price_regular > (float) $a->price_from ? (float) $a->price_regular : null,
             'currency' => $a->currency,
             'image' => static::url($a->cover_image),
             'amenities' => $a->amenities->map(fn ($m) => ['key' => $m->key, 'name' => $m->trAll('name'), 'icon' => $m->icon])->values()->all(),
@@ -252,6 +267,9 @@ class CatalogPresenter
                 'images' => static::gallery($r),
             ])->values()->all(),
             'price_list_pdf' => static::url($a->price_list_pdf),
+            'galleries' => static::galleries($a),
+            'book_by_terms' => (bool) $a->book_by_terms,
+            'terms' => $a->book_by_terms ? $a->termTable() : null,
             'videos' => array_values($a->video_urls ?? []),
             'gallery' => static::gallery($a),
             'booking' => ['enabled' => $a->booking_enabled, 'mode' => $a->booking_mode],

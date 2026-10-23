@@ -42,6 +42,7 @@ class BookingController extends Controller
             'departure_id' => 'nullable|integer',
             'departure_place_id' => 'nullable|integer',
             'room_id' => 'nullable|integer',
+            'term_id' => 'nullable|integer',
             'ticket_id' => 'nullable|integer',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after:date_from',
@@ -61,6 +62,8 @@ class BookingController extends Controller
             'passengers.*.last_name' => 'nullable|string|max:80',
             'passengers.*.birth_date' => 'nullable|date',
             'passengers.*.passport' => 'nullable|string|max:30',
+            'passengers.*.phone' => 'nullable|string|max:50',
+            'passengers.*.title' => 'nullable|string|max:10',
             'message' => 'nullable|string|max:3000',
             'locale' => 'nullable|in:mk,en',
         ]);
@@ -162,7 +165,22 @@ class BookingController extends Controller
             $total = (float) $ticket->price * $booking->quantity;
         }
 
-        if ($item instanceof Accommodation) {
+        if ($item instanceof Accommodation && $item->book_by_terms) {
+            $term = $item->stayTerms()->where('is_active', true)->whereKey($data['term_id'] ?? 0)->first()
+                ?? (! empty($data['date_from']) ? $item->stayTerms()->where('is_active', true)->whereDate('date_from', $data['date_from'])->first() : null);
+            if (! $term) {
+                throw ValidationException::withMessages(['term_id' => 'Choose a term.']);
+            }
+            $offer = collect($item->termOffers($term, max(1, $adults), $children))->firstWhere('room_id', (int) ($data['room_id'] ?? 0));
+            if (! $offer) {
+                throw ValidationException::withMessages(['room_id' => 'This room is not available in the selected term.']);
+            }
+            $booking->stay_term_id = $term->id;
+            $booking->accommodation_room_id = $offer['room_id'];
+            $booking->date_from = $term->date_from;
+            $booking->date_to = $term->date_to;
+            $total = $offer['total'] * ($item->term_price_type === 'per_person' ? 1 : max(1, (int) ($data['quantity'] ?? 1)));
+        } elseif ($item instanceof Accommodation) {
             if (empty($data['date_from']) || empty($data['date_to'])) {
                 throw ValidationException::withMessages(['date_from' => 'Choose check-in and check-out dates.']);
             }
@@ -192,10 +210,20 @@ class BookingController extends Controller
             'Понуда: '.$booking->itemTitle(),
             'Клиент: '.$booking->customer_name.' · '.$booking->customer_phone.' · '.$booking->customer_email,
             'Лица: '.$adults.' + '.$children,
-            'Датум: '.($booking->date_from?->format('d.m.Y') ?? '—'),
+            'Датум: '.($booking->date_from?->format('d.m.Y') ?? '—').($booking->date_to ? ' – '.$booking->date_to->format('d.m.Y') : ''),
             'Вкупно: '.($booking->total ?? '—').' '.$booking->currency,
+            'Патници:',
+            ...array_map(fn ($p) => ' - '.trim(($p['first_name'] ?? '').' '.($p['last_name'] ?? '')).(! empty($p['birth_date']) ? ', '.\Carbon\Carbon::parse($p['birth_date'])->format('d.m.Y') : '').(! empty($p['passport']) ? ', пасош '.$p['passport'] : '').(! empty($p['phone']) ? ', '.$p['phone'] : ''), $booking->passengerList()),
             'Порака: '.($booking->message ?? ''),
         ]));
+        // confirmation to the customer (with all passengers)
+        try {
+            $agency = Agency::find($agencyId);
+            \App\Services\Mail\AgencyMail::send($agency, $booking->customer_email, ($booking->locale === 'en' ? 'Booking request ' : 'Барање за резервација ').$booking->reference.' – '.$agency?->name,
+                view('emails.booking-confirmation', ['booking' => $booking->fresh(['room', 'bookable']), 'agency' => $agency])->render());
+        } catch (Throwable $e) {
+            Log::warning('Customer confirmation e-mail failed: '.$e->getMessage());
+        }
 
         return response()->json(['data' => [
             'reference' => $booking->reference,

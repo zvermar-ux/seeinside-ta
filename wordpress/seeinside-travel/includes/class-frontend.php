@@ -60,6 +60,16 @@ class STA_Frontend
                 'pickArrival' => __('Click the day of arrival, then the day of departure.', 'seeinside-travel'),
                 'pickDeparture' => __('Now click the day of departure.', 'seeinside-travel'),
                 'needConsent' => __('Please tick the consent box above the button.', 'seeinside-travel'),
+                'firstName' => __('First name', 'seeinside-travel'),
+                'lastName' => __('Last name', 'seeinside-travel'),
+                'birthDate' => __('Date of birth', 'seeinside-travel'),
+                'passport' => __('Passport no.', 'seeinside-travel'),
+                'phone' => __('Phone', 'seeinside-travel'),
+                'passenger' => __('Passenger', 'seeinside-travel'),
+                'adult' => __('adult', 'seeinside-travel'),
+                'child' => __('child', 'seeinside-travel'),
+                'termFull' => __('This room is not free in the chosen term any more.', 'seeinside-travel'),
+                'freeUnits' => __('free', 'seeinside-travel'),
                 'needFields' => __('Please fill in the fields marked in red.', 'seeinside-travel'),
                 'months' => [__('January', 'seeinside-travel'), __('February', 'seeinside-travel'), __('March', 'seeinside-travel'), __('April', 'seeinside-travel'), __('May', 'seeinside-travel'), __('June', 'seeinside-travel'), __('July', 'seeinside-travel'), __('August', 'seeinside-travel'), __('September', 'seeinside-travel'), __('October', 'seeinside-travel'), __('November', 'seeinside-travel'), __('December', 'seeinside-travel')],
                 'weekdays' => [__('Mo', 'seeinside-travel'), __('Tu', 'seeinside-travel'), __('We', 'seeinside-travel'), __('Th', 'seeinside-travel'), __('Fr', 'seeinside-travel'), __('Sa', 'seeinside-travel'), __('Su', 'seeinside-travel')],
@@ -375,6 +385,7 @@ class STA_Frontend
         register_rest_route($ns, '/booking', ['methods' => 'POST', 'callback' => [self::class, 'r_booking'], 'permission_callback' => '__return_true']);
         register_rest_route($ns, '/visa', ['methods' => 'POST', 'callback' => [self::class, 'r_visa'], 'permission_callback' => '__return_true']);
         register_rest_route($ns, '/quote', ['methods' => 'GET', 'callback' => [self::class, 'r_quote'], 'permission_callback' => '__return_true']);
+        register_rest_route($ns, '/terms', ['methods' => 'GET', 'callback' => [self::class, 'r_terms'], 'permission_callback' => '__return_true']);
         register_rest_route($ns, '/availability', ['methods' => 'GET', 'callback' => [self::class, 'r_availability'], 'permission_callback' => '__return_true']);
         register_rest_route($ns, '/status', ['methods' => 'GET', 'callback' => [self::class, 'r_status'], 'permission_callback' => '__return_true']);
     }
@@ -426,7 +437,7 @@ class STA_Frontend
             return $blocked;
         }
         $p = $r->get_json_params() ?: $r->get_body_params();
-        $allowed = ['type', 'slug', 'charter_id', 'transport_only', 'departure_id', 'departure_place_id', 'room_id', 'ticket_id', 'date_from', 'date_to', 'adults', 'children', 'children_ages', 'quantity', 'extras', 'customer', 'passengers', 'message'];
+        $allowed = ['type', 'slug', 'charter_id', 'transport_only', 'departure_id', 'departure_place_id', 'room_id', 'term_id', 'ticket_id', 'date_from', 'date_to', 'adults', 'children', 'children_ages', 'quantity', 'extras', 'customer', 'passengers', 'message'];
         $data = array_intersect_key((array) $p, array_flip($allowed));
         $data['locale'] = sta_lang();
         $data['message'] = trim(($data['message'] ?? '')."\n\n[".home_url('/').']');
@@ -517,6 +528,22 @@ class STA_Frontend
         $res = STA_Api::get('accommodations/'.$slug.'/availability', ['from' => $from, 'to' => $to]);
         if ($res[0] === 200) {
             set_transient($key, $res[1], 5 * MINUTE_IN_SECONDS);
+        }
+
+        return self::relay($res);
+    }
+
+    public static function r_terms(WP_REST_Request $r): WP_REST_Response
+    {
+        $slug = sanitize_title((string) $r->get_param('slug'));
+        $key = 'sta_tr_'.md5($slug);
+        $cached = get_transient($key);
+        if ($cached) {
+            return new WP_REST_Response($cached, 200);
+        }
+        $res = STA_Api::get('accommodations/'.$slug.'/terms');
+        if ($res[0] === 200) {
+            set_transient($key, $res[1], 2 * MINUTE_IN_SECONDS);
         }
 
         return self::relay($res);

@@ -72,7 +72,9 @@ class CatalogFields
                 Forms\Components\TextInput::make('first_minute_discount')->label(__('First minute discount'))->numeric(),
                 Forms\Components\Select::make('first_minute_discount_type')->label(__('Discount type'))
                     ->options(['amount' => __('Amount per person'), 'percent' => '%'])->default('amount')->selectablePlaceholder(false),
-                Forms\Components\DatePicker::make('first_minute_until')->label(__('For bookings until'))->native(false)->displayFormat('d.m.Y'),
+                Forms\Components\DatePicker::make('first_minute_until')->label(__('Book and pay until'))->native(false)->displayFormat('d.m.Y')
+                    ->helperText(__('Shown on the website: the regular price is struck through and the date until which the discount is valid.')),
+                Forms\Components\TextInput::make('first_minute_label')->label(__('Promotion name on the website'))->placeholder('Early Booking')->maxLength(40),
             ]);
     }
 
@@ -108,6 +110,36 @@ class CatalogFields
                 ->content(fn (Get $get) => new HtmlString(
                     '<iframe class="ta-map" loading="lazy" src="https://maps.google.com/maps?q='.urlencode((string) $get('map_location')).'&z=13&output=embed"></iframe>'
                 )),
+        ];
+    }
+
+    /** Extra photo galleries (e.g. "The hotel", "Excursions") shown lower on the website page */
+    public static function galleries(string $directory): Forms\Components\Repeater
+    {
+        return Forms\Components\Repeater::make('galleries')->label(__('Additional photo galleries'))->defaultItems(0)->collapsible()
+            ->addActionLabel(__('Add gallery'))->columns(2)->columnSpanFull()
+            ->itemLabel(fn (array $state) => ($state['title']['mk'] ?? null) ?: null)
+            ->helperText(__('Shown on the website below the description, each with its own title – e.g. “The hotel”, “Excursions”.'))
+            ->schema([
+                Forms\Components\TextInput::make('title.mk')->label(__('Title').' (МК)')->required(),
+                Forms\Components\TextInput::make('title.en')->label(__('Title').' (EN)'),
+                Forms\Components\FileUpload::make('images')->label(__('Photos'))->image()->multiple()->reorderable()->maxFiles(60)->maxSize(10240)
+                    ->disk('public')->directory($directory.'/galleries')->panelLayout('grid')->columnSpanFull(),
+            ]);
+    }
+
+    /** Itinerary map (Google Maps) of a tour */
+    public static function routeMap(): array
+    {
+        return [
+            Forms\Components\Textarea::make('route_map')->label(__('Itinerary map (Google Maps)'))->rows(2)->live(onBlur: true)->columnSpanFull()
+                ->placeholder('Скопје – Битола – Атина')
+                ->helperText(__('Write the stops separated by “–” (Skopje – Bitola – Athens), or paste a Google Maps route link or its embed code (Share → Embed a map).')),
+            Forms\Components\Placeholder::make('route_preview')->hiddenLabel()->columnSpanFull()
+                ->visible(fn (Get $get) => filled($get('route_map')))
+                ->content(fn (Get $get) => ($u = \App\Support\RouteMap::embedUrl($get('route_map')))
+                    ? new HtmlString('<iframe class="ta-map" loading="lazy" src="'.e($u).'"></iframe>')
+                    : new HtmlString('<span style="color:rgb(var(--danger-600))">'.e(__('Not recognised – use stops separated by “–” or a google.com/maps link.')).'</span>')),
         ];
     }
 

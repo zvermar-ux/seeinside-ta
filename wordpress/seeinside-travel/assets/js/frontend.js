@@ -59,6 +59,7 @@
     if (name === 'visa') { opts.body.append('locale', C.lang); return [C.direct + 'visa-applications', Object.assign({}, opts, { headers: { Accept: 'application/json' } })]; }
     var slug = q.get('slug'); q.delete('slug'); q.delete('website'); q.delete('sta_ts');
     if (name === 'quote') return [C.direct + 'accommodations/' + encodeURIComponent(slug) + '/quote?' + q, { headers: { Accept: 'application/json' } }];
+    if (name === 'terms') return [C.direct + 'accommodations/' + encodeURIComponent(slug) + '/terms', { headers: { Accept: 'application/json' } }];
     if (name === 'availability') return [C.direct + 'accommodations/' + encodeURIComponent(slug) + '/availability?' + q, { headers: { Accept: 'application/json' } }];
     if (name === 'status') {
       var ref = (q.get('reference') || '').toUpperCase();
@@ -146,6 +147,45 @@
     }
     children && children.addEventListener('input', ages);
 
+    // one row per passenger (name, date of birth, passport, phone) – goes into the contract and the confirmation
+    var paxBox = $('[data-sta-pax]', form), paxRows = paxBox && $('[data-sta-pax-rows]', paxBox);
+    function pax() {
+      if (!paxRows) return;
+      var ad = Math.max(0, Math.min(20, +(($('[name="adults"]', form) || {}).value || 0))), ch = Math.max(0, Math.min(10, +(children ? children.value : 0) || 0)), n = ad + ch;
+      var rows = $$('.sta-pax-row', paxRows);
+      for (var k = rows.length; k < n; k++) {
+        var r = document.createElement('div'); r.className = 'sta-pax-row';
+        r.innerHTML = '<div class="sta-pax-title"></div><div class="sta-row">'
+          + '<label class="sta-field"><span>' + esc(T.firstName) + ' *</span><input name="passengers[' + k + '][first_name]" required autocomplete="off"></label>'
+          + '<label class="sta-field"><span>' + esc(T.lastName) + ' *</span><input name="passengers[' + k + '][last_name]" required autocomplete="off"></label>'
+          + '<label class="sta-field"><span>' + esc(T.birthDate) + ' *</span><input type="date" name="passengers[' + k + '][birth_date]" required max="' + new Date().toISOString().slice(0, 10) + '"></label>'
+          + (paxBox.dataset.passport ? '<label class="sta-field"><span>' + esc(T.passport) + '</span><input name="passengers[' + k + '][passport]" autocomplete="off"></label>' : '')
+          + (paxBox.dataset.phone ? '<label class="sta-field"><span>' + esc(T.phone) + '</span><input type="tel" name="passengers[' + k + '][phone]"></label>' : '')
+          + '</div>';
+        paxRows.appendChild(r);
+      }
+      $$('.sta-pax-row', paxRows).forEach(function (r, k) {
+        if (k >= n) { r.remove(); return; }
+        $('.sta-pax-title', r).textContent = T.passenger + ' ' + (k + 1) + ' · ' + (k < ad ? T.adult : T.child);
+      });
+      paxBox.hidden = n === 0;
+    }
+    form.addEventListener('input', function (e) { if (e.target.name === 'adults' || e.target.name === 'children') pax(); });
+    form.addEventListener('change', function (e) { if (e.target.name === 'adults' || e.target.name === 'children') pax(); });
+    form.addEventListener('sta:pax', pax);
+    pax();
+
+    // fixed terms: the term sets the dates
+    var termSel = $('[data-sta-term]', form);
+    termSel && termSel.addEventListener('change', function () {
+      var o = termSel.selectedOptions[0];
+      $('[name="date_from"]', form).value = o && o.value ? o.dataset.from : '';
+      $('[name="date_to"]', form).value = o && o.value ? o.dataset.to : '';
+      var box = $('[data-sta-offers]', form); if (box) box.innerHTML = '';
+      $('[name="room_id"]', form).value = '';
+      if (o && o.value) { var q = $('[data-sta-quote]', form); if (q) q.click(); }
+    });
+
     function estimate() {
       if (!totalBox) return;
       var adults = +($('[name="adults"]', form) || {}).value || 0, kids = +(children ? children.value : 0) || 0, sum = null;
@@ -172,7 +212,7 @@
     var quoteBtn = $('[data-sta-quote]', form);
     quoteBtn && quoteBtn.addEventListener('click', function () {
       var from = $('[name="date_from"]', form).value, to = $('[name="date_to"]', form).value, box = $('[data-sta-offers]', form);
-      if (!from || !to) { validate(form); return; }
+      if (!from || !to) { if (termSel) { termSel.classList.add('is-invalid'); termSel.focus(); } else validate(form); return; }
       box.innerHTML = '<p class="sta-muted">' + esc(T.checking) + '</p>';
       var q = new URLSearchParams({ slug: form.dataset.slug, from: from, to: to, adults: $('[name="adults"]', form).value, children: children ? children.value : 0 });
       api('quote?' + q).then(function (r) {
@@ -195,23 +235,27 @@
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       if (!validate(form)) return;
-      var fd = new FormData(form), data = { type: type, slug: form.dataset.slug, website: fd.get('website') || '', sta_ts: started, customer: {}, extras: [], children_ages: [] };
+      var fd = new FormData(form), data = { type: type, slug: form.dataset.slug, website: fd.get('website') || '', sta_ts: started, customer: {}, extras: [], children_ages: [] }, px = [];
       fd.forEach(function (v, k) {
-        var m = k.match(/^customer\[(\w+)\]$/);
-        if (m) data.customer[m[1]] = v;
+        var m = k.match(/^customer\[(\w+)\]$/), pm = k.match(/^passengers\[(\d+)\]\[(\w+)\]$/);
+        if (pm) { px[+pm[1]] = px[+pm[1]] || {}; if (v) px[+pm[1]][pm[2]] = v; }
+        else if (m) data.customer[m[1]] = v;
         else if (k === 'extras[]') data.extras.push(+v);
         else if (k === 'children_ages[]') data.children_ages.push(+v);
         else if (k !== 'website') data[k] = v;
       });
       $$('[name="extras[]"]:checked:disabled', form).forEach(function (x) { if (data.extras.indexOf(+x.value) < 0) data.extras.push(+x.value); });
-      ['adults', 'children', 'quantity', 'departure_id', 'departure_place_id', 'ticket_id', 'room_id', 'charter_id'].forEach(function (k) { if (data[k] !== undefined) data[k] = data[k] === '' ? null : +data[k]; });
+      if (px.length) data.passengers = px.filter(Boolean);
+      // contact person = first passenger when the name was left empty
+      if (data.passengers && data.passengers[0] && !data.customer.name) data.customer.name = (data.passengers[0].first_name + ' ' + data.passengers[0].last_name).trim();
+      ['adults', 'children', 'quantity', 'departure_id', 'departure_place_id', 'ticket_id', 'room_id', 'charter_id', 'term_id'].forEach(function (k) { if (data[k] !== undefined) data[k] = data[k] === '' ? null : +data[k]; });
       if (data.transport_only) data.transport_only = true;
       var btn = $('[type="submit"]', form), label = btn.textContent; btn.disabled = true; btn.textContent = T.sending;
       api('booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function (r) {
         if (r.ok && r.body && r.body.data) {
           var d = r.body.data;
           msg(form, '<b>' + esc(T.thanks) + '</b><span class="sta-muted">' + esc(T.reference) + ':</span><span class="sta-ref">' + esc(d.reference) + '</span>' + (d.total ? esc(T.total) + ': <b>' + money(d.total, d.currency) + '</b>' : '') + (d.payment && d.payment.url ? '<p><a class="sta-btn" href="' + esc(d.payment.url) + '">Pay</a></p>' : ''), true);
-          form.reset(); ages(); estimate();
+          form.reset(); ages(); pax(); estimate();
           document.dispatchEvent(new CustomEvent('sta:booked', { detail: d }));
         } else msg(form, errors(r.body), false);
       }).catch(function () { msg(form, esc(T.error), false); }).then(function () { btn.disabled = false; btn.textContent = label; });
@@ -381,6 +425,56 @@
     // more people → new price (and the room may not fit)
     if (qform) ['adults', 'children'].forEach(function (n) { $('[name="' + n + '"]', qform).addEventListener('change', function () { if (start && end) priceFor(start, end).then(function () { fillSum(); }); }); });
     load();
+  });
+
+  /* ---------- fixed terms table (15–22.05 …): click a price → quick booking ---------- */
+  $$('[data-sta-terms]').forEach(function (box) {
+    var dlg = $('[data-sta-quick-dialog]', box), qform = dlg && $('form', dlg), cur = box.dataset.currency || 'EUR', sel = null;
+    function fmt(k) { var p = k.split('-'); return +p[2] + '.' + +p[1] + '.' + p[0]; }
+    function quote() {
+      if (!sel || !qform) return;
+      var sum = $('[data-sta-quick-sum]', qform);
+      var q = new URLSearchParams({ slug: box.dataset.slug, from: sel.from, to: sel.to, adults: +$('[name="adults"]', qform).value || 1, children: +$('[name="children"]', qform).value || 0 });
+      sum.innerHTML = '<span class="sta-muted">' + esc(T.checking) + '</span>';
+      api('quote?' + q).then(function (r) {
+        var o = ((r.ok && r.body && r.body.data) || []).filter(function (x) { return String(x.room_id) === sel.room; })[0];
+        sum.classList.toggle('is-selected', !!o); sum.dataset.total = o ? o.total : '';
+        sum.innerHTML = o
+          ? '<span><b style="color:inherit;font-size:1rem">' + esc(o.room) + '</b><br><small class="sta-muted">' + esc(fmt(sel.from)) + ' → ' + esc(fmt(sel.to)) + ' · ' + o.nights + ' ' + esc(T.nights) + (o.board ? ' · ' + esc(o.board) : '') + '</small></span><b>' + money(o.total, o.currency || cur) + '</b>'
+          : '<span class="sta-muted">' + esc(T.termFull) + '</span>';
+        qform.dispatchEvent(new Event('change'));
+      });
+    }
+    box.addEventListener('click', function (e) {
+      var c = e.target.closest('button.sta-term-cell'); if (!c || !qform) return;
+      var tr = c.closest('tr');
+      sel = { term: tr.dataset.term, from: tr.dataset.from, to: tr.dataset.to, room: c.dataset.room };
+      $('[name="date_from"]', qform).value = sel.from; $('[name="date_to"]', qform).value = sel.to;
+      $('[name="room_id"]', qform).value = sel.room; $('[name="term_id"]', qform).value = sel.term;
+      $('[data-sta-msg]', qform).className = 'sta-msg';
+      quote();
+      dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', '');
+    });
+    if (dlg) dlg.addEventListener('click', function (e) { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close ? dlg.close() : dlg.removeAttribute('open'); });
+    if (qform) ['adults', 'children'].forEach(function (n) { $('[name="' + n + '"]', qform).addEventListener('change', quote); });
+    // live prices and free units (the page may be cached)
+    function refresh() {
+      api('terms?' + new URLSearchParams({ slug: box.dataset.slug })).then(function (r) {
+        var d = r.ok && r.body && r.body.data; if (!d || !d.terms) return;
+        d.terms.forEach(function (t) {
+          var tr = $('tr[data-term="' + t.id + '"]', box); if (!tr) return;
+          $$('button.sta-term-cell', tr).forEach(function (b) {
+            var c = t.rooms[b.dataset.room]; if (!c) return;
+            var full = c.free !== null && c.free < 1, small = $('small', b);
+            if (small) small.textContent = full ? T.booked : (c.free !== null ? c.free + ' ' + T.freeUnits : T.free);
+            var bb = $('b', b); if (bb) bb.textContent = money(c.price, d.currency || cur);
+            b.disabled = full; b.closest('td').classList.toggle('is-full', full);
+          });
+        });
+      }).catch(function () {});
+    }
+    document.addEventListener('sta:booked', refresh);
+    refresh();
   });
 
   /* ---------- testimonials carousel ---------- */

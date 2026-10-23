@@ -27,6 +27,9 @@ class STA_Render
         'info_cards' => 'Visa info cards',
         'reviews' => 'Reviews',
         'availability' => 'Availability calendar',
+        'terms' => 'Terms & prices (fixed stays)',
+        'galleries' => 'Additional photo galleries',
+        'route_map' => 'Itinerary map',
         'map' => 'Map',
         'videos' => 'Videos',
         'booking' => 'Booking form',
@@ -118,32 +121,26 @@ class STA_Render
 
     public static function promo_badges(array $d): string
     {
-        $out = '';
-        if (! empty($d['promotions']['last_minute'])) {
-            $lm = $d['promotions']['last_minute'];
-            $out .= '<span class="sta-badge sta-badge-lm">'.sta_icon('bolt').' LAST MINUTE'.(! empty($lm['discount_percent']) ? ' −'.(float) $lm['discount_percent'].'%' : '').'</span>';
-        }
-        if (! empty($d['promotions']['first_minute'])) {
-            $fm = $d['promotions']['first_minute'];
-            $out .= '<span class="sta-badge sta-badge-fm">FIRST MINUTE '.($fm['type'] === 'percent' ? '−'.(float) $fm['discount'].'%' : '−'.sta_money($fm['discount'], $d['currency'] ?? 'EUR')).'</span>';
+        [, , $label] = sta_price_info($d);
+        if ($label === '') {
+            return '';
         }
 
-        return $out;
+        return ! empty($d['promotions']['last_minute'])
+            ? '<span class="sta-badge sta-badge-lm">'.sta_icon('bolt').' '.esc_html(strtoupper($label)).'</span>'
+            : '<span class="sta-badge sta-badge-fm">'.esc_html($label).'</span>';
     }
 
     protected static function s_price(array $d, string $type): string
     {
-        $price = $type === 'visa' ? ($d['price'] ?? null) : ($d['price_from'] ?? null);
         $currency = $d['currency'] ?? 'EUR';
+        [$price, $old, $promo, $until] = sta_price_info($d, $type);
         $lm = $d['promotions']['last_minute'] ?? null;
-        $old = null;
-        if ($lm && $price) {
-            $old = $price;
-            $price = $lm['price'] ?? ($lm['discount_percent'] ? $price * (1 - $lm['discount_percent'] / 100) : $price);
-        }
         $per = match ($type) {
             'tour' => __('per person', 'seeinside-travel'),
-            'accommodation' => __('per night', 'seeinside-travel'),
+            'accommodation' => ! empty($d['book_by_terms'])
+                ? (($d['terms']['price_type'] ?? '') === 'per_person' ? __('per person / term', 'seeinside-travel') : __('per term', 'seeinside-travel'))
+                : __('per night', 'seeinside-travel'),
             'event' => __('per ticket', 'seeinside-travel'),
             default => '',
         };
@@ -161,8 +158,13 @@ class STA_Render
         } else {
             $html .= '<div class="sta-price"><b>'.esc_html__('Price on request', 'seeinside-travel').'</b></div>';
         }
-        if (! empty($lm['until'])) {
-            $html .= '<div class="sta-muted">'.esc_html(sprintf(__('Offer valid until %s', 'seeinside-travel'), sta_date($lm['until']))).'</div>';
+        if ($promo !== '' && $old) {
+            $html .= '<div class="sta-save">'.esc_html(sprintf(__('You save %s', 'seeinside-travel'), sta_money($old - $price, $currency))).'</div>';
+        }
+        if ($until !== '') {
+            $html .= '<div class="sta-promo-until">'.sta_icon('clock').' '.esc_html($lm
+                ? sprintf(__('Offer valid until %s', 'seeinside-travel'), sta_date($until))
+                : sprintf(__('%1$s price valid for bookings paid by %2$s', 'seeinside-travel'), trim(preg_replace('/\s[−-].*$/u', '', $promo)), sta_date($until))).'</div>';
         }
         if ($type === 'event' && ! empty($d['external_ticket_url']) && empty($d['booking']['enabled'])) {
             $html .= '<a class="sta-btn sta-btn-block" href="'.esc_url($d['external_ticket_url']).'" target="_blank" rel="noopener">'.esc_html($cta).'</a>';
@@ -270,7 +272,7 @@ class STA_Render
                 $status = sprintf(_n('Last %d seat', 'Last %d seats', $seats, 'seeinside-travel'), $seats);
             }
             $html .= '<tr class="'.($closed ? 'is-closed' : '').'"><td><b>'.esc_html(sta_date($dep['start_date'])).'</b>'.(! empty($dep['is_last_minute']) ? ' <span class="sta-badge sta-badge-lm">LM</span>' : '').'</td><td>'.esc_html(sta_date($dep['end_date'])).'</td>'
-                .'<td>'.esc_html(sta_money($dep['price_adult'], $currency)).'</td><td>'.esc_html($dep['price_child'] !== null ? sta_money($dep['price_child'], $currency) : '—').'</td>'
+                .'<td>'.(! empty($dep['price_adult_regular']) ? '<del class="sta-old">'.esc_html(sta_money($dep['price_adult_regular'], $currency)).'</del> <b class="sta-new">'.esc_html(sta_money($dep['price_adult'], $currency)).'</b>' : esc_html(sta_money($dep['price_adult'], $currency))).'</td><td>'.esc_html($dep['price_child'] !== null ? sta_money($dep['price_child'], $currency) : '—').'</td>'
                 .'<td><span class="sta-status sta-status-'.esc_attr($dep['status']).'">'.esc_html($status).'</span></td>'
                 .'<td>'.($closed ? '' : '<a class="sta-btn sta-btn-sm" href="#sta-booking" data-sta-departure="'.(int) $dep['id'].'">'.esc_html__('Book', 'seeinside-travel').'</a>').'</td></tr>';
         }
@@ -476,7 +478,7 @@ class STA_Render
     /** Month calendar with free / booked nights per room (live from SeeInside) */
     protected static function s_availability(array $d, string $type): string
     {
-        if ($type !== 'accommodation' || empty($d['rooms'])) {
+        if ($type !== 'accommodation' || empty($d['rooms']) || ! empty($d['book_by_terms'])) {
             return '';
         }
         $opts = '';
@@ -494,6 +496,90 @@ class STA_Render
             .'<div class="sta-cal-legend"><span class="is-free"></span>'.esc_html__('Free', 'seeinside-travel').' <span class="is-booked"></span>'.esc_html__('Booked', 'seeinside-travel').($quick ? ' <span class="is-pick"></span>'.esc_html__('Your stay', 'seeinside-travel') : '').'</div>'
             .($quick ? '<div class="sta-cal-pick" data-sta-cal-pick hidden></div>'.sta_part('quick-booking', ['d' => $d]) : '')
             .'</div>';
+    }
+
+    /** Fixed terms (15–22.05, 22–29.05…) with the price and free units of every room; a click opens the quick booking */
+    protected static function s_terms(array $d, string $type): string
+    {
+        if ($type !== 'accommodation' || empty($d['book_by_terms'])) {
+            return '';
+        }
+        $t = $d['terms'] ?? [];
+        $currency = $d['currency'] ?? 'EUR';
+        $rooms = $t['rooms'] ?? [];
+        $html = self::heading(__('Terms & prices', 'seeinside-travel'));
+        if (empty($t['terms']) || ! $rooms) {
+            return $html.'<p class="sta-muted">'.esc_html__('New terms coming soon – send an inquiry.', 'seeinside-travel').'</p>';
+        }
+        $quick = ! isset($d['booking']['enabled']) || ! empty($d['booking']['enabled']);
+        $per = ($t['price_type'] ?? '') === 'per_person' ? __('Prices per person for the whole term.', 'seeinside-travel') : __('Prices per room / apartment for the whole term.', 'seeinside-travel');
+        $html .= '<div class="sta-terms" data-sta-terms data-slug="'.esc_attr($d['slug']).'" data-currency="'.esc_attr($currency).'" data-price-type="'.esc_attr($t['price_type'] ?? 'per_room').'">';
+        $html .= '<div class="sta-table-wrap"><table class="sta-table sta-terms-table"><thead><tr><th>'.esc_html__('Term', 'seeinside-travel').'</th>';
+        foreach ($rooms as $r) {
+            $html .= '<th>'.esc_html(sta_t($r['name'])).($r['board'] ? '<small>'.esc_html($r['board']).' · '.(int) $r['max_adults'].'+'.(int) $r['max_children'].'</small>' : '').'</th>';
+        }
+        $html .= '</tr></thead><tbody>';
+        foreach ($t['terms'] as $term) {
+            $html .= '<tr data-term="'.(int) $term['id'].'" data-from="'.esc_attr($term['from']).'" data-to="'.esc_attr($term['to']).'"><td><b>'.esc_html(sta_date($term['from'])).' – '.esc_html(sta_date($term['to'])).'</b><small>'.(int) $term['nights'].' '.esc_html__('nights', 'seeinside-travel').($term['label'] ? ' · '.esc_html($term['label']) : '').'</small></td>';
+            foreach ($rooms as $r) {
+                $c = $term['rooms'][$r['id']] ?? ($term['rooms'][(string) $r['id']] ?? null);
+                if (! $c) {
+                    $html .= '<td class="is-na">—</td>';
+                    continue;
+                }
+                $full = $c['free'] !== null && (int) $c['free'] < 1;
+                $cell = (! empty($c['regular']) && $c['regular'] > $c['price'] ? '<del>'.esc_html(sta_money($c['regular'], $currency)).'</del>' : '')
+                    .'<b>'.esc_html(sta_money($c['price'], $currency)).'</b>'
+                    .'<small>'.esc_html($full ? __('Booked', 'seeinside-travel') : ($c['free'] !== null ? sprintf(_n('%d free', '%d free', (int) $c['free'], 'seeinside-travel'), (int) $c['free']) : __('Free', 'seeinside-travel'))).'</small>';
+                $html .= $full || ! $quick
+                    ? '<td class="'.($full ? 'is-full' : '').'"><span class="sta-term-cell">'.$cell.'</span></td>'
+                    : '<td><button type="button" class="sta-term-cell" data-room="'.(int) $r['id'].'" data-room-name="'.esc_attr(sta_t($r['name'])).'" data-price="'.esc_attr($c['price']).'">'.$cell.'</button></td>';
+            }
+            $html .= '</tr>';
+        }
+        $html .= '</tbody></table></div><p class="sta-muted">'.esc_html($per).($quick ? ' '.esc_html__('Click a price to book.', 'seeinside-travel') : '').'</p>';
+        if ($quick) {
+            $html .= sta_part('quick-booking', ['d' => $d, 'terms' => true]);
+        }
+
+        return $html.'</div>';
+    }
+
+    /** Extra galleries ("The hotel", "Excursions" …) */
+    protected static function s_galleries(array $d): string
+    {
+        $html = '';
+        foreach ((array) ($d['galleries'] ?? []) as $g) {
+            $imgs = array_values(array_filter(array_map(fn ($i) => is_array($i) ? ($i['url'] ?? '') : $i, (array) ($g['images'] ?? []))));
+            if (! $imgs) {
+                continue;
+            }
+            $html .= self::heading(sta_t($g['title'] ?? null) ?: __('Photos', 'seeinside-travel'));
+            $html .= '<div class="sta-gallery sta-gallery-grid" data-sta-lightbox>';
+            foreach ($imgs as $i => $url) {
+                $src = sta_local_image($url, 'medium_large');
+                $html .= '<a href="'.esc_url(sta_local_image($url)).'" class="sta-gallery-item'.($i > 7 ? ' sta-hidden' : '').'"><img src="'.esc_url($src).'" alt="" loading="lazy">'.($i === 7 && count($imgs) > 8 ? '<span class="sta-more">+'.(count($imgs) - 8).'</span>' : '').'</a>';
+            }
+            $html .= '</div>';
+        }
+
+        return $html;
+    }
+
+    /** Itinerary on Google Maps (Skopje – Bitola – Athens) */
+    protected static function s_route_map(array $d): string
+    {
+        $rm = $d['route_map'] ?? null;
+        $src = is_array($rm) ? (string) ($rm['embed'] ?? '') : '';
+        // only Google Maps is ever embedded
+        if (! $src || ! preg_match('~^https://(www\.|maps\.)?google\.[a-z.]+/maps~', $src)) {
+            return '';
+        }
+        $stops = array_filter((array) ($rm['stops'] ?? []));
+
+        return self::heading(__('Itinerary', 'seeinside-travel'))
+            .($stops ? '<ol class="sta-route">'.implode('', array_map(fn ($s) => '<li>'.esc_html($s).'</li>', $stops)).'</ol>' : '')
+            .'<div class="sta-map sta-route-map"><iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="'.esc_url($src).'" title="'.esc_attr__('Itinerary', 'seeinside-travel').'" allowfullscreen></iframe></div>';
     }
 
     protected static function s_map(array $d): string
@@ -541,7 +627,7 @@ class STA_Render
     /** The whole page in a sensible order (used when no builder template exists) */
     protected static function s_layout(array $d, string $type, int $postId): string
     {
-        $main = ['gallery', 'facts', 'description', 'info_cards', 'highlights', 'program', 'departures', 'rooms', 'availability', 'tickets', 'requirements', 'included', 'extras', 'amenities', 'info', 'videos', 'map'];
+        $main = ['gallery', 'facts', 'description', 'info_cards', 'highlights', 'program', 'route_map', 'departures', 'rooms', 'terms', 'availability', 'tickets', 'requirements', 'included', 'extras', 'amenities', 'info', 'galleries', 'videos', 'map'];
         // aside first: on narrow screens the price / booking button comes before the details
         $html = '<div class="sta-page"><aside class="sta-aside"><div class="sta-sticky">'.self::section('price', $postId).'</div></aside><div class="sta-main">';
         foreach ($main as $s) {

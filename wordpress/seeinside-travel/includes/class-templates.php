@@ -130,7 +130,7 @@ class STA_Templates
     protected static function single_layout(string $postType): array
     {
         $type = STA_Schema::api_type($postType);
-        $main = ['gallery', 'facts', 'description', 'info_cards', 'highlights', 'program', 'departures', 'rooms', 'availability', 'tickets', 'requirements', 'included', 'extras', 'amenities', 'info', 'videos', 'map', 'booking', 'reviews'];
+        $main = ['gallery', 'facts', 'description', 'info_cards', 'highlights', 'program', 'route_map', 'departures', 'rooms', 'terms', 'availability', 'tickets', 'requirements', 'included', 'extras', 'amenities', 'info', 'galleries', 'videos', 'map', 'booking', 'reviews'];
         $skip = [
             'tour' => ['rooms', 'availability', 'tickets', 'requirements', 'amenities'],
             'event' => ['highlights', 'program', 'departures', 'rooms', 'availability', 'requirements', 'extras', 'amenities'],

@@ -39,6 +39,7 @@ class Event extends Model
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'price_from' => 'decimal:2',
+            'price_regular' => 'decimal:2',
         ];
     }
 
@@ -49,6 +50,7 @@ class Event extends Model
                 $min = $e->tickets()->where('is_active', true)->min('price');
                 if ($min !== null) {
                     $e->price_from = $e->promoPrice((float) $min);
+                    $e->price_regular = (float) $min;
                 }
             }
         });

@@ -35,6 +35,7 @@ class Tour extends Model
         return array_fill_keys(self::TRANSLATABLE, 'array') + [
             'tour_type' => TourType::class,
             'video_urls' => 'array',
+            'galleries' => 'array',
             'links' => 'array',
             'aries_quality' => 'boolean',
             'is_flight' => 'boolean',
@@ -47,6 +48,7 @@ class Tour extends Model
             'single_supplement' => 'decimal:2',
             'price_from' => 'decimal:2',
             'deposit_percent' => 'decimal:2',
+            'price_regular' => 'decimal:2',
         ];
     }
 
@@ -70,6 +72,19 @@ class Tour extends Model
         if (! $prices && $this->price_adult !== null) {
             $prices[] = (float) $this->price_adult;
         }
+
+        // regular (not discounted) lowest price – shown struck through next to the promo price
+        $regular = [];
+        if ($this->exists) {
+            foreach ($this->departures()->whereDate('start_date', '>=', today())->whereNotIn('status', ['sold_out', 'cancelled'])->get() as $d) {
+                $p = $d->price_adult ?? $this->price_adult;
+                $p !== null && $regular[] = (float) $p;
+            }
+        }
+        if (! $regular && $this->price_adult !== null) {
+            $regular[] = (float) $this->price_adult;
+        }
+        $this->price_regular = $regular ? min($regular) : null;
 
         return $prices ? $this->promoPrice(min($prices)) : null;
     }

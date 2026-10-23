@@ -374,7 +374,65 @@ class OfferReport
             }
         }
 
+        // fixed terms (accommodation): purchase price of each booked term from the price list
+        if ($this->offer instanceof Accommodation && $this->offer->book_by_terms) {
+            $perPerson = $this->offer->term_price_type === 'per_person';
+            $prices = \App\Models\TermPrice::query()->whereIn('stay_term_id', $this->bookings->pluck('stay_term_id')->filter()->unique())->whereNotNull('cost_price')->get()
+                ->keyBy(fn ($p) => $p->stay_term_id.'-'.$p->accommodation_room_id);
+            $units = 0;
+            $total = 0.0;
+            foreach ($this->bookings as $b) {
+                $tp = $prices->get($b->stay_term_id.'-'.$b->accommodation_room_id);
+                if ($tp) {
+                    $u = $perPerson ? $b->passengerCount() : max(1, (int) $b->quantity);
+                    $units += $u;
+                    $total += $u * (float) $tp->cost_price;
+                }
+            }
+            if ($units) {
+                $out[] = ['id' => null, 'name' => __('Purchase price of the terms'), 'category' => OfferCost::categories()['accommodation'] ?? __('Accommodation'),
+                    'basis' => __('Term price list'), 'basis_key' => 'term', 'units' => $units, 'unit_label' => $perPerson ? __('passengers') : __('rooms'),
+                    'rate' => round($total / $units, 2), 'quantity' => 1.0, 'total' => round($total, 2), 'paid' => 0.0, 'owed' => round($total, 2),
+                    'currency' => $this->currency(), 'supplier' => $this->offer->tourOperator?->name, 'due' => null, 'scope' => __('purchase prices per term and room')];
+            }
+        }
+
+        // incoming invoices: of the bookings in the report, or of the whole offer (issued in the period)
+        $ids = $this->bookings->pluck('id');
+        $si = \App\Models\SupplierInvoice::withoutGlobalScopes()
+            ->where(function ($q) use ($ids) {
+                $q->whereIn('booking_id', $ids)
+                    ->orWhere(fn ($q) => $q->whereNull('booking_id')->where('costable_type', $this->offer->getMorphClass())->where('costable_id', $this->offer->getKey())
+                        ->when($this->filters['from'] ?? null, fn ($q, $d) => $q->whereDate('issue_date', '>=', $d))
+                        ->when($this->filters['to'] ?? null, fn ($q, $d) => $q->whereDate('issue_date', '<=', $d)));
+            })->with('booking')->orderBy('issue_date')->get();
+        $agency = \App\Models\Agency::find($this->offer->getAttribute('agency_id'));
+        foreach ($si as $i) {
+            $amount = $this->toReportCurrency((float) $i->amount, $i->currency, (float) $i->exchange_rate, $agency);
+            $paid = $this->toReportCurrency((float) $i->paid_amount, $i->currency, (float) $i->exchange_rate, $agency);
+            $out[] = ['id' => null, 'name' => __('Incoming invoice').' '.$i->number, 'category' => \App\Filament\Resources\SupplierInvoiceResource::categories()[$i->category] ?? __('Supplier'),
+                'basis' => __('Real cost (invoice)'), 'basis_key' => 'invoice', 'units' => 1, 'unit_label' => '', 'rate' => $amount, 'quantity' => 1.0,
+                'total' => $amount, 'paid' => $paid, 'owed' => max(0, round($amount - $paid, 2)), 'currency' => $this->currency(),
+                'supplier' => $i->supplier_name, 'due' => $i->due_date?->format('d.m.Y'),
+                'scope' => trim(($i->booking ? __('Booking').' '.$i->booking->reference : __('whole offer')).($i->currency !== $this->currency() ? ' · '.self::money($i->amount, $i->currency) : ''))];
+        }
+
         return $out;
+    }
+
+    protected function toReportCurrency(float $amount, ?string $currency, ?float $rate, ?\App\Models\Agency $agency): float
+    {
+        $cur = $this->currency();
+        if (! $currency || $currency === $cur || ! $agency) {
+            return round($amount, 2);
+        }
+        $base = $agency->toBase($amount, $currency, $rate ?: null);
+        if ($cur === $agency->doc('base_currency', 'MKD')) {
+            return $base;
+        }
+        $r = $agency->eurRate();
+
+        return $r > 0 ? round($base / $r, 2) : $amount;
     }
 
     /** Payment state of a booking for the report */

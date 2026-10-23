@@ -17,6 +17,9 @@ class EditAccommodation extends EditRecord
             Actions\Action::make('calendar')->label(__('Availability calendar'))->icon('heroicon-o-calendar-days')->color('gray')
                 ->visible(fn () => \App\Filament\Pages\AvailabilityCalendar::canAccess())
                 ->url(fn () => \App\Filament\Pages\AvailabilityCalendar::getUrl(['accommodation' => $this->record->id])),
+            Actions\Action::make('termPrices')->label(__('Price matrix'))->icon('heroicon-o-table-cells')->color('gray')
+                ->visible(fn () => (bool) $this->record->book_by_terms)
+                ->url(fn () => AccommodationResource::getUrl('term-prices', ['record' => $this->record])),
             Actions\DeleteAction::make(),
         ];
     }

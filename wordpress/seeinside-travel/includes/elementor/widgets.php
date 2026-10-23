@@ -54,28 +54,28 @@ abstract class STA_Elementor_Widget extends Widget_Base
 
 class STA_Widget_Section extends STA_Elementor_Widget
 {
-    protected static array $reviewsIn = [];
+    protected static array $sectionsIn = [];
 
-    /** Does the template being rendered already show reviews (section or reviews widget)? */
-    protected static function doc_has_reviews(): bool
+    /** Sections shown by the template being rendered ('reviews' also for the reviews widget, 'layout' = everything) */
+    protected static function doc_sections(): array
     {
         try {
             $doc = \Elementor\Plugin::$instance->documents->get_current();
             if (! $doc) {
-                return false;
+                return [];
             }
             $id = (int) $doc->get_main_id();
-            if (isset(self::$reviewsIn[$id])) {
-                return self::$reviewsIn[$id];
+            if (isset(self::$sectionsIn[$id])) {
+                return self::$sectionsIn[$id];
             }
-            $found = false;
+            $found = [];
             $walk = function (array $els) use (&$walk, &$found) {
                 foreach ($els as $e) {
                     $w = $e['widgetType'] ?? '';
-                    if ($w === 'sta-reviews' || ($w === 'sta-section' && (($e['settings']['section'] ?? '') === 'reviews'))) {
-                        $found = true;
-
-                        return;
+                    if ($w === 'sta-reviews') {
+                        $found['reviews'] = true;
+                    } elseif ($w === 'sta-section') {
+                        $found[($e['settings']['section'] ?? '') ?: 'facts'] = true;
                     }
                     if (! empty($e['elements'])) {
                         $walk($e['elements']);
@@ -84,10 +84,22 @@ class STA_Widget_Section extends STA_Elementor_Widget
             };
             $walk((array) $doc->get_elements_data());
 
-            return self::$reviewsIn[$id] = $found;
+            return self::$sectionsIn[$id] = $found;
         } catch (\Throwable $e) {
-            return false;
+            return [];
         }
+    }
+
+    protected static function doc_has(string $section): bool
+    {
+        $in = self::doc_sections();
+
+        return isset($in[$section]) || isset($in['layout']);
+    }
+
+    protected static function doc_has_reviews(): bool
+    {
+        return self::doc_has('reviews');
     }
 
     public function get_name(): string { return 'sta-section'; }
@@ -138,9 +150,32 @@ class STA_Widget_Section extends STA_Elementor_Widget
         } elseif (isset($args['title']) && $args['title'] === false) {
             $html = preg_replace('#<h3 class="sta-h">.*?</h3>#s', '', $html, 1);
         }
-        // templates made before reviews existed end with the booking form: add the reviews after it
-        if (($s['section'] ?? '') === 'booking' && ! self::doc_has_reviews() && apply_filters('sta_auto_reviews', true, $postId)) {
-            $html .= STA_Render::section('reviews', $postId);
+        // templates made before a section existed: new sections are added next to a related one
+        $name = $s['section'] ?? '';
+        if (apply_filters('sta_auto_sections', true, $postId) && $name !== 'layout') {
+            $before = '';
+            if ($name === 'program' && ! self::doc_has('route_map')) {
+                $html .= STA_Render::section('route_map', $postId);
+            }
+            $roomsAnchor = self::doc_has('availability') ? 'availability' : 'rooms';
+            if ($name === $roomsAnchor && ! self::doc_has('terms')) {
+                $html .= STA_Render::section('terms', $postId);
+            }
+            if ($name === 'booking') {
+                if (! self::doc_has('program') && ! self::doc_has('route_map')) {
+                    $before .= STA_Render::section('route_map', $postId);
+                }
+                if (! self::doc_has('rooms') && ! self::doc_has('availability') && ! self::doc_has('terms')) {
+                    $before .= STA_Render::section('terms', $postId);
+                }
+                if (! self::doc_has('galleries')) {
+                    $before .= STA_Render::section('galleries', $postId);
+                }
+                $html = $before.$html;
+                if (! self::doc_has_reviews() && apply_filters('sta_auto_reviews', true, $postId)) {
+                    $html .= STA_Render::section('reviews', $postId);
+                }
+            }
         }
         if ($html === '' && $this->is_editor()) {
             $html = '<div class="sta-empty">'.esc_html(sprintf(__('"%s" is empty for this item.', 'seeinside-travel'), __(STA_Render::SECTIONS[$s['section']] ?? '', 'seeinside-travel'))).'</div>';

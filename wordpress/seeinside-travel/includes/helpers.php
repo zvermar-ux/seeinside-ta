@@ -198,3 +198,39 @@ function sta_stars(float $rating, string $class = ''): string
 
     return '<span class="sta-stars '.esc_attr($class).'" role="img" aria-label="'.esc_attr(sprintf(__('%s out of 5', 'seeinside-travel'), number_format_i18n($rating, 1))).'"><span class="sta-stars-fill" style="width:'.round($pct, 1).'%"></span></span>';
 }
+
+/**
+ * Regular and promotional price of an offer: [price, old (struck through) or null, promo label or '', "pay until" date or ''].
+ * The app sends price_from already discounted and price_regular as the regular price.
+ */
+function sta_price_info(array $d, string $type = ''): array
+{
+    $price = $type === 'visa' ? ($d['price'] ?? null) : ($d['price_from'] ?? null);
+    $price = $price !== null ? (float) $price : null;
+    $old = isset($d['price_regular']) && $d['price_regular'] !== null && $price !== null && (float) $d['price_regular'] > $price ? (float) $d['price_regular'] : null;
+    $lm = $d['promotions']['last_minute'] ?? null;
+    $fm = $d['promotions']['first_minute'] ?? null;
+    $label = '';
+    $until = '';
+    if ($lm) {
+        $label = 'Last minute'.(! empty($lm['discount_percent']) ? ' −'.(float) $lm['discount_percent'].'%' : '');
+        $until = (string) ($lm['until'] ?? '');
+        // older app without price_regular: the price was not discounted yet
+        if (! array_key_exists('price_regular', $d) && $price) {
+            $new = $lm['price'] ?? (! empty($lm['discount_percent']) ? $price * (1 - $lm['discount_percent'] / 100) : $price);
+            if ($new < $price) {
+                $old = $price;
+                $price = (float) $new;
+            }
+        }
+    } elseif ($fm) {
+        $off = ($fm['type'] ?? '') === 'percent' ? '−'.(float) $fm['discount'].'%' : '−'.sta_money($fm['discount'], $d['currency'] ?? 'EUR');
+        $label = trim(($fm['label'] ?? '') ?: 'Early Booking').' '.$off;
+        $until = (string) ($fm['until'] ?? '');
+        if ($old === null && ! array_key_exists('price_regular', $d) && $price) {
+            $old = ($fm['type'] ?? '') === 'percent' ? round($price / max(0.01, 1 - $fm['discount'] / 100), 2) : $price + (float) $fm['discount'];
+        }
+    }
+
+    return [$price, $old, $label, $until];
+}

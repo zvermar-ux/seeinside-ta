@@ -363,3 +363,42 @@ html.sta-noscroll { overflow: hidden; }
 .sta-quick form { padding: 1.4rem; }
 .sta-quick-sum { margin: .2rem 0 .8rem; cursor: default; }
 @media (max-width: 560px) { .sta-cal-grid .d small { display: none; } .sta-cal-price { text-align: left; } .sta-cal-acts { width: 100%; } .sta-cal-acts .sta-btn { flex: 1; } }
+
+/* promo price (Early Booking / Last minute) */
+.sta-price del { font-size: 1.1rem; margin-right: .25rem; text-decoration-thickness: 2px; text-decoration-color: var(--sta-bad, #dc2626); }
+.sta-save { display: inline-block; margin-top: .35rem; padding: .2rem .55rem; border-radius: 999px; background: #dcfce7; color: #166534; font-size: .82rem; font-weight: 700; }
+.sta-promo-until { display: flex; gap: .35rem; align-items: flex-start; margin-top: .5rem; padding: .55rem .7rem; border-radius: 10px; background: #fff7ed; color: #9a3412; font-size: .86rem; font-weight: 600; line-height: 1.35; }
+.sta-table del.sta-old { color: var(--sta-muted); font-size: .85em; margin-right: .2rem; } .sta-table b.sta-new { color: var(--sta-bad, #dc2626); }
+
+/* fixed terms table */
+.sta-terms-table th small, .sta-terms-table td small { display: block; font-size: .75rem; font-weight: 400; color: var(--sta-muted); text-transform: none; letter-spacing: 0; }
+.sta-terms-table td { white-space: nowrap; }
+.sta-terms .sta-term-cell { display: flex; flex-direction: column; align-items: flex-start; gap: .05rem; width: 100%; min-width: 6.5rem; padding: .45rem .6rem !important; border-radius: 10px;
+  border: 1.5px solid var(--sta-line) !important; background: #fff !important; color: var(--sta-ink) !important; text-align: left; cursor: pointer; font: inherit; transition: border-color .15s, box-shadow .15s; }
+.sta-terms button.sta-term-cell:hover { border-color: var(--sta-primary) !important; box-shadow: 0 4px 14px rgba(15, 23, 42, .08); }
+.sta-terms .sta-term-cell b { color: var(--sta-primary); font-size: 1.02rem; }
+.sta-terms .sta-term-cell del { color: var(--sta-muted); font-size: .8rem; }
+.sta-terms span.sta-term-cell { cursor: default; }
+.sta-terms td.is-full .sta-term-cell { opacity: .5; background: var(--sta-soft) !important; cursor: not-allowed; }
+.sta-terms td.is-full .sta-term-cell b { color: var(--sta-muted); text-decoration: line-through; }
+.sta-terms td.is-na { color: var(--sta-muted); text-align: center; }
+
+/* passengers */
+.sta-pax { border: 1px solid var(--sta-line); border-radius: calc(var(--sta-radius) * .8); padding: .8rem 1rem 0; margin: 0 0 1rem; }
+.sta-pax legend { font-weight: 700; padding: 0 .35rem; }
+.sta-pax-hint { margin: 0 0 .6rem; font-size: .85rem; }
+.sta-pax-row { padding: .5rem 0 .25rem; border-top: 1px dashed var(--sta-line); }
+.sta-pax-row:first-child { border-top: 0; }
+.sta-pax-title { font-size: .8rem; font-weight: 700; color: var(--sta-primary); text-transform: uppercase; letter-spacing: .04em; margin-bottom: .35rem; }
+.sta-pax .sta-row { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+
+/* itinerary map */
+.sta-route { display: flex; flex-wrap: wrap; gap: .3rem; list-style: none; margin: 0 0 .8rem; padding: 0; counter-reset: st; }
+.sta-route li { counter-increment: st; display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .7rem .3rem .35rem; border-radius: 999px; background: var(--sta-soft); border: 1px solid var(--sta-line); font-weight: 600; font-size: .9rem; }
+.sta-route li::before { content: counter(st); display: inline-grid; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%; background: var(--sta-primary); color: #fff; font-size: .75rem; }
+.sta-route li:not(:last-child)::after { content: '→'; margin-left: .3rem; color: var(--sta-muted); }
+.sta-route-map iframe { height: 420px; }
+
+/* additional galleries */
+.sta-gallery.sta-gallery-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); grid-auto-rows: 150px; }
+.sta-gallery.sta-gallery-grid .sta-gallery-item:first-child { grid-column: auto; grid-row: auto; }

@@ -38,6 +38,21 @@ $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array(
                 </label>
             <?php endif; ?>
         </div>
+    <?php elseif ($type === 'accommodation' && ! empty($d['book_by_terms'])) : ?>
+        <div class="sta-row">
+            <label class="sta-field sta-col-2"><span><?php esc_html_e('Term', 'seeinside-travel'); ?> *</span>
+                <select name="term_id" required data-sta-term>
+                    <option value=""><?php esc_html_e('Choose a term', 'seeinside-travel'); ?></option>
+                    <?php foreach ($d['terms']['terms'] ?? [] as $term) : ?>
+                        <option value="<?php echo (int) $term['id']; ?>" data-from="<?php echo esc_attr($term['from']); ?>" data-to="<?php echo esc_attr($term['to']); ?>">
+                            <?php echo esc_html(sta_date($term['from']).' – '.sta_date($term['to']).' · '.(int) $term['nights'].' '.__('nights', 'seeinside-travel').($term['label'] ? ' · '.$term['label'] : '')); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+        </div>
+        <input type="hidden" name="date_from" value="">
+        <input type="hidden" name="date_to" value="">
     <?php elseif ($type === 'accommodation') : ?>
         <div class="sta-row">
             <label class="sta-field"><span><?php esc_html_e('Check-in', 'seeinside-travel'); ?> *</span><input type="date" name="date_from" required min="<?php echo esc_attr(wp_date('Y-m-d')); ?>"></label>
@@ -69,6 +84,8 @@ $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array(
         <button type="button" class="sta-btn sta-btn-ghost sta-btn-block" data-sta-quote><?php esc_html_e('Show available rooms & prices', 'seeinside-travel'); ?></button>
         <div class="sta-offers" data-sta-offers></div>
     <?php endif; ?>
+
+    <?php if ($type !== 'event') { echo sta_part('passengers'); } // phpcs:ignore ?>
 
     <?php if ($type === 'tour' && ! empty($d['extras'])) : ?>
         <fieldset class="sta-extras"><legend><?php esc_html_e('Extras', 'seeinside-travel'); ?></legend>

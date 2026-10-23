@@ -30,6 +30,12 @@ class Booking extends Model
             'total' => 'decimal:2',
             'paid_amount' => 'decimal:2',
             'confirmed_at' => 'datetime',
+            'price_lines' => 'array',
+            'discount_percent' => 'decimal:2',
+            'commission_percent' => 'decimal:2',
+            'exchange_rate' => 'decimal:4',
+            'option_until' => 'date',
+            'payment_due' => 'date',
         ];
     }
 
@@ -50,7 +56,41 @@ class Booking extends Model
             }
         });
 
+        // every passenger ends up in the client list (and the holder is linked)
+        static::saved(function (Booking $b) {
+            if (! $b->wasChanged('passengers') && ! $b->wasRecentlyCreated) {
+                return;
+            }
+            $rows = (array) $b->passengers;
+            $changed = false;
+            foreach ($rows as $k => $p) {
+                if (! is_array($p)) {
+                    continue;
+                }
+                try {
+                    $c = Client::fromPassenger($p, (int) $b->agency_id);
+                } catch (\Throwable $e) {
+                    report($e);
+                    $c = null;
+                }
+                if ($c && (int) ($p['client_id'] ?? 0) !== $c->id) {
+                    $rows[$k]['client_id'] = $c->id;
+                    $changed = true;
+                }
+            }
+            $first = collect($rows)->first(fn ($p) => ! empty($p['client_id']));
+            $holder = $b->client_id ?: ($first['client_id'] ?? null);
+            if ($changed || $holder !== $b->client_id) {
+                $b->passengers = $rows;
+                $b->client_id = $holder;
+                $b->saveQuietly();
+            }
+        });
+
         static::saving(function (Booking $b) {
+            if (! $b->exchange_rate && $b->currency && $b->currency !== 'MKD' && ($a = Agency::find($b->agency_id))) {
+                $b->exchange_rate = $a->eurRate();
+            }
             if ($b->exists && $b->isDirty('total') && $b->payment_status !== PaymentStatus::Refunded && $b->payments()->exists()) {
                 $b->payment_status = self::paymentStatusFor((float) $b->paid_amount, $b->total);
             }
@@ -88,6 +128,93 @@ class Booking extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Client::class, 'company_id');
+    }
+
+    public function subagent(): BelongsTo
+    {
+        return $this->belongsTo(Subagent::class);
+    }
+
+    public function stayTerm(): BelongsTo
+    {
+        return $this->belongsTo(StayTerm::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function supplierInvoices(): HasMany
+    {
+        return $this->hasMany(SupplierInvoice::class);
+    }
+
+    public function cashEntries(): HasMany
+    {
+        return $this->hasMany(CashEntry::class);
+    }
+
+    /** Amount in MKD (or the agency's base currency) */
+    public function inBase(float $amount): float
+    {
+        $a = $this->agency ?? Agency::find($this->agency_id);
+
+        return $a ? $a->toBase($amount, $this->currency, $this->exchange_rate ? (float) $this->exchange_rate : null) : $amount;
+    }
+
+    /** An amount in another currency (e.g. a supplier invoice in MKD) expressed in the booking currency */
+    public function fromCurrency(float $amount, ?string $currency, ?float $rate = null): float
+    {
+        if (! $currency || $currency === $this->currency) {
+            return $amount;
+        }
+        $a = $this->agency ?? Agency::find($this->agency_id);
+        if (! $a) {
+            return $amount;
+        }
+        $base = $a->toBase($amount, $currency, $rate ?: null);
+        if ($this->currency === $a->doc('base_currency', 'MKD')) {
+            return round($base, 2);
+        }
+        $r = (float) ($this->exchange_rate ?: $a->eurRate());
+
+        return $r > 0 ? round($base / $r, 2) : $amount;
+    }
+
+    /** Passenger rows with names (for documents) */
+    public function passengerList(): array
+    {
+        $rows = array_values(array_filter((array) $this->passengers, fn ($p) => is_array($p) && trim(($p['first_name'] ?? '').($p['last_name'] ?? '')) !== ''));
+        if (! $rows && $this->customer_name) {
+            $rows[] = ['first_name' => $this->customer_name, 'last_name' => '', 'phone' => $this->customer_phone];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Calculation lines: [kind (base|supplement|discount), label, qty, price, total].
+     * Saved lines win; otherwise they are built from the offer (departure prices, extras, room, ticket).
+     */
+    public function priceLines(): array
+    {
+        $lines = array_values(array_filter((array) $this->price_lines, fn ($l) => is_array($l) && filled($l['label'] ?? null)));
+        if ($lines) {
+            return array_map(fn ($l) => $l + ['kind' => 'base', 'qty' => 1, 'price' => 0, 'total' => round((float) ($l['qty'] ?? 1) * (float) ($l['price'] ?? 0), 2)], $lines);
+        }
+
+        return \App\Services\Bookings\BookingPricing::suggest($this);
     }
 
     public function payments(): HasMany

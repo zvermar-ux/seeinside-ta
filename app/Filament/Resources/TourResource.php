@@ -220,6 +220,8 @@ class TourResource extends Resource
                 ]),
 
                 Forms\Components\Tabs\Tab::make(__('Media & links'))->icon('heroicon-o-film')->schema([
+                    ...CatalogFields::routeMap(),
+                    CatalogFields::galleries('tours'),
                     CatalogFields::videos(),
                     Forms\Components\FileUpload::make('program_pdf')->label(__('Program / price list (PDF)'))
                         ->disk('public')->directory('programs')->acceptedFileTypes(['application/pdf'])->downloadable()->openable(),

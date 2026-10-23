@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('public/{site}')->middleware([\App\Http\Middleware\AuthenticatePublicSite::class, 'throttle:website-visitor'])->group(function () {
     Route::get('accommodations/{slug}/quote', [CatalogController::class, 'quote']);
     Route::get('accommodations/{slug}/availability', [CatalogController::class, 'availability']);
+    Route::get('accommodations/{slug}/terms', [CatalogController::class, 'terms']);
     Route::post('bookings', [BookingController::class, 'store']);
     Route::post('visa-applications', [BookingController::class, 'visaApplication']);
     Route::get('bookings/{reference}', [BookingController::class, 'status']);
@@ -60,6 +61,7 @@ Route::middleware([AuthenticateApiClient::class, 'throttle:website'])->group(fun
     Route::get('accommodations/{slug}', [CatalogController::class, 'accommodation']);
     Route::get('accommodations/{slug}/quote', [CatalogController::class, 'quote']);
     Route::get('accommodations/{slug}/availability', [CatalogController::class, 'availability']);
+    Route::get('accommodations/{slug}/terms', [CatalogController::class, 'terms']);
 
     Route::get('visas', [CatalogController::class, 'visas']);
     Route::get('visas/{slug}', [CatalogController::class, 'visa']);
