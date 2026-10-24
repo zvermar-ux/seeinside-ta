@@ -36,6 +36,7 @@ class Booking extends Model
             'exchange_rate' => 'decimal:4',
             'option_until' => 'date',
             'payment_due' => 'date',
+            'cancel_requested_at' => 'datetime',
         ];
     }
 
@@ -43,6 +44,7 @@ class Booking extends Model
     {
         static::creating(function (Booking $b) {
             $b->reference ??= 'R'.now()->format('ym').'-'.Str::upper(Str::random(5));
+            $b->access_token ??= Str::random(40);
         });
 
         // an amount entered when the booking is created becomes its first payment
@@ -84,6 +86,22 @@ class Booking extends Model
                 $b->passengers = $rows;
                 $b->client_id = $holder;
                 $b->saveQuietly();
+            }
+        });
+
+        // automatic messages to the client when the agency confirms / cancels
+        static::updated(function (Booking $b) {
+            if (! $b->wasChanged('status')) {
+                return;
+            }
+            $event = match ($b->status) {
+                BookingStatus::Confirmed => 'booking_confirmed',
+                BookingStatus::Cancelled => 'booking_cancelled',
+                default => null,
+            };
+            if ($event) {
+                $fresh = $b->fresh();
+                \App\Services\Messaging\Messenger::later(fn () => \App\Services\Messaging\Messenger::notify($event, $fresh, once: true));
             }
         });
 
@@ -148,6 +166,11 @@ class Booking extends Model
     public function stayTerm(): BelongsTo
     {
         return $this->belongsTo(StayTerm::class);
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(Message::class)->orderBy('created_at');
     }
 
     public function invoices(): HasMany

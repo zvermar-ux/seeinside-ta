@@ -531,6 +531,14 @@ class STA_Sync
                     'fields' => $f,
                     'terms' => ['sta_country' => $country],
                 ];
+            case 'custom':
+                $rt = $d['record_type'] ?? [];
+
+                return [
+                    'title' => $mk($d['title'] ?? null), 'content' => $mk($d['description'] ?? null), 'excerpt' => $mk($d['short_description'] ?? null),
+                    'fields' => $common + ['record_type' => $rt['slug'] ?? ''],
+                    'terms' => ['sta_offer_type' => $rt ? [['slug' => $rt['slug'], 'name' => $rt['name'] ?? $rt['slug']]] : []],
+                ];
         }
 
         throw new RuntimeException('Unknown type '.$apiType);

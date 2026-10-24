@@ -38,6 +38,14 @@ echo "▶ База и кеш"
 "$PHP" artisan optimize
 "$PHP" artisan filament:optimize || true
 
+# scheduler (daily reminders) – one cron line, added once
+CRON=/etc/cron.d/seeinside-travel
+if [ -d /etc/cron.d ] && [ ! -f "$CRON" ]; then
+  echo "* * * * * www cd $SITE && $PHP artisan schedule:run >> /dev/null 2>&1" > "$CRON"
+  chmod 644 "$CRON"
+  echo "▶ Додаден cron за потсетници ($CRON)"
+fi
+
 find "$SITE" -mindepth 1 -maxdepth 1 ! -name '.user.ini' ! -name '.git' -exec chown -R www:www {} + 2>/dev/null || true
 chmod -R ug+rwX storage bootstrap/cache
 echo "✔ Готово"

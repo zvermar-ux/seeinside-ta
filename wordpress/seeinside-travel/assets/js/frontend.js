@@ -147,6 +147,17 @@
     }
     children && children.addEventListener('input', ages);
 
+    // details remembered on this device (like Booking.com)
+    var KEY = 'sta_customer';
+    try {
+      var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (saved) ['name', 'phone', 'email', 'city'].forEach(function (k) { var el = $('[name="customer[' + k + ']"]', form); if (el && !el.value && saved[k]) el.value = saved[k]; });
+    } catch (e) {}
+    function remember(data) {
+      var box = $('[data-sta-remember]', form);
+      try { if (box && box.checked) localStorage.setItem(KEY, JSON.stringify(data.customer || {})); else if (box) localStorage.removeItem(KEY); } catch (e) {}
+    }
+
     // one row per passenger (name, date of birth, passport, phone) – goes into the contract and the confirmation
     var paxBox = $('[data-sta-pax]', form), paxRows = paxBox && $('[data-sta-pax-rows]', paxBox);
     function pax() {
@@ -254,8 +265,14 @@
       api('booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function (r) {
         if (r.ok && r.body && r.body.data) {
           var d = r.body.data;
-          msg(form, '<b>' + esc(T.thanks) + '</b><span class="sta-muted">' + esc(T.reference) + ':</span><span class="sta-ref">' + esc(d.reference) + '</span>' + (d.total ? esc(T.total) + ': <b>' + money(d.total, d.currency) + '</b>' : '') + (d.payment && d.payment.url ? '<p><a class="sta-btn" href="' + esc(d.payment.url) + '">Pay</a></p>' : ''), true);
+          msg(form, '<b>' + esc(T.thanks) + '</b><span class="sta-muted">' + esc(T.reference) + ':</span><span class="sta-ref">' + esc(d.reference) + '</span>' + (d.total ? esc(T.total) + ': <b>' + money(d.total, d.currency) + '</b>' : '')
+            + (d.manage_url ? '<p class="sta-manage"><a class="sta-btn" href="' + esc(d.manage_url) + '" target="_blank" rel="noopener">' + esc(T.manage) + ' →</a><small>' + esc(T.manageHint) + '</small></p>' : '')
+            + (d.payment && d.payment.url ? '<p><a class="sta-btn" href="' + esc(d.payment.url) + '">Pay</a></p>' : ''), true);
+          remember(data);
+          var keep = {}; ['name', 'phone', 'email', 'city'].forEach(function (k) { var el = $('[name="customer[' + k + ']"]', form); if (el) keep[k] = el.value; });
           form.reset(); ages(); pax(); estimate();
+          var rb = $('[data-sta-remember]', form);
+          if (rb && rb.checked) Object.keys(keep).forEach(function (k) { var el = $('[name="customer[' + k + ']"]', form); if (el) el.value = keep[k]; });
           document.dispatchEvent(new CustomEvent('sta:booked', { detail: d }));
         } else msg(form, errors(r.body), false);
       }).catch(function () { msg(form, esc(T.error), false); }).then(function () { btn.disabled = false; btn.textContent = label; });
@@ -319,7 +336,8 @@
         if (d.total != null) rows.push([T.total, money(d.total, d.currency)]);
         if (d.amount != null) rows.push([T.total, money(d.amount, d.currency)]);
         if (d.paid) rows.push([T.paid, money(d.paid, d.currency)]);
-        msg(form, rows.filter(function (x) { return x[1]; }).map(function (x) { return (x[0] ? '<span class="sta-muted">' + esc(x[0]) + ':</span> ' : '') + '<b>' + esc(x[1]) + '</b>'; }).join('<br>'), true);
+        msg(form, rows.filter(function (x) { return x[1]; }).map(function (x) { return (x[0] ? '<span class="sta-muted">' + esc(x[0]) + ':</span> ' : '') + '<b>' + esc(x[1]) + '</b>'; }).join('<br>')
+          + (d.manage_url ? '<p class="sta-manage"><a class="sta-btn" href="' + esc(d.manage_url) + '" target="_blank" rel="noopener">' + esc(T.manage) + ' →</a></p>' : ''), true);
       }).catch(function () { msg(form, esc(T.error), false); });
     });
   });
@@ -476,6 +494,18 @@
     document.addEventListener('sta:booked', refresh);
     refresh();
   });
+
+  /* ---------- phone: price + "Book" bar at the bottom while the booking form is out of sight ---------- */
+  (function () {
+    var bar = $('[data-sta-sticky-cta]'), target = $('#sta-booking') || $('form[data-sta-booking]:not([data-quick])');
+    if (!bar || !target || !('IntersectionObserver' in window)) return;
+    document.body.appendChild(bar);
+    var formSeen = false, priceSeen = true, price = $('.sta-pricebox');
+    function upd() { bar.hidden = !(window.innerWidth < 900 && !formSeen && !priceSeen); document.body.classList.toggle('sta-has-cta', !bar.hidden); }
+    new IntersectionObserver(function (e) { formSeen = e[0].isIntersecting; upd(); }).observe(target);
+    if (price) new IntersectionObserver(function (e) { priceSeen = e[0].isIntersecting; upd(); }).observe(price); else priceSeen = false;
+    window.addEventListener('resize', upd);
+  })();
 
   /* ---------- testimonials carousel ---------- */
   $$('[data-sta-tm]').forEach(function (root) {

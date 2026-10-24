@@ -428,7 +428,7 @@ class STA_Listings
             }
         }
         $source = $atts['source'] ?? $atts['type'] ?? ($base['source'] ?? 'tour');
-        $source = ['hotel' => 'accommodation', 'hotels' => 'accommodation', 'tours' => 'tour', 'events' => 'event', 'visas' => 'visa', 'charters' => 'charter', 'destinations' => 'destination', 'groups' => 'group', 'lastminute' => 'last_minute'][$source] ?? $source;
+        $source = ['hotel' => 'accommodation', 'hotels' => 'accommodation', 'tours' => 'tour', 'events' => 'event', 'visas' => 'visa', 'charters' => 'charter', 'destinations' => 'destination', 'groups' => 'group', 'lastminute' => 'last_minute', 'offers' => 'custom', 'other' => 'custom'][$source] ?? $source;
         $in = ['source' => $source] + array_intersect_key($atts, array_flip(['layout', 'limit', 'columns', 'columns_tablet', 'columns_mobile', 'gap', 'autoplay', 'loop', 'arrows', 'dots', 'orderby', 'pagination', 'featured', 'last_minute', 'parent', 'filter_tax']));
         foreach (['title', 'eyebrow', 'subtitle', 'link_text', 'highlight'] as $k) {
             if (isset($atts[$k])) {
@@ -439,7 +439,7 @@ class STA_Listings
             $in['link_url'] = $atts['link'];
         }
         $terms = $base['terms'] ?? [];
-        foreach (['destination' => 'sta_destination', 'group' => 'sta_group', 'tour_type' => 'sta_tour_type', 'category' => 'sta_event_category', 'hotel_type' => 'sta_hotel_type', 'country' => 'sta_country'] as $k => $tax) {
+        foreach (['destination' => 'sta_destination', 'group' => 'sta_group', 'tour_type' => 'sta_tour_type', 'category' => 'sta_event_category', 'hotel_type' => 'sta_hotel_type', 'country' => 'sta_country', 'offer_type' => 'sta_offer_type'] as $k => $tax) {
             if (! empty($atts[$k])) {
                 $terms[$tax] = explode(',', $atts[$k]);
             }

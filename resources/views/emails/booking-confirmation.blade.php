@@ -24,5 +24,9 @@
         </table>
     @endif
     @if ($b->message)<p style="margin-top:14px"><b>{{ $t('Ваша порака', 'Your message') }}:</b><br>{!! nl2br(e($b->message)) !!}</p>@endif
+    @if (! empty($portal))
+        <p style="margin:20px 0"><a href="{{ $portal }}" style="display:inline-block;background:{{ $agency->brand_color ?: '#0e7490' }};color:#fff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px">{{ $t('Мојата резервација', 'Manage my booking') }}</a><br>
+        <span style="font-size:12px;color:#666">{{ $t('Статус, документи, уплати и пораки со агенцијата.', 'Status, documents, payments and messages with the agency.') }}</span></p>
+    @endif
     <p style="margin-top:18px">{{ $t('Поздрав', 'Kind regards') }},<br><b>{{ $agency->name }}</b><br>{{ $agency->phone }} · {{ $agency->email }}@if($agency->website)<br>{{ $agency->website }}@endif</p>
 </div>

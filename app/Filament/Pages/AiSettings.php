@@ -57,6 +57,9 @@ class AiSettings extends Page implements HasForms
 
     public static function canAccess(): bool
     {
+        if (! \App\Models\Agency::moduleOn('ai')) {
+            return false;
+        }
         $u = Auth::user();
 
         return $u && ($u->isSuperAdmin() || ($u->agency_id && $u->can('agency.manage')));

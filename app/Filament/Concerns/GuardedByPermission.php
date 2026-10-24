@@ -32,9 +32,23 @@ trait GuardedByPermission
         }
 
         $module = static::permissionModule();
+        // the super admin turned this part off for the agency
+        if (($agencyModule = \App\Filament\Concerns\GuardedByPermission::agencyModuleFor($module)) && ! \App\Models\Agency::moduleOn($agencyModule)) {
+            return false;
+        }
         $permission = in_array($action, ['viewAny', 'view'], true) ? "{$module}.view" : "{$module}.manage";
 
         return $user->can($permission);
+    }
+
+    /** permission module → module the super admin switches per agency */
+    public static function agencyModuleFor(string $module): ?string
+    {
+        return [
+            'tours' => 'tours', 'events' => 'events', 'accommodations' => 'accommodations', 'visas' => 'visas', 'visa_applications' => 'visas',
+            'charters' => 'charters', 'finance' => 'finance', 'reports' => 'reports', 'reviews' => 'reviews', 'live_chat' => 'live_chat',
+            'ai' => 'ai', 'objects' => 'imports', 'imports' => 'imports',
+        ][$module] ?? null;
     }
 
     public static function isSuperAdmin(): bool

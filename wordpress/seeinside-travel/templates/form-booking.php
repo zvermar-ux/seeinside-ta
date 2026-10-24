@@ -59,6 +59,13 @@ $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array(
             <label class="sta-field"><span><?php esc_html_e('Check-out', 'seeinside-travel'); ?> *</span><input type="date" name="date_to" required min="<?php echo esc_attr(wp_date('Y-m-d')); ?>"></label>
         </div>
         <input type="hidden" name="room_id" value="">
+    <?php elseif ($type === 'custom') : ?>
+        <div class="sta-row">
+            <label class="sta-field"><span><?php esc_html_e('Date', 'seeinside-travel'); ?></span><input type="date" name="date_from" min="<?php echo esc_attr(wp_date('Y-m-d')); ?>"></label>
+            <?php if (in_array($d['record_type']['price_label'] ?? '', ['per_day', 'per_night'], true)) : ?>
+                <label class="sta-field"><span><?php esc_html_e('Until', 'seeinside-travel'); ?></span><input type="date" name="date_to" min="<?php echo esc_attr(wp_date('Y-m-d')); ?>"></label>
+            <?php endif; ?>
+        </div>
     <?php elseif ($type === 'event') : ?>
         <div class="sta-row">
             <label class="sta-field sta-col-2"><span><?php esc_html_e('Ticket', 'seeinside-travel'); ?> *</span>
@@ -105,6 +112,12 @@ $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array(
     </div>
 
     <div class="sta-total" data-sta-total hidden></div>
+    <ul class="sta-trust">
+        <li><?php esc_html_e('No payment now – the agency confirms first', 'seeinside-travel'); ?></li>
+        <li><?php esc_html_e('Your own page to follow the booking, documents and messages', 'seeinside-travel'); ?></li>
+        <li><?php esc_html_e('Answer by e-mail, Viber or WhatsApp', 'seeinside-travel'); ?></li>
+    </ul>
+    <label class="sta-check sta-remember"><input type="checkbox" data-sta-remember checked> <span><?php esc_html_e('Remember my details on this device', 'seeinside-travel'); ?></span></label>
     <label class="sta-check sta-consent"><input type="checkbox" required> <span><?php echo wp_kses_post(sprintf(__('I agree that my data is used to process this request (%s).', 'seeinside-travel'), get_privacy_policy_url() ? '<a href="'.esc_url(get_privacy_policy_url()).'" target="_blank">'.__('privacy policy', 'seeinside-travel').'</a>' : __('privacy policy', 'seeinside-travel'))); ?></span></label>
     <button type="submit" class="sta-btn sta-btn-lg sta-btn-block"><?php echo esc_html($type === 'accommodation' ? __('Send booking request', 'seeinside-travel') : __('Send booking', 'seeinside-travel')); ?></button>
     <div class="sta-msg" data-sta-msg role="status" aria-live="polite"></div>

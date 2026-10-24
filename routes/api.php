@@ -17,11 +17,11 @@ use Illuminate\Support\Facades\Route;
 
 // Called from the visitor's browser (push mode): forms, prices, availability, booking status
 Route::prefix('public/{site}')->middleware([\App\Http\Middleware\AuthenticatePublicSite::class, 'throttle:website-visitor'])->group(function () {
-    Route::get('accommodations/{slug}/quote', [CatalogController::class, 'quote']);
-    Route::get('accommodations/{slug}/availability', [CatalogController::class, 'availability']);
-    Route::get('accommodations/{slug}/terms', [CatalogController::class, 'terms']);
-    Route::post('bookings', [BookingController::class, 'store']);
-    Route::post('visa-applications', [BookingController::class, 'visaApplication']);
+    Route::get('accommodations/{slug}/quote', [CatalogController::class, 'quote'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
+    Route::get('accommodations/{slug}/availability', [CatalogController::class, 'availability'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
+    Route::get('accommodations/{slug}/terms', [CatalogController::class, 'terms'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
+    Route::post('bookings', [BookingController::class, 'store'])->middleware(\App\Http\Middleware\AgencyModule::class);
+    Route::post('visa-applications', [BookingController::class, 'visaApplication'])->middleware(\App\Http\Middleware\AgencyModule::class.':visas');
     Route::get('bookings/{reference}', [BookingController::class, 'status']);
     Route::get('visa-applications/{reference}', [BookingController::class, 'visaStatus']);
     Route::post('reviews', [ReviewController::class, 'store']);
@@ -44,28 +44,31 @@ Route::middleware([AuthenticateApiClient::class, 'throttle:website'])->group(fun
     Route::get('changes', [CatalogController::class, 'changes']);
     Route::get('last-minute', [CatalogController::class, 'lastMinute']);
     Route::get('slider', [CatalogController::class, 'slider']);
-    Route::get('charters', [CatalogController::class, 'charters']);
-    Route::get('reviews', [ReviewController::class, 'index']);
+    Route::get('charters', [CatalogController::class, 'charters'])->middleware(\App\Http\Middleware\AgencyModule::class.':charters');
+    Route::get('reviews', [ReviewController::class, 'index'])->middleware(\App\Http\Middleware\AgencyModule::class.':reviews');
     Route::get('chat', [CatalogController::class, 'chat']);
     Route::post('reviews', [ReviewController::class, 'store'])->middleware('throttle:website-forms');
     Route::get('bookings/{reference}', [BookingController::class, 'status'])->middleware('throttle:website-forms');
     Route::get('visa-applications/{reference}', [BookingController::class, 'visaStatus'])->middleware('throttle:website-forms');
 
-    Route::get('tours', [CatalogController::class, 'tours']);
-    Route::get('tours/{slug}', [CatalogController::class, 'tour']);
+    Route::get('tours', [CatalogController::class, 'tours'])->middleware(\App\Http\Middleware\AgencyModule::class.':tours');
+    Route::get('tours/{slug}', [CatalogController::class, 'tour'])->middleware(\App\Http\Middleware\AgencyModule::class.':tours');
 
-    Route::get('events', [CatalogController::class, 'events']);
-    Route::get('events/{slug}', [CatalogController::class, 'event']);
+    Route::get('events', [CatalogController::class, 'events'])->middleware(\App\Http\Middleware\AgencyModule::class.':events');
+    Route::get('events/{slug}', [CatalogController::class, 'event'])->middleware(\App\Http\Middleware\AgencyModule::class.':events');
 
-    Route::get('accommodations', [CatalogController::class, 'accommodations']);
-    Route::get('accommodations/{slug}', [CatalogController::class, 'accommodation']);
-    Route::get('accommodations/{slug}/quote', [CatalogController::class, 'quote']);
-    Route::get('accommodations/{slug}/availability', [CatalogController::class, 'availability']);
-    Route::get('accommodations/{slug}/terms', [CatalogController::class, 'terms']);
+    Route::get('accommodations', [CatalogController::class, 'accommodations'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
+    Route::get('accommodations/{slug}', [CatalogController::class, 'accommodation'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
+    Route::get('accommodations/{slug}/quote', [CatalogController::class, 'quote'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
+    Route::get('accommodations/{slug}/availability', [CatalogController::class, 'availability'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
+    Route::get('accommodations/{slug}/terms', [CatalogController::class, 'terms'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
 
-    Route::get('visas', [CatalogController::class, 'visas']);
-    Route::get('visas/{slug}', [CatalogController::class, 'visa']);
+    Route::get('custom-records', [CatalogController::class, 'customRecords']);
+    Route::get('custom-records/{slug}', [CatalogController::class, 'customRecord']);
 
-    Route::post('bookings', [BookingController::class, 'store'])->middleware('throttle:website-forms');
-    Route::post('visa-applications', [BookingController::class, 'visaApplication'])->middleware('throttle:website-forms');
+    Route::get('visas', [CatalogController::class, 'visas'])->middleware(\App\Http\Middleware\AgencyModule::class.':visas');
+    Route::get('visas/{slug}', [CatalogController::class, 'visa'])->middleware(\App\Http\Middleware\AgencyModule::class.':visas');
+
+    Route::post('bookings', [BookingController::class, 'store'])->middleware(\App\Http\Middleware\AgencyModule::class)->middleware('throttle:website-forms');
+    Route::post('visa-applications', [BookingController::class, 'visaApplication'])->middleware(\App\Http\Middleware\AgencyModule::class.':visas')->middleware('throttle:website-forms');
 });

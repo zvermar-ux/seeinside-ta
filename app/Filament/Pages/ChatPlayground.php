@@ -51,6 +51,9 @@ class ChatPlayground extends Page
 
     public static function canAccess(): bool
     {
+        if (! \App\Models\Agency::moduleOn('live_chat')) {
+            return false;
+        }
         $u = Auth::user();
 
         return $u && ($u->isSuperAdmin() || ($u->agency_id && $u->can('live_chat.manage')));

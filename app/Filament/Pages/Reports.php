@@ -57,6 +57,9 @@ class Reports extends Page implements HasForms
 
     public static function canAccess(): bool
     {
+        if (! \App\Models\Agency::moduleOn('reports')) {
+            return false;
+        }
         return static::canSee();
     }
 

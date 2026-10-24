@@ -199,7 +199,7 @@ class STA_Widget_List extends STA_Elementor_Widget
         ]]);
         $this->add_control('type', ['label' => __('Type', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'tour', 'condition' => ['query' => 'custom'], 'options' => [
             'tour' => __('Organized tours', 'seeinside-travel'), 'hotel' => __('Hotels & apartments', 'seeinside-travel'),
-            'event' => __('Events', 'seeinside-travel'), 'visa' => __('Visas', 'seeinside-travel'), 'all' => __('Everything', 'seeinside-travel'),
+            'event' => __('Events', 'seeinside-travel'), 'visa' => __('Visas', 'seeinside-travel'), 'custom' => __('Other offers', 'seeinside-travel'), 'all' => __('Everything', 'seeinside-travel'),
         ]]);
         $terms = get_terms(['taxonomy' => 'sta_destination', 'hide_empty' => false]);
         $this->add_control('destination', ['label' => __('Destination', 'seeinside-travel'), 'type' => Controls_Manager::SELECT2, 'multiple' => true, 'condition' => ['query' => 'custom'],

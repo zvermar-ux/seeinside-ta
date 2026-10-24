@@ -40,7 +40,7 @@ class LastMinute extends Page
     {
         $u = Auth::user();
 
-        return $u && ($u->can('tours.view') || $u->can('accommodations.view') || $u->can('events.view'));
+        return $u && (($u->can('tours.view') && \App\Models\Agency::moduleOn('tours')) || ($u->can('accommodations.view') && \App\Models\Agency::moduleOn('accommodations')) || ($u->can('events.view') && \App\Models\Agency::moduleOn('events')));
     }
 
     public static function getNavigationBadge(): ?string

@@ -70,7 +70,14 @@ class BookingResource extends Resource
         return ['reference', 'customer_name', 'customer_email', 'customer_phone'];
     }
 
-    public const TYPES = ['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class, 'charter' => \App\Models\Charter::class];
+    public const TYPES = ['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class, 'charter' => \App\Models\Charter::class, 'custom' => \App\Models\CustomRecord::class];
+
+    /** Types the super admin defined (Transport…) – booked as "custom" */
+    public static function customTypeOptions(): array
+    {
+        return \App\Filament\Resources\CustomRecordResource::types()->isNotEmpty()
+            ? ['custom' => \App\Filament\Resources\CustomRecordResource::types()->map(fn ($t) => $t->label())->implode(' / ')] : [];
+    }
 
     public static function form(Form $form): Form
     {
@@ -142,7 +149,8 @@ class BookingResource extends Resource
         return [
             AgencyField::select(),
             Forms\Components\Select::make('bookable_type')->label(__('Type'))->live()
-                ->options(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Hotel / apartment'), 'charter' => __('Charter')])
+                ->options(fn () => array_filter(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Hotel / apartment'), 'charter' => __('Charter')] + static::customTypeOptions(),
+                    fn ($label, $key) => $key === 'custom' || \App\Models\Agency::moduleOn(\App\Http\Middleware\AgencyModule::BY_TYPE[$key] ?? $key), ARRAY_FILTER_USE_BOTH))
                 ->afterStateUpdated(fn (Forms\Set $set) => $set('bookable_id', null)),
             Forms\Components\Select::make('bookable_id')->label(__('Offer'))->searchable()->live()
                 ->options(function (Get $get) {
@@ -153,7 +161,8 @@ class BookingResource extends Resource
 
                     return $class::query()->when(AgencyField::current($get), fn ($q, $a) => $q->where('agency_id', $a))
                         ->latest()->limit(500)->get()
-                        ->mapWithKeys(fn ($m) => [$m->id => is_array($m->getAttribute('title')) ? $m->tr('title') : ($m->name ?? $m->region)]);
+                        ->when($class === \App\Models\CustomRecord::class, fn ($c) => $c->load('recordType'))
+                        ->mapWithKeys(fn ($m) => [$m->id => ($m instanceof \App\Models\CustomRecord ? $m->recordType?->singularLabel().': ' : '').(is_array($m->getAttribute('title')) ? $m->tr('title') : ($m->name ?? $m->region))]);
                 }),
             Forms\Components\Select::make('tour_departure_id')->label(__('Departure date'))->live()
                 ->visible(fn (Get $get) => $get('bookable_type') === 'tour' && $get('bookable_id'))
@@ -356,10 +365,14 @@ class BookingResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with(['bookable', 'departure']))
+            ->modifyQueryUsing(fn ($query) => $query->with(['bookable', 'departure'])
+                ->withCount(['messages as unread_count' => fn ($q) => $q->withoutGlobalScopes()->where('direction', 'in')->whereNull('read_at')]))
             ->columns([
                 Tables\Columns\TextColumn::make('reference')->label(__('Reference'))->searchable()->weight('semibold')->copyable()
-                    ->description(fn (Booking $r) => $r->created_at?->format('d.m.Y H:i')),
+                    ->description(fn (Booking $r) => $r->created_at?->format('d.m.Y H:i'))
+                    ->icon(fn (Booking $r) => $r->cancel_requested_at && $r->status !== BookingStatus::Cancelled ? 'heroicon-m-exclamation-triangle' : ($r->unread_count ? 'heroicon-m-chat-bubble-left-ellipsis' : null))
+                    ->iconColor(fn (Booking $r) => $r->cancel_requested_at ? 'danger' : 'warning')
+                    ->tooltip(fn (Booking $r) => $r->cancel_requested_at && $r->status !== BookingStatus::Cancelled ? __('The client asked for cancellation') : ($r->unread_count ? __(':n new message(s) from the client', ['n' => $r->unread_count]) : null)),
                 Tables\Columns\TextColumn::make('customer_name')->label(__('Customer'))->searchable()
                     ->description(fn (Booking $r) => $r->customer_phone ?: $r->customer_email),
                 Tables\Columns\TextColumn::make('item')->label(__('Offer'))->wrap()
@@ -384,7 +397,8 @@ class BookingResource extends Resource
                 Tables\Filters\SelectFilter::make('status')->label(__('Status'))->options(BookingStatus::class)->multiple(),
                 Tables\Filters\SelectFilter::make('payment_status')->label(__('Payment'))->options(PaymentStatus::class),
                 Tables\Filters\SelectFilter::make('bookable_type')->label(__('Type'))
-                    ->options(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Hotel / apartment'), 'charter' => __('Charter')]),
+                    ->options(fn () => array_filter(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Hotel / apartment'), 'charter' => __('Charter')] + static::customTypeOptions(),
+                    fn ($label, $key) => $key === 'custom' || \App\Models\Agency::moduleOn(\App\Http\Middleware\AgencyModule::BY_TYPE[$key] ?? $key), ARRAY_FILTER_USE_BOTH)),
             ])
             ->actions([
                 Tables\Actions\Action::make('confirm')->label(__('Confirm'))->icon('heroicon-o-check')->color('success')->iconButton()->tooltip(__('Confirm'))
@@ -401,6 +415,7 @@ class BookingResource extends Resource
     {
         return [
             BookingResource\RelationManagers\PaymentsRelationManager::class,
+            BookingResource\RelationManagers\MessagesRelationManager::class,
             BookingResource\RelationManagers\InvoicesRelationManager::class,
             BookingResource\RelationManagers\SupplierInvoicesRelationManager::class,
         ];

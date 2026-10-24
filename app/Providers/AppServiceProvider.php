@@ -51,6 +51,7 @@ class AppServiceProvider extends ServiceProvider
             'accommodation_room' => \App\Models\AccommodationRoom::class,
             'visa_type' => \App\Models\VisaType::class,
             'charter' => \App\Models\Charter::class,
+            'custom' => \App\Models\CustomRecord::class,
         ]);
 
         // Website API (WordPress plugin)

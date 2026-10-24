@@ -3,7 +3,7 @@
  * Plugin Name:       SeeInside Travel – Sync
  * Plugin URI:        https://ta.seeinsidesolution.com
  * Description:       Real-time sync of tours, events, hotels/apartments and visas from the SeeInside Travel system (ta.seeinsidesolution.com) into custom post types with ACF fields, plus booking & visa forms, listings, slider and page-builder templates (Elementor / Gutenberg / any theme).
- * Version:           1.5.0
+ * Version:           1.6.0
  * Requires at least: 6.2
  * Requires PHP:      8.0
  * Author:            SeeInside Solution
@@ -14,7 +14,7 @@
 
 defined('ABSPATH') || exit;
 
-define('STA_VERSION', '1.5.0');
+define('STA_VERSION', '1.6.0');
 define('STA_FILE', __FILE__);
 define('STA_DIR', plugin_dir_path(__FILE__));
 define('STA_URL', plugin_dir_url(__FILE__));
@@ -57,6 +57,14 @@ add_action('plugins_loaded', function () {
         STA_Admin::init();
     }
 });
+
+// after an update (new post types / taxonomies): refresh the permalinks once
+add_action('init', function () {
+    if (get_option('sta_rewrite_version') !== STA_VERSION) {
+        flush_rewrite_rules(false);
+        update_option('sta_rewrite_version', STA_VERSION, true);
+    }
+}, 99);
 
 register_activation_hook(__FILE__, function () {
     STA_Post_Types::register();

@@ -10,7 +10,7 @@ class Agency extends Model
 {
     protected $guarded = ['id'];
 
-    protected $hidden = ['mail_password', 'payment_settings'];
+    protected $hidden = ['mail_password', 'payment_settings', 'messaging'];
 
     protected function casts(): array
     {
@@ -20,7 +20,64 @@ class Agency extends Model
             'mail_port' => 'integer',
             'payment_settings' => 'encrypted:array',
             'documents' => 'array',
+            'messaging' => 'encrypted:array',
+            'modules' => 'array',
         ];
+    }
+
+    /** Modules the super admin can turn on / off per agency (null = all on) */
+    public static function moduleOptions(): array
+    {
+        $out = [
+            'tours' => __('Organized tours'),
+            'events' => __('Events'),
+            'accommodations' => __('Hotels & apartments'),
+            'visas' => __('Visa services'),
+            'charters' => __('Charters'),
+            'finance' => __('Invoices, cash register & supplier invoices'),
+            'reports' => __('Reports, costs & profit'),
+            'reviews' => __('Reviews'),
+            'live_chat' => __('Live chat & chatbot'),
+            'ai' => __('AI assistant (texts and images)'),
+            'imports' => __('Imported offer (Aries)'),
+            'messaging' => __('Viber & WhatsApp messages'),
+        ];
+        try {
+            foreach (RecordType::query()->orderBy('sort_order')->get() as $t) {
+                $out['custom:'.$t->slug] = $t->label().' ('.__('custom type').')';
+            }
+        } catch (\Throwable) {
+        }
+
+        return $out;
+    }
+
+    public function hasModule(string $module): bool
+    {
+        $mods = $this->modules;
+        if ($mods === null) {
+            return true;    // nothing chosen yet → everything on
+        }
+
+        return in_array($module, (array) $mods, true);
+    }
+
+    /** Is the module on for the agency of the logged-in user? (super admin: always) */
+    public static function moduleOn(string $module): bool
+    {
+        $u = auth()->user();
+        if (! $u || $u->isSuperAdmin() || ! $u->agency_id) {
+            return true;
+        }
+        static $cache = [];
+
+        return $cache[$u->agency_id.'|'.$module] ??= (bool) self::find($u->agency_id)?->hasModule($module);
+    }
+
+    /** Messaging settings (channels, tokens, templates) */
+    public function msg(string $key, mixed $default = null): mixed
+    {
+        return data_get((array) $this->messaging, $key, $default);
     }
 
     /** Document & finance settings with defaults (contract, invoices, cash register, exchange rate) */

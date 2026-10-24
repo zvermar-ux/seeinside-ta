@@ -67,6 +67,8 @@ class BookingPricing
             $lines[] = self::line('base', $t->tr('name'), max(1, (int) $b->quantity), (float) $t->price);
         } elseif ($item instanceof Charter) {
             $lines[] = self::line('base', $item->region.' '.$item->departure_date?->format('d.m.Y'), $pax, (float) $item->price);
+        } elseif ($item instanceof \App\Models\CustomRecord && $item->price_from !== null) {
+            $lines[] = self::line('base', (string) $item->tr('title'), \App\Models\CustomRecord::units($item, $b), (float) $item->price_from);
         }
 
         foreach ((array) $b->extras as $e) {

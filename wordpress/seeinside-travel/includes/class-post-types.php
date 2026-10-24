@@ -76,7 +76,7 @@ class STA_Post_Types
     {
         $id = (int) get_post_meta($post->ID, 'sta_id', true);
         $apiType = STA_Schema::api_type($post->post_type);
-        $paths = ['tour' => 'tours', 'event' => 'events', 'accommodation' => 'accommodations', 'visa' => 'visa-types'];
+        $paths = ['tour' => 'tours', 'event' => 'events', 'accommodation' => 'accommodations', 'visa' => 'visa-types', 'custom' => 'other-offers'];
         $admin = rtrim((string) sta_setting('api_url', 'https://ta.seeinsidesolution.com'), '/').'/admin/'.$paths[$apiType].'/'.$id.'/edit';
         $synced = get_post_meta($post->ID, '_sta_synced_at', true);
 

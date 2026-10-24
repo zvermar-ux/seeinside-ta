@@ -60,6 +60,8 @@ class STA_Frontend
                 'pickArrival' => __('Click the day of arrival, then the day of departure.', 'seeinside-travel'),
                 'pickDeparture' => __('Now click the day of departure.', 'seeinside-travel'),
                 'needConsent' => __('Please tick the consent box above the button.', 'seeinside-travel'),
+                'manage' => __('My booking', 'seeinside-travel'),
+                'manageHint' => __('Status, documents, payments and messages with the agency – the link is also in your e-mail.', 'seeinside-travel'),
                 'firstName' => __('First name', 'seeinside-travel'),
                 'lastName' => __('Last name', 'seeinside-travel'),
                 'birthDate' => __('Date of birth', 'seeinside-travel'),
@@ -125,7 +127,7 @@ class STA_Frontend
             $q = $wp_query;
         } else {
             $alias = ['tour' => 'sta_tour', 'tours' => 'sta_tour', 'event' => 'sta_event', 'events' => 'sta_event', 'hotel' => 'sta_hotel', 'hotels' => 'sta_hotel',
-                'accommodation' => 'sta_hotel', 'visa' => 'sta_visa', 'visas' => 'sta_visa'];
+                'accommodation' => 'sta_hotel', 'visa' => 'sta_visa', 'visas' => 'sta_visa', 'custom' => 'sta_offer', 'offers' => 'sta_offer'];
             $types = $a['type'] === 'all' ? array_values(STA_Schema::TYPES)
                 : array_values(array_filter(array_map(fn ($t) => $alias[trim($t)] ?? (in_array(trim($t), STA_Schema::TYPES, true) ? trim($t) : null), explode(',', $a['type']))));
             $args = [

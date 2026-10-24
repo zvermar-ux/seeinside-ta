@@ -52,6 +52,9 @@ class CashJournal extends Page
 
     public static function canAccess(): bool
     {
+        if (! \App\Models\Agency::moduleOn('finance')) {
+            return false;
+        }
         $u = Auth::user();
 
         return (bool) ($u && ($u->isSuperAdmin() || $u->can('finance.view')));

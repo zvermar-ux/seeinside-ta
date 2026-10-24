@@ -48,6 +48,9 @@ class LiveChatSettings extends Page implements HasForms
 
     public static function canAccess(): bool
     {
+        if (! \App\Models\Agency::moduleOn('live_chat')) {
+            return false;
+        }
         $u = Auth::user();
 
         // turning the chat on/off and the bot's rules: agency admin (operators train the bot in Bot knowledge)

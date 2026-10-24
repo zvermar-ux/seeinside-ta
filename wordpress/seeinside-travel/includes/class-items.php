@@ -17,6 +17,7 @@ class STA_Items
             'accommodation' => [__('Hotels & apartments', 'seeinside-travel'), 'post', 'sta_hotel'],
             'event' => [__('Events', 'seeinside-travel'), 'post', 'sta_event'],
             'visa' => [__('Visas', 'seeinside-travel'), 'post', 'sta_visa'],
+            'custom' => [__('Other offers', 'seeinside-travel'), 'post', 'sta_offer'],
             'last_minute' => ['Last minute', 'post', ''],
             'charter' => [__('Charters', 'seeinside-travel'), 'charter', ''],
             'slide' => [__('Homepage slider', 'seeinside-travel'), 'slide', ''],
@@ -25,6 +26,7 @@ class STA_Items
             'tour_type' => [__('Tour types', 'seeinside-travel'), 'term', 'sta_tour_type'],
             'event_category' => [__('Event categories', 'seeinside-travel'), 'term', 'sta_event_category'],
             'hotel_type' => [__('Accommodation types', 'seeinside-travel'), 'term', 'sta_hotel_type'],
+            'offer_type' => [__('Offer types', 'seeinside-travel'), 'term', 'sta_offer_type'],
         ];
     }
 
@@ -46,6 +48,7 @@ class STA_Items
             'accommodation' => ['sta_destination', 'sta_hotel_type', 'sta_country'],
             'event' => ['sta_event_category', 'sta_country'],
             'visa' => ['sta_country'],
+            'custom' => ['sta_offer_type'],
             'last_minute' => ['sta_group', 'sta_destination', 'sta_tour_type', 'sta_hotel_type', 'sta_country'],
         ];
 
@@ -260,6 +263,11 @@ class STA_Items
                 $it['stars'] = (int) ($d['stars'] ?? 0);
                 $it['board'] = implode(' · ', array_map('strtoupper', (array) ($d['board_types'] ?? [])));
                 $it['amenities'] = array_map(fn ($a) => sta_t($a['name'] ?? null), array_slice((array) ($d['amenities'] ?? []), 0, 6));
+                break;
+            case 'custom':
+                $it['category'] = (string) sta_t($d['record_type']['singular'] ?? null);
+                $it['eyebrow'] = $it['category'];
+                $it['subtitle'] = implode(' · ', array_filter(array_map(fn ($f) => is_array($v = sta_t($f['value'] ?? null)) ? '' : trim($v.' '.($f['suffix'] ?? '')), array_slice((array) ($d['key_fields'] ?? []), 0, 3))));
                 break;
             case 'visa':
                 $it['category'] = (string) sta_t($d['category']['label'] ?? null);

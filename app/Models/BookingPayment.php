@@ -65,6 +65,12 @@ class BookingPayment extends Model
                 report($e);
             }
         });
+        static::created(function (BookingPayment $p) {
+            if ((float) $p->amount > 0 && $p->booking) {
+                $b = $p->booking;
+                \App\Services\Messaging\Messenger::later(fn () => \App\Services\Messaging\Messenger::notify('payment_received', $b->fresh()));
+            }
+        });
         static::saved(function (BookingPayment $p) {
             $p->booking?->syncPaid();
             $p->invoice?->syncPaid();

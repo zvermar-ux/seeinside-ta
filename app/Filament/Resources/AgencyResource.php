@@ -96,6 +96,15 @@ class AgencyResource extends Resource
                     Forms\Components\KeyValue::make('payment_settings')->label(__('Payment access keys'))->columnSpanFull()
                         ->keyLabel(__('Name'))->valueLabel(__('Value'))->helperText(__('Stored encrypted.')),
                 ]),
+            Forms\Components\Section::make(__('Modules'))
+                ->description(__('Parts of the application this agency uses. Turned off = hidden in the admin and on the website.'))
+                ->visible(fn () => $withAdminFields && Auth::user()?->isSuperAdmin())
+                ->collapsible()
+                ->schema([
+                    Forms\Components\CheckboxList::make('modules')->hiddenLabel()->columns(3)->bulkToggleable()
+                        ->options(fn () => Agency::moduleOptions())
+                        ->formatStateUsing(fn ($state) => $state === null ? array_keys(Agency::moduleOptions()) : $state),
+                ]),
             Forms\Components\Section::make(__('Outgoing e-mail (SMTP)'))
                 ->description(__('Used for e-mails sent on behalf of the agency.'))
                 ->collapsible()->collapsed()

@@ -29,6 +29,11 @@ class WebsitePush
         $request = Request::create('/api/v1/push');
         $request->attributes->set('agency_id', $agencyId);
         $c = app(CatalogController::class);
+        // a module the super admin turned off is not published
+        $module = ['tour' => 'tours', 'event' => 'events', 'accommodation' => 'accommodations', 'visa' => 'visas', 'charter' => 'charters', 'reviews' => 'reviews', 'chat' => 'live_chat'][$type] ?? null;
+        if ($module && ! \App\Models\Agency::find($agencyId)?->hasModule($module)) {
+            return in_array($type, ['charter', 'reviews', 'chat'], true) ? [] : null;
+        }
 
         try {
             $res = match ($type) {
@@ -36,6 +41,7 @@ class WebsitePush
                 'event' => $c->event($request, (string) $slug),
                 'accommodation' => $c->accommodation($request, (string) $slug),
                 'visa' => $c->visa($request, (string) $slug),
+                'custom' => $c->customRecord($request, (string) $slug),
                 'slider' => $c->slider($request),
                 'charter' => $c->charters($request),
                 'meta' => $c->meta($request),
@@ -158,7 +164,7 @@ class WebsitePush
     {
         @set_time_limit(0);
         $stats = ['meta' => static::pushItem($client, 'meta', 0, null), 'slider' => static::pushItem($client, 'slider', 0, null), 'charter' => static::pushItem($client, 'charter', 0, null), 'reviews' => static::pushItem($client, 'reviews', 0, null), 'chat' => static::pushItem($client, 'chat', 0, null)];
-        foreach (['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class, 'visa' => VisaType::class] as $type => $class) {
+        foreach (['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class, 'visa' => VisaType::class, 'custom' => \App\Models\CustomRecord::class] as $type => $class) {
             $ok = 0;
             foreach ($class::withoutGlobalScopes()->where('agency_id', $client->agency_id)->where('is_active', true)->get(['id', 'slug']) as $m) {
                 $status = static::pushItem($client, $type, $m->id, $m->slug);

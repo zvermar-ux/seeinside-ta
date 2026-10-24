@@ -82,6 +82,9 @@ class CatalogController extends Controller
                 'boards' => collect(\App\Enums\Board::cases())->map(fn ($c) => ['value' => $c->value, 'label' => $c->labels()]),
                 'visa_categories' => collect(\App\Enums\VisaCategory::cases())->map(fn ($c) => ['value' => $c->value, 'label' => $c->labels()]),
             ],
+            'record_types' => \App\Models\RecordType::query()->where('is_active', true)->orderBy('sort_order')->get()
+                ->filter(fn ($t) => $agency->hasModule('custom:'.$t->slug))->map(fn ($t) => P::recordType($t))->values(),
+            'modules' => collect(['tours', 'events', 'accommodations', 'visas', 'charters', 'reviews', 'live_chat'])->filter(fn ($m) => $agency->hasModule($m))->values(),
             'server_time' => now()->toIso8601String(),
         ]);
     }
@@ -332,13 +335,35 @@ class CatalogController extends Controller
      * Sync cursor for the website: everything changed (or deleted) since ?since=ISO-8601.
      * The website stores "server_time" and sends it as "since" next time.
      */
+    /** Records of the types defined by the super admin (?type=transport) */
+    public function customRecords(Request $request): JsonResponse
+    {
+        $agency = Agency::find($this->agencyId($request));
+        $types = \App\Models\RecordType::query()->where('is_active', true)->get()->filter(fn ($t) => $agency->hasModule('custom:'.$t->slug));
+        $q = \App\Models\CustomRecord::query()->where('agency_id', $agency->id)->where('is_active', true)->with('recordType')
+            ->whereIn('record_type_id', $types->pluck('id'))
+            ->when($request->query('type'), fn ($q, $t) => $q->whereIn('record_type_id', $types->where('slug', $t)->pluck('id')))
+            ->orderBy('sort_order')->orderByDesc('id');
+
+        return $this->paginate($q, $request, fn ($r) => P::customSummary($r));
+    }
+
+    public function customRecord(Request $request, string $slug): JsonResponse
+    {
+        $agency = Agency::find($this->agencyId($request));
+        $r = \App\Models\CustomRecord::query()->where('agency_id', $agency->id)->where('is_active', true)->where('slug', $slug)->with('recordType')->firstOrFail();
+        abort_unless($r->recordType?->is_active && $agency->hasModule('custom:'.$r->recordType->slug), 404);
+
+        return response()->json(['data' => P::custom($r)]);
+    }
+
     public function changes(Request $request): JsonResponse
     {
         $since = $request->filled('since') ? Carbon::parse($request->query('since')) : Carbon::createFromTimestamp(0);
         $agency = $this->agencyId($request);
 
         $changed = collect();
-        foreach (['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class, 'visa' => VisaType::class] as $type => $class) {
+        foreach (['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class, 'visa' => VisaType::class, 'custom' => \App\Models\CustomRecord::class] as $type => $class) {
             $class::query()->where('agency_id', $agency)->where('updated_at', '>', $since)->get(['id', 'slug', 'is_active', 'updated_at'])
                 ->each(fn ($m) => $changed->push(['type' => $type, 'id' => $m->id, 'slug' => $m->slug, 'active' => (bool) $m->is_active, 'updated_at' => $m->updated_at->toIso8601String()]));
         }

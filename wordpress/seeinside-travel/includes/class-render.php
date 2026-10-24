@@ -11,6 +11,7 @@ class STA_Render
 {
     public const SECTIONS = [
         'facts' => 'Key facts',
+        'fields' => 'Details (own fields of the offer type)',
         'price' => 'Price & booking button',
         'gallery' => 'Gallery',
         'description' => 'Description',
@@ -142,12 +143,20 @@ class STA_Render
                 ? (($d['terms']['price_type'] ?? '') === 'per_person' ? __('per person / term', 'seeinside-travel') : __('per term', 'seeinside-travel'))
                 : __('per night', 'seeinside-travel'),
             'event' => __('per ticket', 'seeinside-travel'),
+            'custom' => match ($d['record_type']['price_label'] ?? '') {
+                'per_person' => __('per person', 'seeinside-travel'),
+                'per_day' => __('per day', 'seeinside-travel'),
+                'per_night' => __('per night', 'seeinside-travel'),
+                'per_booking' => __('per booking', 'seeinside-travel'),
+                default => '',
+            },
             default => '',
         };
         $cta = match ($type) {
             'visa' => __('Apply online', 'seeinside-travel'),
             'accommodation' => __('Check availability', 'seeinside-travel'),
             'event' => __('Buy tickets', 'seeinside-travel'),
+            'custom' => empty($d['booking']['enabled']) ? __('Send inquiry', 'seeinside-travel') : __('Book now', 'seeinside-travel'),
             default => __('Book now', 'seeinside-travel'),
         };
 
@@ -170,6 +179,10 @@ class STA_Render
             $html .= '<a class="sta-btn sta-btn-block" href="'.esc_url($d['external_ticket_url']).'" target="_blank" rel="noopener">'.esc_html($cta).'</a>';
         } else {
             $html .= '<a class="sta-btn sta-btn-block" href="#sta-booking">'.esc_html($cta).'</a>';
+        }
+        // phone: a bar with the price and the button stays at the bottom of the screen (like Booking.com)
+        if ($type !== 'visa' || $price !== null) {
+            $html .= '<div class="sta-sticky-cta" data-sta-sticky-cta hidden><div>'.($price !== null ? '<small>'.esc_html__('Price from', 'seeinside-travel').'</small><b>'.esc_html(sta_money($price, $currency)).'</b>' : '').'</div><a class="sta-btn" href="#sta-booking">'.esc_html($cta).'</a></div>';
         }
         $agency = (get_option('sta_meta', [])['agency'] ?? []);
         if (! empty($agency['phone'])) {
@@ -498,6 +511,62 @@ class STA_Render
             .'</div>';
     }
 
+    /** Own fields of an offer type defined in SeeInside (vehicle, seats, route …) */
+    protected static function s_fields(array $d, string $type): string
+    {
+        $fields = (array) ($d['fields'] ?? []);
+        if ($type !== 'custom' || ! $fields) {
+            return '';
+        }
+        $simple = '';
+        $long = '';
+        foreach ($fields as $f) {
+            $label = esc_html((string) sta_t($f['label'] ?? null));
+            $v = sta_t($f['value'] ?? null);
+            if ($v === null || $v === '' || $v === []) {
+                continue;
+            }
+            switch ($f['type'] ?? 'text') {
+                case 'gallery':
+                    $long .= '<h4 class="sta-h4">'.$label.'</h4><div class="sta-gallery sta-gallery-grid" data-sta-lightbox>';
+                    foreach ((array) $v as $url) {
+                        $long .= '<a class="sta-gallery-item" href="'.esc_url(sta_local_image($url)).'"><img src="'.esc_url(sta_local_image($url, 'medium_large')).'" alt="" loading="lazy"></a>';
+                    }
+                    $long .= '</div>';
+                    break;
+                case 'image':
+                    $long .= '<h4 class="sta-h4">'.$label.'</h4><img class="sta-field-img" src="'.esc_url(sta_local_image($v, 'large')).'" alt="'.$label.'" loading="lazy">';
+                    break;
+                case 'file':
+                    $simple .= '<li><span>'.$label.'</span><b><a href="'.esc_url($v).'" target="_blank" rel="noopener">'.esc_html__('Open', 'seeinside-travel').' ↗</a></b></li>';
+                    break;
+                case 'url':
+                    $simple .= '<li><span>'.$label.'</span><b><a href="'.esc_url($v).'" target="_blank" rel="noopener nofollow">'.esc_html(preg_replace('~^https?://(www\.)?~', '', $v)).'</a></b></li>';
+                    break;
+                case 'list':
+                    $long .= '<h4 class="sta-h4">'.$label.'</h4>'.self::list_html((array) $v);
+                    break;
+                case 'richtext':
+                    $long .= '<h4 class="sta-h4">'.$label.'</h4><div class="sta-prose">'.wp_kses_post($v).'</div>';
+                    break;
+                case 'textarea':
+                    $long .= '<h4 class="sta-h4">'.$label.'</h4><div class="sta-prose">'.wpautop(esc_html($v)).'</div>';
+                    break;
+                case 'location':
+                    $long .= '<h4 class="sta-h4">'.$label.'</h4><div class="sta-map"><iframe loading="lazy" src="https://maps.google.com/maps?q='.rawurlencode($v).'&z=13&output=embed" title="'.$label.'"></iframe></div>';
+                    break;
+                case 'phone':
+                    $simple .= '<li><span>'.$label.'</span><b><a href="tel:'.esc_attr(preg_replace('/[^0-9+]/', '', $v)).'">'.esc_html($v).'</a></b></li>';
+                    break;
+                default:
+                    $simple .= '<li><span>'.$label.'</span><b>'.esc_html(trim($v.' '.($f['suffix'] ?? ''))).'</b></li>';
+            }
+        }
+
+        return self::heading(sta_t($d['record_type']['singular'] ?? null) ?: __('Details', 'seeinside-travel'))
+            .($simple ? '<ul class="sta-fields">'.$simple.'</ul>' : '').$long;
+    }
+
     /** Fixed terms (15–22.05, 22–29.05…) with the price and free units of every room; a click opens the quick booking */
     protected static function s_terms(array $d, string $type): string
     {
@@ -530,7 +599,7 @@ class STA_Render
                 $full = $c['free'] !== null && (int) $c['free'] < 1;
                 $cell = (! empty($c['regular']) && $c['regular'] > $c['price'] ? '<del>'.esc_html(sta_money($c['regular'], $currency)).'</del>' : '')
                     .'<b>'.esc_html(sta_money($c['price'], $currency)).'</b>'
-                    .'<small>'.esc_html($full ? __('Booked', 'seeinside-travel') : ($c['free'] !== null ? sprintf(_n('%d free', '%d free', (int) $c['free'], 'seeinside-travel'), (int) $c['free']) : __('Free', 'seeinside-travel'))).'</small>';
+                    .'<small'.(! $full && $c['free'] !== null && (int) $c['free'] <= 2 ? ' class="is-few"' : '').'>'.esc_html($full ? __('Booked', 'seeinside-travel') : ($c['free'] !== null && (int) $c['free'] <= 2 ? sprintf(_n('Only %d left!', 'Only %d left!', (int) $c['free'], 'seeinside-travel'), (int) $c['free']) : ($c['free'] !== null ? sprintf(_n('%d free', '%d free', (int) $c['free'], 'seeinside-travel'), (int) $c['free']) : __('Free', 'seeinside-travel')))).'</small>';
                 $html .= $full || ! $quick
                     ? '<td class="'.($full ? 'is-full' : '').'"><span class="sta-term-cell">'.$cell.'</span></td>'
                     : '<td><button type="button" class="sta-term-cell" data-room="'.(int) $r['id'].'" data-room-name="'.esc_attr(sta_t($r['name'])).'" data-price="'.esc_attr($c['price']).'">'.$cell.'</button></td>';
@@ -621,13 +690,17 @@ class STA_Render
                 : '';
         }
 
+        if ($type === 'custom' && empty($d['booking']['enabled'])) {
+            return '';
+        }
+
         return sta_part('form-booking', ['d' => $d, 'type' => $type, 'post_id' => $postId]);
     }
 
     /** The whole page in a sensible order (used when no builder template exists) */
     protected static function s_layout(array $d, string $type, int $postId): string
     {
-        $main = ['gallery', 'facts', 'description', 'info_cards', 'highlights', 'program', 'route_map', 'departures', 'rooms', 'terms', 'availability', 'tickets', 'requirements', 'included', 'extras', 'amenities', 'info', 'galleries', 'videos', 'map'];
+        $main = ['gallery', 'facts', 'fields', 'description', 'info_cards', 'highlights', 'program', 'route_map', 'departures', 'rooms', 'terms', 'availability', 'tickets', 'requirements', 'included', 'extras', 'amenities', 'info', 'galleries', 'videos', 'map'];
         // aside first: on narrow screens the price / booking button comes before the details
         $html = '<div class="sta-page"><aside class="sta-aside"><div class="sta-sticky">'.self::section('price', $postId).'</div></aside><div class="sta-main">';
         foreach ($main as $s) {

@@ -2461,6 +2461,53 @@ msgstr "по лице / термин"
 msgid "per term"
 msgstr "за термин"
 
+msgid "Answer by e-mail, Viber or WhatsApp"
+msgstr "Одговор по е-пошта, Viber или WhatsApp"
+
+msgid "Details (own fields of the offer type)"
+msgstr "Детали (сопствени полиња на типот понуда)"
+
+msgid "My booking"
+msgstr "Мојата резервација"
+
+msgid "No payment now – the agency confirms first"
+msgstr "Без плаќање сега – агенцијата прво потврдува"
+
+msgid "Offer"
+msgstr "Понуда"
+
+msgid "Offer type"
+msgstr "Тип на понуда"
+
+msgid "Offer types"
+msgstr "Типови понуди"
+
+msgid "Other offers"
+msgstr "Други понуди"
+
+msgid "Remember my details on this device"
+msgstr "Запомни ги моите податоци на овој уред"
+
+msgid "Status, documents, payments and messages with the agency – the link is also in your e-mail."
+msgstr "Статус, документи, уплати и пораки со агенцијата – линкот го имате и во е-поштата."
+
+msgid "Until"
+msgstr "До"
+
+msgid "Your own page to follow the booking, documents and messages"
+msgstr "Ваша страница за следење на резервацијата, документите и пораките"
+
+msgid "per booking"
+msgstr "по резервација"
+
+msgid "per day"
+msgstr "по ден"
+
+msgid "Only %d left!"
+msgid_plural "Only %d left!"
+msgstr[0] "Само уште %d!"
+msgstr[1] "Само уште %d!"
+
 msgid "%d free"
 msgid_plural "%d free"
 msgstr[0] "%d слободна"

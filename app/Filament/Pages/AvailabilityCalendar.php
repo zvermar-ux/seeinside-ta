@@ -46,6 +46,9 @@ class AvailabilityCalendar extends Page
 
     public static function canAccess(): bool
     {
+        if (! \App\Models\Agency::moduleOn('accommodations')) {
+            return false;
+        }
         $u = Auth::user();
 
         return $u && ($u->can('bookings.view') || $u->can('accommodations.view'));

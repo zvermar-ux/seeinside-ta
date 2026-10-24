@@ -16,6 +16,7 @@ class STA_Schema
         'event' => 'sta_event',
         'accommodation' => 'sta_hotel',
         'visa' => 'sta_visa',
+        'custom' => 'sta_offer',
     ];
 
     /** API list endpoints */
@@ -24,6 +25,7 @@ class STA_Schema
         'event' => 'events',
         'accommodation' => 'accommodations',
         'visa' => 'visas',
+        'custom' => 'custom-records',
     ];
 
     public static function post_type(string $apiType): ?string
@@ -70,6 +72,14 @@ class STA_Schema
                 'icon' => 'dashicons-id-alt',
                 'taxonomies' => ['sta_country'],
             ],
+            // types defined in SeeInside by the super admin (transfers, rent-a-car …)
+            'sta_offer' => [
+                'singular' => __('Offer', 'seeinside-travel'),
+                'plural' => __('Other offers', 'seeinside-travel'),
+                'slug' => 'ponudi',
+                'icon' => 'dashicons-car',
+                'taxonomies' => ['sta_offer_type'],
+            ],
         ];
     }
 
@@ -82,6 +92,7 @@ class STA_Schema
             'sta_event_category' => ['singular' => __('Event category', 'seeinside-travel'), 'plural' => __('Event categories', 'seeinside-travel'), 'slug' => 'kategorija-nastan', 'hierarchical' => false],
             'sta_hotel_type' => ['singular' => __('Accommodation type', 'seeinside-travel'), 'plural' => __('Accommodation types', 'seeinside-travel'), 'slug' => 'tip-smestuvanje', 'hierarchical' => false],
             'sta_amenity' => ['singular' => __('Amenity', 'seeinside-travel'), 'plural' => __('Amenities', 'seeinside-travel'), 'slug' => 'sodrzina', 'hierarchical' => false],
+            'sta_offer_type' => ['singular' => __('Offer type', 'seeinside-travel'), 'plural' => __('Offer types', 'seeinside-travel'), 'slug' => 'tip-ponuda', 'hierarchical' => false],
             'sta_country' => ['singular' => __('Country', 'seeinside-travel'), 'plural' => __('Countries', 'seeinside-travel'), 'slug' => 'drzava', 'hierarchical' => false],
         ];
     }
@@ -354,6 +365,15 @@ class STA_Schema
                     self::tab(__('Form', 'seeinside-travel')),
                     self::f('questionnaire_json', 'textarea', __('Questionnaire (managed in SeeInside)', 'seeinside-travel'), ['readonly' => 1]),
                     self::f('documents_json', 'textarea', __('Required documents (managed in SeeInside)', 'seeinside-travel'), ['readonly' => 1]),
+                ],
+                self::common_end(),
+            ),
+            'sta_offer' => array_merge(
+                self::common_start(),
+                [
+                    self::f('record_type', 'text', __('Offer type', 'seeinside-travel')),
+                    self::f('price_from', 'number', __('Price from', 'seeinside-travel')),
+                    self::f('currency', 'text', __('Currency', 'seeinside-travel')),
                 ],
                 self::common_end(),
             ),

@@ -57,3 +57,13 @@ Route::get('/admin/library/browse', [\App\Http\Controllers\Admin\LibraryControll
 // Printable documents: contract, voucher, invoice, cash receipt, rooming list
 Route::get('/admin/docs/{type}/{id}', [\App\Http\Controllers\Admin\DocumentController::class, 'show'])
     ->middleware(['web', 'auth'])->whereNumber('id')->name('docs.show');
+
+/* Client portal – private link of a booking (like "Manage booking") */
+Route::prefix('moja-rezervacija/{token}')->middleware('throttle:60,1')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PortalController::class, 'show'])->name('portal.show');
+    Route::post('/poraka', [\App\Http\Controllers\PortalController::class, 'message'])->middleware('throttle:10,10')->name('portal.message');
+    Route::post('/otkazuvanje', [\App\Http\Controllers\PortalController::class, 'cancel'])->middleware('throttle:5,10')->name('portal.cancel');
+    Route::post('/patnici', [\App\Http\Controllers\PortalController::class, 'passengers'])->middleware('throttle:10,10')->name('portal.passengers');
+    Route::post('/recenzija', [\App\Http\Controllers\PortalController::class, 'review'])->middleware('throttle:5,10')->name('portal.review');
+    Route::get('/dokument/{type}/{id?}', [\App\Http\Controllers\PortalController::class, 'document'])->name('portal.doc');
+});

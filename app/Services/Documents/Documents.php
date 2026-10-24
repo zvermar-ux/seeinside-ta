@@ -79,6 +79,15 @@ class Documents
         if (! $err && $type === 'invoice') {
             $model->forceFill(['sent_at' => now()])->saveQuietly();
         }
+        // in the communication history of the booking
+        try {
+            \App\Models\Message::withoutGlobalScopes()->create([
+                'agency_id' => $agency->id, 'booking_id' => $type === 'invoice' ? $model->booking_id : $model->id, 'invoice_id' => $type === 'invoice' ? $model->id : null,
+                'direction' => 'out', 'channel' => 'email', 'event' => 'document:'.$type, 'recipient' => $to, 'subject' => $subject,
+                'body' => trim(($message ? $message."\n\n" : '').'📎 '.$file), 'status' => $err ? 'failed' : 'sent', 'error' => $err, 'created_by' => auth()->id(),
+            ]);
+        } catch (\Throwable) {
+        }
 
         return $err;
     }

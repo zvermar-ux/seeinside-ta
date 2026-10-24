@@ -35,7 +35,7 @@ class BookingController extends Controller
             return response()->json(['data' => ['reference' => 'R0000-00000', 'status' => 'inquiry', 'total' => null, 'currency' => 'EUR', 'payment' => null]], 201);
         }
         $data = $request->validate([
-            'type' => 'required|in:tour,event,accommodation,charter',
+            'type' => 'required|in:tour,event,accommodation,charter,custom',
             'slug' => 'required_unless:type,charter|nullable|string',
             'charter_id' => 'required_if:type,charter|nullable|integer',
             'transport_only' => 'nullable|boolean',
@@ -72,8 +72,11 @@ class BookingController extends Controller
         if ($data['type'] === 'charter') {
             $item = \App\Models\Charter::query()->where('agency_id', $agencyId)->where('is_active', true)->findOrFail($data['charter_id']);
         } else {
-            $class = ['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class][$data['type']];
+            $class = ['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class, 'custom' => \App\Models\CustomRecord::class][$data['type']];
             $item = $class::query()->where('agency_id', $agencyId)->where('is_active', true)->where('slug', $data['slug'])->firstOrFail();
+            if ($item instanceof \App\Models\CustomRecord && (! $item->recordType?->bookable || ! Agency::find($agencyId)?->hasModule('custom:'.$item->recordType->slug))) {
+                throw ValidationException::withMessages(['slug' => 'Online booking is disabled for this offer.']);
+            }
         }
 
         if (! ($item instanceof \App\Models\Charter) && ! $item->booking_enabled) {
@@ -116,6 +119,12 @@ class BookingController extends Controller
             if ($transportOnly) {
                 $booking->extras = [['id' => 0, 'name' => 'Само превоз / Transport only', 'price' => (float) $item->transport_only_price, 'price_type' => 'per_person']];
             }
+        }
+
+        if ($item instanceof \App\Models\CustomRecord) {
+            $booking->date_from = $data['date_from'] ?? null;
+            $booking->date_to = $data['date_to'] ?? null;
+            $total = $item->price_from !== null ? (float) $item->price_from * \App\Models\CustomRecord::units($item, $booking) : null;
         }
 
         if ($item instanceof Tour) {
@@ -206,24 +215,12 @@ class BookingController extends Controller
         $booking->total = $total !== null ? round($total, 2) : null;
         $booking->save();
 
-        $this->notifyAgency($agencyId, 'Ново барање за резервација '.$booking->reference, implode("\n", [
-            'Понуда: '.$booking->itemTitle(),
-            'Клиент: '.$booking->customer_name.' · '.$booking->customer_phone.' · '.$booking->customer_email,
-            'Лица: '.$adults.' + '.$children,
-            'Датум: '.($booking->date_from?->format('d.m.Y') ?? '—').($booking->date_to ? ' – '.$booking->date_to->format('d.m.Y') : ''),
-            'Вкупно: '.($booking->total ?? '—').' '.$booking->currency,
-            'Патници:',
-            ...array_map(fn ($p) => ' - '.trim(($p['first_name'] ?? '').' '.($p['last_name'] ?? '')).(! empty($p['birth_date']) ? ', '.\Carbon\Carbon::parse($p['birth_date'])->format('d.m.Y') : '').(! empty($p['passport']) ? ', пасош '.$p['passport'] : '').(! empty($p['phone']) ? ', '.$p['phone'] : ''), $booking->passengerList()),
-            'Порака: '.($booking->message ?? ''),
-        ]));
-        // confirmation to the customer (with all passengers)
-        try {
-            $agency = Agency::find($agencyId);
-            \App\Services\Mail\AgencyMail::send($agency, $booking->customer_email, ($booking->locale === 'en' ? 'Booking request ' : 'Барање за резервација ').$booking->reference.' – '.$agency?->name,
-                view('emails.booking-confirmation', ['booking' => $booking->fresh(['room', 'bookable']), 'agency' => $agency])->render());
-        } catch (Throwable $e) {
-            Log::warning('Customer confirmation e-mail failed: '.$e->getMessage());
-        }
+        // e-mail / WhatsApp / Viber to the client and to the agency (after the response)
+        $fresh = $booking->fresh();
+        \App\Services\Messaging\Messenger::later(function () use ($fresh) {
+            \App\Services\Messaging\Messenger::notify('booking_received', $fresh);
+            \App\Services\Messaging\Messenger::notify('new_booking', $fresh);
+        });
 
         return response()->json(['data' => [
             'reference' => $booking->reference,
@@ -231,6 +228,7 @@ class BookingController extends Controller
             'total' => $booking->total !== null ? (float) $booking->total : null,
             'currency' => $booking->currency,
             'payment' => null,   // online payment link once a payment provider is configured
+            'manage_url' => \App\Http\Controllers\PortalController::url($booking),
         ]], 201);
     }
 
@@ -257,6 +255,7 @@ class BookingController extends Controller
             'paid' => (float) $b->paid_amount,
             'currency' => $b->currency,
             'created_at' => $b->created_at?->toIso8601String(),
+            'manage_url' => \App\Http\Controllers\PortalController::url($b),
         ]]);
     }
 

@@ -45,6 +45,9 @@ class DocumentSettings extends Page implements HasForms
 
     public static function canAccess(): bool
     {
+        if (! \App\Models\Agency::moduleOn('finance')) {
+            return false;
+        }
         $u = Auth::user();
 
         return (bool) ($u && ($u->isSuperAdmin() || ($u->agency_id && $u->can('agency.manage'))));

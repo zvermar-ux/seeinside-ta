@@ -277,6 +277,52 @@ class CatalogPresenter
         ];
     }
 
+    /* ---------------- types defined by the super admin ---------------- */
+
+    public static function recordType(\App\Models\RecordType $t): array
+    {
+        return [
+            'slug' => $t->slug, 'name' => $t->name, 'singular' => $t->singular ?: $t->name, 'icon' => $t->icon,
+            'bookable' => $t->bookable, 'price_label' => $t->price_label,
+            'filters' => collect($t->fieldDefs())->filter(fn ($f) => ! empty($f['filterable']))->map(fn ($f) => [
+                'key' => $f['key'], 'label' => $f['label'] ?? [], 'type' => $f['type'], 'options' => array_values((array) ($f['options'] ?? [])),
+            ])->values()->all(),
+        ];
+    }
+
+    public static function customSummary(\App\Models\CustomRecord $r): array
+    {
+        $fields = $r->displayFields();
+
+        return [
+            'type' => 'custom',
+            'record_type' => $r->recordType ? static::recordType($r->recordType) : null,
+            'id' => $r->id,
+            'slug' => $r->slug,
+            'title' => $r->trAll('title'),
+            'short_description' => $r->trAll('short_description'),
+            'price_from' => static::money($r->price_from),
+            'currency' => $r->currency,
+            'image' => static::url($r->cover_image),
+            'is_featured' => $r->is_featured,
+            'key_fields' => collect($fields)->filter(fn ($f) => ! in_array($f['type'], ['gallery', 'image', 'file', 'richtext', 'textarea', 'list'], true))->take(4)->values()->all(),
+            'filter_values' => collect((array) $r->data)->only(collect($r->recordType?->fieldDefs() ?? [])->filter(fn ($f) => ! empty($f['filterable']))->pluck('key'))->all(),
+            'promotions' => ['last_minute' => null, 'first_minute' => null],
+            'updated_at' => $r->updated_at?->toIso8601String(),
+        ];
+    }
+
+    public static function custom(\App\Models\CustomRecord $r): array
+    {
+        return static::customSummary($r) + [
+            'description' => $r->trAll('description'),
+            'fields' => $r->displayFields(),
+            'gallery' => collect((array) $r->gallery)->filter()->map(fn ($p) => ['url' => static::url($p), 'caption' => ['mk' => null, 'en' => null], 'is_main' => false])->values()->all(),
+            'booking' => ['enabled' => $r->booking_enabled && $r->recordType?->bookable, 'mode' => 'request'],
+            'seo' => ['title' => $r->trAll('title'), 'description' => $r->trAll('short_description')],
+        ];
+    }
+
     /* ---------------- visas ---------------- */
 
     public static function visaSummary(VisaType $v): array
