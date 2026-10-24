@@ -266,6 +266,7 @@
         if (r.ok && r.body && r.body.data) {
           var d = r.body.data;
           msg(form, '<b>' + esc(T.thanks) + '</b><span class="sta-muted">' + esc(T.reference) + ':</span><span class="sta-ref">' + esc(d.reference) + '</span>' + (d.total ? esc(T.total) + ': <b>' + money(d.total, d.currency) + '</b>' : '')
+            + (d.qr_url ? '<div class="sta-qr"><img src="' + esc(d.qr_url) + '" width="132" height="132" alt="QR ' + esc(d.reference) + '"><div><b>' + esc(T.qrTitle) + '</b><small>' + esc(T.qrHint) + '</small><a href="' + esc(d.qr_url) + '" download="' + esc(d.reference) + '.png" target="_blank" rel="noopener">' + esc(T.qrSave) + '</a></div></div>' : '')
             + (d.manage_url ? '<p class="sta-manage"><a class="sta-btn" href="' + esc(d.manage_url) + '" target="_blank" rel="noopener">' + esc(T.manage) + ' →</a><small>' + esc(T.manageHint) + '</small></p>' : '')
             + (d.payment && d.payment.url ? '<p><a class="sta-btn" href="' + esc(d.payment.url) + '">Pay</a></p>' : ''), true);
           remember(data);
@@ -337,6 +338,7 @@
         if (d.amount != null) rows.push([T.total, money(d.amount, d.currency)]);
         if (d.paid) rows.push([T.paid, money(d.paid, d.currency)]);
         msg(form, rows.filter(function (x) { return x[1]; }).map(function (x) { return (x[0] ? '<span class="sta-muted">' + esc(x[0]) + ':</span> ' : '') + '<b>' + esc(x[1]) + '</b>'; }).join('<br>')
+          + (d.qr_url ? '<div class="sta-qr"><img src="' + esc(d.qr_url) + '" width="120" height="120" alt="QR"></div>' : '')
           + (d.manage_url ? '<p class="sta-manage"><a class="sta-btn" href="' + esc(d.manage_url) + '" target="_blank" rel="noopener">' + esc(T.manage) + ' →</a></p>' : ''), true);
       }).catch(function () { msg(form, esc(T.error), false); });
     });

@@ -229,6 +229,7 @@ class BookingController extends Controller
             'currency' => $booking->currency,
             'payment' => null,   // online payment link once a payment provider is configured
             'manage_url' => \App\Http\Controllers\PortalController::url($booking),
+            'qr_url' => $booking->qrPngUrl(),
         ]], 201);
     }
 
@@ -256,6 +257,7 @@ class BookingController extends Controller
             'currency' => $b->currency,
             'created_at' => $b->created_at?->toIso8601String(),
             'manage_url' => \App\Http\Controllers\PortalController::url($b),
+            'qr_url' => $b->qrPngUrl(),
         ]]);
     }
 

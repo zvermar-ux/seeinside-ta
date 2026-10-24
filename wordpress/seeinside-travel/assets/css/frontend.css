@@ -427,3 +427,8 @@ html.sta-noscroll { overflow: hidden; }
 .sta-sticky-cta .sta-btn { background: var(--sta-primary) !important; color: #fff !important; padding: .75rem 1.3rem !important; border-radius: 10px !important; font-weight: 700; text-decoration: none; }
 body.sta-has-cta { padding-bottom: 76px; }
 body.sta-has-cta .sta-chat { bottom: 92px; }
+.sta-qr { display: flex; align-items: center; gap: .9rem; margin: .8rem 0 0; padding: .7rem; background: #fff; border: 1px solid var(--sta-line, #e2e8f0); border-radius: 12px; }
+.sta-qr img { width: 120px; height: 120px; flex-shrink: 0; image-rendering: pixelated; }
+.sta-qr div { display: grid; gap: .25rem; font-size: .9rem; }
+.sta-qr small { color: var(--sta-muted, #64748b); }
+.sta-qr a { color: var(--sta-primary); font-weight: 600; font-size: .88rem; }
