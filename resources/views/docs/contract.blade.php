@@ -19,7 +19,8 @@
     <div>
         <div class="lic">{{ $agency->doc('license') }}@if($agency->license_number) <span class="small muted">{{ $agency->license_number }}</span>@endif</div>
         <div class="doc">{{ __('TRAVEL CONTRACT') }}</div>
-        <div class="num">{{ $b->reference }}</div>
+        <div style="display:flex;align-items:center;gap:10px"><div class="num">{{ $b->reference }}</div>
+            <div class="c" style="line-height:1">{!! \App\Support\QrCode::svg(\App\Http\Controllers\PortalController::url($b), 74) !!}<div style="font-size:8.5px;color:#555">{{ __('My booking') }}</div></div></div>
     </div>
     <div class="c">@if($logoUrl)<img src="{{ $logoUrl }}" alt="">@else<b style="font-size:20px">{{ $agency->name }}</b>@endif</div>
     <div class="addr">{{ $agency->name }}<br>{{ $agency->address }}<br>{{ $agency->city }}@if($agency->phone)<br>{{ __('tel.') }} {{ $agency->phone }}@endif @if($agency->email)<br>{{ $agency->email }}@endif @if($agency->website)<br>{{ $agency->website }}@endif</div>

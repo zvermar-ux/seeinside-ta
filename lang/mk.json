@@ -1757,5 +1757,19 @@
     "or address": "или адреса",
     "passport": "пасош",
     "per booking / vehicle": "по резервација / возило",
-    "per day": "по ден"
+    "per day": "по ден",
+    "Booking check": "Проверка на резервација",
+    "Valid booking": "Важечка резервација",
+    "Not confirmed yet": "Сè уште не е потврдена",
+    "Holder": "Носител",
+    "Not fully paid yet": "Сè уште не е целосно платено",
+    "Open in the admin": "Отвори во админ-панелот",
+    "Scan to check": "Скенирај за проверка",
+    "QR code of the booking": "QR код на резервацијата",
+    "Show it at the hotel, to the guide or on the bus – they scan it to check the booking.": "Покажете го во хотелот, на водичот или во автобусот – го скенираат за да ја проверат резервацијата.",
+    "Save the QR code": "Зачувај го QR кодот",
+    "QR code": "QR код",
+    "Check-in / verification": "Пријавување / проверка",
+    "For the hotel, guide or bus": "За хотелот, водичот или автобусот",
+    "Download PNG": "Преземи PNG"
 }

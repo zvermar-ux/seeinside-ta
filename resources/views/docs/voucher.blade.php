@@ -7,7 +7,10 @@
 @include('docs._header')
 <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #111;padding-bottom:6px;margin-bottom:10px">
     <div style="font-size:22px;font-weight:700">ВАУЧЕР / VOUCHER</div>
-    <div class="r"><span class="muted">{{ __('No.') }}</span> <b style="font-size:16px">{{ $b->reference }}</b><br><span class="muted">{{ __('Date') }}</span> {{ now()->format('d.m.Y') }}</div>
+    <div style="display:flex;align-items:flex-end;gap:12px">
+        <div class="r"><span class="muted">{{ __('No.') }}</span> <b style="font-size:16px">{{ $b->reference }}</b><br><span class="muted">{{ __('Date') }}</span> {{ now()->format('d.m.Y') }}</div>
+        <div class="c" style="line-height:1">{!! \App\Support\QrCode::svg($b->verifyUrl(), 92) !!}<div style="font-size:9px;color:#555;margin-top:2px">{{ __('Scan to check') }}</div></div>
+    </div>
 </div>
 <table class="grid">
     <tr><td style="width:30%" class="muted">{{ __('To / Hotel') }}</td><td class="b">{{ $hotel?->name ?? $b->itemTitle() }}@if($hotel?->stars) {{ str_repeat('*', $hotel->stars) }}@endif<br><span class="small" style="font-weight:400">{{ trim(implode(', ', array_filter([$hotel?->address, $hotel?->place, $hotel?->country]))) }}</span></td></tr>

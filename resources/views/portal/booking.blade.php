@@ -228,6 +228,15 @@
             @endif
         </div></section>
 
+        @if ($status !== BookingStatus::Cancelled)
+        <section class="card"><div class="pad" style="text-align:center">
+            <h2 style="text-align:left">{{ __('QR code of the booking') }}</h2>
+            <div style="display:inline-block;padding:8px;border:1px solid var(--line);border-radius:12px;background:#fff">{!! \App\Support\QrCode::svg($b->verifyUrl(), 168) !!}</div>
+            <p class="muted" style="margin:8px 0 0">{{ __('Show it at the hotel, to the guide or on the bus – they scan it to check the booking.') }}</p>
+            <a class="btn ghost" style="margin-top:10px" href="{{ $b->qrPngUrl() }}" download="{{ $b->reference }}.png">{{ __('Save the QR code') }}</a>
+        </div></section>
+        @endif
+
         <section class="card docs"><div class="pad">
             <h2>{{ __('Documents') }}</h2>
             <a href="{{ route('portal.doc', [$token, 'contract'] + $q) }}" target="_blank" rel="noopener">📄 {{ __('Travel contract') }} <span>{{ __('Open') }} ↗</span></a>

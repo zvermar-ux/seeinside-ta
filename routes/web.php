@@ -67,3 +67,7 @@ Route::prefix('moja-rezervacija/{token}')->middleware('throttle:60,1')->group(fu
     Route::post('/recenzija', [\App\Http\Controllers\PortalController::class, 'review'])->middleware('throttle:5,10')->name('portal.review');
     Route::get('/dokument/{type}/{id?}', [\App\Http\Controllers\PortalController::class, 'document'])->name('portal.doc');
 });
+
+/* QR code of a booking: verification page (hotel, guide, bus) and the image for e-mails */
+Route::get('proverka/{reference}/{sig}', [\App\Http\Controllers\VerifyController::class, 'show'])->middleware('throttle:60,1')->name('booking.verify');
+Route::get('qr/{reference}/{sig}.png', [\App\Http\Controllers\VerifyController::class, 'png'])->middleware('throttle:120,1')->name('booking.qr');

@@ -11,6 +11,12 @@
       @if ($logo)<img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($logo) }}" alt="{{ $agency->name }}" style="max-height:48px;max-width:220px">@else<b style="font-size:20px;color:{{ $color }}">{{ $agency->name }}</b>@endif
     </div>
     <div style="padding:22px 24px;font-size:15px;line-height:1.6;color:#111">{!! $html !!}</div>
+    @if ($portal && in_array($booking?->status?->value, ['confirmed', 'completed'], true))
+      <div style="padding:0 24px 16px"><table cellpadding="0" cellspacing="0"><tr>
+        <td style="padding-right:12px"><img src="{{ $booking->qrPngUrl() }}" width="104" height="104" alt="QR {{ $booking->reference }}" style="display:block;border:1px solid #eee"></td>
+        <td style="font-size:13px;color:#555">{{ $en ? 'QR code of your booking – show it at the hotel, to the guide or on the bus.' : 'QR код на резервацијата – покажете го во хотелот, на водичот или во автобусот.' }}</td>
+      </tr></table></div>
+    @endif
     @if ($portal)
       <div style="padding:0 24px 24px">
         <a href="{{ $portal }}" style="display:inline-block;background:{{ $color }};color:#fff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px">{{ $en ? 'Manage my booking' : 'Мојата резервација' }}</a>

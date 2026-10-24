@@ -24,6 +24,10 @@
         </table>
     @endif
     @if ($b->message)<p style="margin-top:14px"><b>{{ $t('Ваша порака', 'Your message') }}:</b><br>{!! nl2br(e($b->message)) !!}</p>@endif
+    <table cellpadding="0" cellspacing="0" style="margin:18px 0"><tr>
+        <td style="padding-right:14px"><img src="{{ $b->qrPngUrl() }}" width="120" height="120" alt="QR {{ $b->reference }}" style="display:block;border:1px solid #eee"></td>
+        <td style="font-size:13px;color:#555">{{ $t('QR код на резервацијата – покажете го во хотелот, на водичот или во автобусот.', 'QR code of your booking – show it at the hotel, to the guide or on the bus.') }}</td>
+    </tr></table>
     @if (! empty($portal))
         <p style="margin:20px 0"><a href="{{ $portal }}" style="display:inline-block;background:{{ $agency->brand_color ?: '#0e7490' }};color:#fff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px">{{ $t('Мојата резервација', 'Manage my booking') }}</a><br>
         <span style="font-size:12px;color:#666">{{ $t('Статус, документи, уплати и пораки со агенцијата.', 'Status, documents, payments and messages with the agency.') }}</span></p>

@@ -30,6 +30,14 @@ class EditBooking extends EditRecord
                     ->url(fn () => Documents::url('contract', $record()->id), shouldOpenInNewTab: true),
                 Actions\Action::make('voucher')->label(__('Voucher'))->icon('heroicon-o-ticket')
                     ->url(fn () => Documents::url('voucher', $record()->id), shouldOpenInNewTab: true),
+                Actions\Action::make('qr')->label(__('QR code'))->icon('heroicon-o-qr-code')
+                    ->modalHeading(fn () => __('QR code').' '.$record()->reference)->modalSubmitAction(false)->modalCancelActionLabel(__('Close'))->modalWidth('lg')
+                    ->modalContent(fn () => new \Illuminate\Support\HtmlString(
+                        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;text-align:center">'
+                        .'<div><div style="display:inline-block;background:#fff;padding:6px;border-radius:8px">'.\App\Support\QrCode::svg($record()->verifyUrl(), 170).'</div><p style="font-size:.85rem;margin-top:.4rem"><b>'.e(__('Check-in / verification')).'</b><br>'.e(__('For the hotel, guide or bus')).'</p>'
+                        .'<p><a style="color:rgb(var(--primary-600));font-size:.85rem" href="'.e($record()->qrPngUrl()).'" download="'.e($record()->reference).'.png">'.e(__('Download PNG')).'</a> · <a style="color:rgb(var(--primary-600));font-size:.85rem" target="_blank" href="'.e($record()->verifyUrl()).'">'.e(__('Open')).'</a></p></div>'
+                        .'<div><div style="display:inline-block;background:#fff;padding:6px;border-radius:8px">'.\App\Support\QrCode::svg(\App\Http\Controllers\PortalController::url($record()), 170).'</div><p style="font-size:.85rem;margin-top:.4rem"><b>'.e(__('My booking')).'</b><br>'.e(__('Client portal')).'</p>'
+                        .'<p><a style="color:rgb(var(--primary-600));font-size:.85rem" target="_blank" href="'.e(\App\Http\Controllers\PortalController::url($record())).'">'.e(__('Open')).'</a></p></div></div>')),
                 Actions\Action::make('email')->label(__('Send by e-mail'))->icon('heroicon-o-envelope')
                     ->modalHeading(__('Send a document to the client'))
                     ->fillForm(fn () => ['doc' => 'contract', 'to' => $record()->customer_email])

@@ -188,6 +188,23 @@ class Booking extends Model
         return $this->hasMany(CashEntry::class);
     }
 
+    /** Signature for the public verification link / QR code (cannot be guessed from the reference) */
+    public static function verifySig(string $reference): string
+    {
+        return substr(hash_hmac('sha256', 'verify|'.$reference, (string) config('app.key')), 0, 16);
+    }
+
+    /** Link in the QR code of the voucher: the hotel / guide / bus checks the booking */
+    public function verifyUrl(): string
+    {
+        return route('booking.verify', [$this->reference, self::verifySig($this->reference)]);
+    }
+
+    public function qrPngUrl(): string
+    {
+        return route('booking.qr', [$this->reference, self::verifySig($this->reference)]);
+    }
+
     /** Amount in MKD (or the agency's base currency) */
     public function inBase(float $amount): float
     {
