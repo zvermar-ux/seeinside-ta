@@ -175,6 +175,15 @@ class STA_Render
                 ? sprintf(__('Offer valid until %s', 'seeinside-travel'), sta_date($until))
                 : sprintf(__('%1$s price valid for bookings paid by %2$s', 'seeinside-travel'), trim(preg_replace('/\s[−-].*$/u', '', $promo)), sta_date($until))).'</div>';
         }
+        // early booking in steps: −20% until 30.11, then −15% until 31.12, then −10% until 31.03
+        $steps = (array) ($d['promotions']['first_minute']['steps'] ?? []);
+        if (! $lm && count($steps) > 1) {
+            $html .= '<ol class="sta-eb-steps">';
+            foreach ($steps as $k => $st) {
+                $html .= '<li'.($k === 0 ? ' class="is-now"' : '').'><b>−'.esc_html((float) $st['percent']).'%</b> '.esc_html(sprintf(__('until %s', 'seeinside-travel'), sta_date($st['until']))).($k === 0 ? ' <small>'.esc_html__('now', 'seeinside-travel').'</small>' : '').'</li>';
+            }
+            $html .= '</ol>';
+        }
         if ($type === 'event' && ! empty($d['external_ticket_url']) && empty($d['booking']['enabled'])) {
             $html .= '<a class="sta-btn sta-btn-block" href="'.esc_url($d['external_ticket_url']).'" target="_blank" rel="noopener">'.esc_html($cta).'</a>';
         } else {

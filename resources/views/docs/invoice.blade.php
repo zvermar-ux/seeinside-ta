@@ -35,7 +35,7 @@
     @if((float) $inv->paid_amount)<tr><td>{{ __('Paid') }}:</td><td class="r">{{ $n($inv->paid_amount) }}</td></tr><tr><td class="b">{{ __('To pay') }}:</td><td class="r b">{{ $n($inv->balance()) }}</td></tr>@endif
 </table>
 @if($inv->note)<p style="white-space:pre-line;margin-top:10px">{{ $inv->note }}</p>@endif
-@if($agency->doc('invoice_footer'))<p class="small" style="white-space:pre-line;margin-top:10px">{{ $agency->doc('invoice_footer') }}</p>@endif
+@if($agency->doc('invoice_footer'))<p class="small" style="white-space:pre-line;margin-top:10px">{{ strtr($agency->doc('invoice_footer'), [':days' => $inv->due_date && $inv->issue_date ? (int) $inv->issue_date->diffInDays($inv->due_date) : $agency->doc('invoice_days', 8), ':city' => $agency->city]) }}</p>@endif
 <p class="small">{{ __('Please pay to our bank account and quote the number of this document.') }} @if($agency->doc('bank_account')){{ __('Bank account') }}: <b>{{ $agency->doc('bank_account') }}</b> {{ $agency->doc('bank_name') }}@endif</p>
 <div class="sign" style="margin-top:36px"><div>{{ __('Received by') }}<div class="line"></div></div>@if($stampUrl)<img class="stamp" src="{{ $stampUrl }}" alt="">@else<div></div>@endif<div>{{ __('Issued by') }}<div class="line"></div><span class="small muted">{{ $inv->creator?->name ?? '' }}</span></div></div>
 @endsection

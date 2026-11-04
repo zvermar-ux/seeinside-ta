@@ -43,6 +43,9 @@ class STA_Frontend
                 'noOffers' => __('No free rooms for these dates. Send an inquiry and we will find an option.', 'seeinside-travel'),
                 'nights' => __('nights', 'seeinside-travel'),
                 'book' => __('Book', 'seeinside-travel'),
+                'free' => __('Free', 'seeinside-travel'),
+                'freePlaces' => __('free for your dates', 'seeinside-travel'),
+                'freeNote' => __('Showing only places that are free for your dates, with the total price.', 'seeinside-travel'),
                 'available' => __('available', 'seeinside-travel'),
                 'childAge' => __('Age of child', 'seeinside-travel'),
                 'free' => __('Free', 'seeinside-travel'),
@@ -294,6 +297,10 @@ class STA_Frontend
     public static function sc_flights($atts = []): string
     {
         $f = (get_option('sta_meta', [])['flights'] ?? []);
+        // official GOL IBE plugin ("GOL IBE Search Form") installed → its search form with the agency's booking engine
+        if (shortcode_exists('iforma-golibe')) {
+            return '<div class="sta sta-flights sta-golibe">'.do_shortcode('[iforma-golibe]').'</div>';
+        }
         $widget = $f['widget_code'] ?? '';
         if ($widget) {
             // embed code from the flight partner (GOL IBE), set by the agency in SeeInside
@@ -392,6 +399,7 @@ class STA_Frontend
         register_rest_route($ns, '/quote', ['methods' => 'GET', 'callback' => [self::class, 'r_quote'], 'permission_callback' => '__return_true']);
         register_rest_route($ns, '/terms', ['methods' => 'GET', 'callback' => [self::class, 'r_terms'], 'permission_callback' => '__return_true']);
         register_rest_route($ns, '/availability', ['methods' => 'GET', 'callback' => [self::class, 'r_availability'], 'permission_callback' => '__return_true']);
+        register_rest_route($ns, '/available', ['methods' => 'GET', 'callback' => [self::class, 'r_available'], 'permission_callback' => '__return_true']);
         register_rest_route($ns, '/status', ['methods' => 'GET', 'callback' => [self::class, 'r_status'], 'permission_callback' => '__return_true']);
     }
 
@@ -442,7 +450,7 @@ class STA_Frontend
             return $blocked;
         }
         $p = $r->get_json_params() ?: $r->get_body_params();
-        $allowed = ['type', 'slug', 'charter_id', 'transport_only', 'departure_id', 'departure_place_id', 'room_id', 'term_id', 'ticket_id', 'date_from', 'date_to', 'adults', 'children', 'children_ages', 'quantity', 'extras', 'customer', 'passengers', 'message'];
+        $allowed = ['type', 'slug', 'charter_id', 'transport_only', 'departure_id', 'departure_place_id', 'with_transport', 'room_id', 'term_id', 'ticket_id', 'date_from', 'date_to', 'adults', 'children', 'children_ages', 'quantity', 'extras', 'customer', 'passengers', 'message'];
         $data = array_intersect_key((array) $p, array_flip($allowed));
         $data['locale'] = sta_lang();
         $data['message'] = trim(($data['message'] ?? '')."\n\n[".home_url('/').']');
@@ -518,6 +526,25 @@ class STA_Frontend
             'adults' => (int) $r->get_param('adults') ?: 2,
             'children' => (int) $r->get_param('children'),
         ], fn ($v) => $v !== '' && $v !== null)));
+    }
+
+    /** Which hotels are free for the dates (hotel finder) */
+    public static function r_available(WP_REST_Request $r): WP_REST_Response
+    {
+        $q = [];
+        foreach (['from', 'to', 'adults', 'children'] as $k) {
+            $q[$k] = sanitize_text_field((string) $r->get_param($k));
+        }
+        $key = 'sta_avl_'.md5(wp_json_encode($q));
+        if ($cached = get_transient($key)) {
+            return new WP_REST_Response($cached, 200);
+        }
+        $res = STA_Api::get('accommodations-available', $q, 30);
+        if ($res[0] === 200) {
+            set_transient($key, $res[1], 5 * MINUTE_IN_SECONDS);
+        }
+
+        return self::relay($res);
     }
 
     public static function r_availability(WP_REST_Request $r): WP_REST_Response

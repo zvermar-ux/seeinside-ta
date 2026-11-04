@@ -60,6 +60,7 @@
     var slug = q.get('slug'); q.delete('slug'); q.delete('website'); q.delete('sta_ts');
     if (name === 'quote') return [C.direct + 'accommodations/' + encodeURIComponent(slug) + '/quote?' + q, { headers: { Accept: 'application/json' } }];
     if (name === 'terms') return [C.direct + 'accommodations/' + encodeURIComponent(slug) + '/terms', { headers: { Accept: 'application/json' } }];
+    if (name === 'available') return [C.direct + 'accommodations-available?' + q, { headers: { Accept: 'application/json' } }];
     if (name === 'availability') return [C.direct + 'accommodations/' + encodeURIComponent(slug) + '/availability?' + q, { headers: { Accept: 'application/json' } }];
     if (name === 'status') {
       var ref = (q.get('reference') || '').toUpperCase();
@@ -213,6 +214,17 @@
         if (tk) sum = (+tk.dataset.price || 0) * (+($('[name="quantity"]', form) || {}).value || 1);
       } else if (type === 'accommodation') {
         var sel = $('.sta-offer.is-selected', form); if (sel) sum = +sel.dataset.total;
+        var trb = $('[data-sta-transport]', form), trc = trb && $('[name="with_transport"]', trb);
+        if (trb) { var pl = $('[data-sta-transport-place]', trb); if (pl) pl.hidden = !trc.checked; }
+        if (sum !== null && trc && trc.checked) {
+          var add = adults * (+trb.dataset.adult || 0);
+          var agesIn = $$('[name="children_ages[]"]', form);
+          for (var ci = 0; ci < kids; ci++) {
+            var age = agesIn[ci] && agesIn[ci].value !== '' ? +agesIn[ci].value : null;
+            add += age !== null && age < +trb.dataset.free ? 0 : age !== null && age > +trb.dataset.childTo ? +trb.dataset.adult || 0 : +trb.dataset.child || 0;
+          }
+          sum += add;
+        }
       }
       totalBox.hidden = sum === null;
       if (sum !== null) totalBox.innerHTML = '<span>' + esc(T.estimate) + '</span><b>' + money(sum, cur) + '</b>';
@@ -261,6 +273,7 @@
       if (data.passengers && data.passengers[0] && !data.customer.name) data.customer.name = (data.passengers[0].first_name + ' ' + data.passengers[0].last_name).trim();
       ['adults', 'children', 'quantity', 'departure_id', 'departure_place_id', 'ticket_id', 'room_id', 'charter_id', 'term_id'].forEach(function (k) { if (data[k] !== undefined) data[k] = data[k] === '' ? null : +data[k]; });
       if (data.transport_only) data.transport_only = true;
+      if (type === 'accommodation') { data.with_transport = !!data.with_transport; if (!data.with_transport) delete data.departure_place_id; }
       var btn = $('[type="submit"]', form), label = btn.textContent; btn.disabled = true; btn.textContent = T.sending;
       api('booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function (r) {
         if (r.ok && r.body && r.body.data) {
@@ -582,4 +595,41 @@
     if (e.target.tagName === 'DIALOG' && e.target.classList.contains('sta-dialog')) e.target.close();   // click on the backdrop
   });
   $$('dialog.sta-dialog').forEach(function (d) { d.addEventListener('close', function () { document.documentElement.classList.remove('sta-noscroll'); }); });
+
+  /* ---------- hotel finder: filters on the left, free places for the dates ---------- */
+  $$('[data-sta-finder]').forEach(function (box) {
+    var form = $('[data-sta-finder-form]', box), timer;
+    function go() { clearTimeout(timer); timer = setTimeout(function () {
+      var data = new FormData(form), u = new URL(form.action, location.href);
+      data.forEach(function (v, k) { if (String(v) !== '' && !(k === 'f_sort' && v === 'recommended') && !(k === 'f_beach' && v === '0') && !(k === 'f_ad' && v === '2' && !form.f_from.value) && !(k === 'f_ch' && v === '0')) u.searchParams.append(k, v); });
+      var pr = $('[data-sta-price]', form); if (pr && !pr.dataset.dirty && !new URLSearchParams(location.search).get('f_price')) u.searchParams.delete('f_price');
+      box.classList.add('is-loading'); location.href = u.toString();
+    }, 250); }
+    form.addEventListener('change', function (e) { if (['f_from', 'f_to', 'f_ad', 'f_ch', 'f_q'].indexOf(e.target.name) < 0) go(); });
+    form.addEventListener('submit', function (e) { e.preventDefault(); go(); });
+    var pr = $('[data-sta-price]', form), out = $('[data-sta-price-out]', form);
+    if (pr && out) pr.addEventListener('input', function () { pr.dataset.dirty = 1; out.textContent = pr.value; });
+    var sort = $('[data-sta-finder-sort]', box);
+    if (sort) sort.addEventListener('change', function () { form.f_sort.value = sort.value; go(); });
+    var tg = $('[data-sta-finder-toggle]', box);
+    if (tg) tg.addEventListener('click', function () { box.classList.toggle('is-open'); });
+    if (form.f_from) form.f_from.addEventListener('change', function () { if (form.f_to && (!form.f_to.value || form.f_to.value <= form.f_from.value)) { var d = new Date(form.f_from.value); d.setDate(d.getDate() + 7); form.f_to.value = d.toISOString().slice(0, 10); } if (form.f_to) form.f_to.min = form.f_from.value; });
+    if (!box.dataset.from) return;
+    var q = new URLSearchParams({ from: box.dataset.from, to: box.dataset.to, adults: box.dataset.ad, children: box.dataset.ch }), note = $('[data-sta-finder-note]', box);
+    api('available?' + q).then(function (res) {
+      var list = (res.body && res.body.data) || [];
+      if (!res.ok) { if (note) note.textContent = T.error; return; }
+      var free = {}; list.forEach(function (x) { free[x.slug] = x; });
+      var n = 0;
+      $$('.sta-finder-cell', box).forEach(function (cell) {
+        var f = free[cell.dataset.slug], av = $('.sta-finder-avail', cell);
+        cell.hidden = !f; if (!f) return; n++;
+        av.hidden = false;
+        av.innerHTML = '<b>' + esc(T.free) + '</b> · ' + f.nights + ' ' + esc(T.nights) + ': <strong>' + esc(money(f.total, f.currency)) + '</strong>';
+        $$('a[href]', cell).forEach(function (a) { try { var u = new URL(a.href); if (u.origin === location.origin) { u.searchParams.set('from', box.dataset.from); u.searchParams.set('to', box.dataset.to); u.searchParams.set('adults', box.dataset.ad); a.href = u.toString(); } } catch (e) {} });
+      });
+      var c = $('[data-sta-finder-count]', box); if (c) c.textContent = n + ' ' + T.freePlaces;
+      if (note) { note.textContent = n ? T.freeNote : T.noOffers; note.classList.toggle('is-empty', !n); }
+    });
+  });
 })();

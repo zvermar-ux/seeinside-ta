@@ -112,6 +112,12 @@ class Booking extends Model
             if ($b->exists && $b->isDirty('total') && $b->payment_status !== PaymentStatus::Refunded && $b->payments()->exists()) {
                 $b->payment_status = self::paymentStatusFor((float) $b->paid_amount, $b->total);
             }
+            // confirmed stay without a room number: the first free one of the room type
+            if ($b->status === BookingStatus::Confirmed && blank($b->room_number) && $b->accommodation_room_id && $b->date_from && $b->date_to
+                && ($nums = (array) AccommodationRoom::find($b->accommodation_room_id)?->unit_numbers)) {
+                $taken = self::takenUnits($b->accommodation_room_id, $b->date_from, $b->date_to, $b->id);
+                $b->room_number = collect($nums)->first(fn ($n) => ! isset($taken[$n]));
+            }
             if ($b->status === BookingStatus::Confirmed && ! $b->confirmed_at) {
                 $b->confirmed_at = now();
             }
@@ -186,6 +192,20 @@ class Booking extends Model
     public function cashEntries(): HasMany
     {
         return $this->hasMany(CashEntry::class);
+    }
+
+    /** Room numbers already given to other active bookings that overlap the dates: [number => booking reference] */
+    public static function takenUnits(?int $roomId, $from, $to, ?int $exceptId = null): array
+    {
+        if (! $roomId || ! $from || ! $to) {
+            return [];
+        }
+
+        return self::withoutGlobalScopes()->where('accommodation_room_id', $roomId)->whereNotNull('room_number')
+            ->whereIn('status', [BookingStatus::Inquiry->value, BookingStatus::Pending->value, BookingStatus::Confirmed->value])
+            ->whereDate('date_from', '<', $to)->whereDate('date_to', '>', $from)
+            ->when($exceptId, fn ($q) => $q->whereKeyNot($exceptId))
+            ->pluck('reference', 'room_number')->all();
     }
 
     /** Signature for the public verification link / QR code (cannot be guessed from the reference) */

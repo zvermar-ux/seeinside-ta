@@ -43,6 +43,7 @@ class BookingController extends Controller
             'departure_place_id' => 'nullable|integer',
             'room_id' => 'nullable|integer',
             'term_id' => 'nullable|integer',
+            'with_transport' => 'nullable|boolean',
             'ticket_id' => 'nullable|integer',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after:date_from',
@@ -210,6 +211,16 @@ class BookingController extends Controller
             $booking->date_from = $data['date_from'];
             $booking->date_to = $data['date_to'];
             $total = $offer['total'] ?? null;   // no price for these dates -> inquiry without price
+        }
+
+        // stay + organized transport (bus / plane) from the agency
+        if ($item instanceof Accommodation && ! empty($data['with_transport']) && $item->hasTransport()) {
+            $booking->transport = $item->transport['type'] ?? 'bus';
+            if (! empty($data['departure_place_id']) && in_array((int) $data['departure_place_id'], array_map('intval', (array) ($item->transport['places'] ?? [])), true)) {
+                $booking->departure_place_id = (int) $data['departure_place_id'];
+            }
+            $tp = $item->transportPrice($adults, (array) ($data['children_ages'] ?? []), $children);
+            $total = $total !== null ? $total + $tp : null;
         }
 
         $booking->total = $total !== null ? round($total, 2) : null;

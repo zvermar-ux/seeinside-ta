@@ -51,7 +51,11 @@ class RoomsRelationManager extends RelationManager
             Forms\Components\TextInput::make('max_children')->label(__('Max children'))->numeric()->default(0)->required(),
             Forms\Components\TextInput::make('beds')->label(__('Beds'))->placeholder('1 брачен + 1 помошен'),
             Forms\Components\TextInput::make('size_m2')->label(__('Size (m²)'))->numeric(),
-            Forms\Components\TextInput::make('units')->label(__('Number of units'))->numeric(),
+            Forms\Components\TextInput::make('units')->label(__('Number of units'))->numeric()
+                ->helperText(__('With room numbers below: counted automatically.')),
+            Forms\Components\TagsInput::make('unit_numbers')->label(__('Room / apartment numbers'))->columnSpanFull()
+                ->placeholder(__('e.g. A4, A5, Б201 – type and press Enter'))->reorderable()
+                ->helperText(__('Every physical room of this type. In a booking you choose which one the guest gets (it appears on the contract, voucher and invoice).')),
             Forms\Components\Toggle::make('is_active')->label(__('Active'))->default(true)->inline(false),
             Forms\Components\TextInput::make('provider_code')->label(__('Room code in the booking system'))
                 ->visible(fn (RelationManager $livewire) => filled($livewire->getOwnerRecord()->supplier_connection_id))
@@ -102,6 +106,7 @@ class RoomsRelationManager extends RelationManager
                     ->description(fn (AccommodationRoom $r) => $r->beds),
                 Tables\Columns\TextColumn::make('room_type')->label(__('Room type'))->badge()->color('gray'),
                 Tables\Columns\TextColumn::make('board')->label(__('Board'))->badge()->color('info'),
+                Tables\Columns\TextColumn::make('unit_numbers')->label(__('Numbers'))->badge()->color('gray')->limitList(6)->placeholder('—'),
                 Tables\Columns\TextColumn::make('capacity')->label(__('Capacity'))
                     ->state(fn (AccommodationRoom $r) => $r->max_adults.' + '.$r->max_children),
                 Tables\Columns\TextColumn::make('price')->label(__('Base price'))->placeholder('—')

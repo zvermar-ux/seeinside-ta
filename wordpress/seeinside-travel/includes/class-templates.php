@@ -235,18 +235,25 @@ class STA_Templates
     {
         $pages = [
             'aranzmani' => [__('Organized tours', 'seeinside-travel'), "[sta_search types=\"tour\"]\n[sta_list type=\"tour\" limit=\"12\" columns=\"3\" search=\"1\" pagination=\"1\" orderby=\"departure\"]"],
-            'hoteli' => [__('Hotels & apartments', 'seeinside-travel'), "[sta_search types=\"accommodation\"]\n[sta_list type=\"hotel\" limit=\"12\" columns=\"3\" search=\"1\" pagination=\"1\"]"],
+            'hoteli' => [__('Hotels & apartments', 'seeinside-travel'), '[sta_hotel_finder]'],
             'nastani' => [__('Events', 'seeinside-travel'), '[sta_list type="event" limit="12" columns="3" orderby="departure" pagination="1"]'],
             'vizi' => [__('Visas', 'seeinside-travel'), '[sta_list type="visa" limit="24" columns="4" orderby="title"]'],
             'last-minute' => ['Last minute', '[sta_last_minute limit="24" columns="3"]'],
             'carteri' => [__('Charter seats', 'seeinside-travel'), '[sta_charters]'],
             'avio-karti' => [__('Flights', 'seeinside-travel'), '[sta_flight_search]'],
             'proveri-rezervacija' => [__('Check your booking', 'seeinside-travel'), '[sta_booking_status]'],
+            'kontakt' => [__('Contact', 'seeinside-travel'), '[sta_contacts]'],
         ];
+        // the hotels page made by an older version (search + plain list) → filters on the left
+        $old = "[sta_search types=\"accommodation\"]\n[sta_list type=\"hotel\" limit=\"12\" columns=\"3\" search=\"1\" pagination=\"1\"]";
         $made = [];
         $known = get_option('sta_pages', []);
         foreach ($pages as $slug => [$title, $content]) {
             if (! empty($known[$slug]) && get_post_status($known[$slug])) {
+                if ($slug === 'hoteli' && trim(str_replace("\r", '', (string) get_post_field('post_content', $known[$slug]))) === $old) {
+                    wp_update_post(['ID' => $known[$slug], 'post_content' => $content]);
+                    $made[] = $title.' ('.__('filters', 'seeinside-travel').')';
+                }
                 continue;
             }
             $existing = get_page_by_path($slug);

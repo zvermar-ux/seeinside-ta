@@ -21,8 +21,8 @@ class InvoiceBuilder
         }
         if ($b->room) {
             $parts[] = __('Accommodation type').': '.$b->room->tr('name');
-            if ($b->room->board) {
-                $parts[] = __('Service').': '.$b->room->board->value;
+            if ($b->room->board || $b->room_number) {
+                $parts[] = __('Service').': '.trim(($b->room->board?->value ?? '').' '.($b->room_number ?: ''));
             }
         }
         if ($b->date_from) {
@@ -58,14 +58,33 @@ class InvoiceBuilder
         // price incl. VAT → net line price
         $net = $vat > 0 ? round($value / (1 + $vat / 100), 2) : round($value, 2);
 
+        // whole booking: the stay / arrangement in one line, transport and other supplements in their own lines (like in Expert)
+        $lines = [['description' => self::description($b), 'qty' => 1, 'price' => $net, 'vat' => $vat]];
+        if ($amount === null && (float) $b->total > 0) {
+            $factor = $value / (float) $b->total;
+            $extra = collect($b->priceLines())->filter(fn ($l) => $l['kind'] === 'supplement' && (float) $l['total'] > 0);
+            $extraSum = 0.0;
+            $rows = [];
+            foreach ($extra as $l) {
+                $v = round((float) $l['total'] * $factor, 2);
+                $extraSum += $v;
+                $rows[] = ['description' => $l['label'], 'qty' => 1, 'price' => $vat > 0 ? round($v / (1 + $vat / 100), 2) : $v, 'vat' => $vat];
+            }
+            if ($rows && $extraSum < $value) {
+                $main = round($value - $extraSum, 2);
+                $lines = [['description' => self::description($b), 'qty' => 1, 'price' => $vat > 0 ? round($main / (1 + $vat / 100), 2) : $main, 'vat' => $vat], ...$rows];
+            }
+        }
+
         return [
             'agency_id' => $b->agency_id, 'type' => $type, 'booking_id' => $b->id,
+            'note' => __('Booking no.').' '.$b->reference,
             'client_id' => $payer?->id, 'client_name' => $payer?->display_name ?? $b->customer_name,
             'client_address' => $payer ? trim(($payer->address ?? '').' '.($payer->city ?? '')) : $b->customer_city,
             'client_tax_number' => $payer?->tax_number,
             'issue_date' => now()->toDateString(), 'due_date' => now()->addDays((int) $agency->doc('invoice_days', 8))->toDateString(),
             'currency' => $currency, 'exchange_rate' => $rate,
-            'lines' => [['description' => self::description($b), 'qty' => 1, 'price' => $net, 'vat' => $vat]],
+            'lines' => $lines,
             'status' => 'issued',
         ];
     }

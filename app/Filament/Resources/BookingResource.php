@@ -188,8 +188,22 @@ class BookingResource extends Resource
             Forms\Components\Select::make('accommodation_room_id')->label(__('Room'))->live()
                 ->visible(fn (Get $get) => $get('bookable_type') === 'accommodation' && $get('bookable_id'))
                 ->options(fn (Get $get) => Accommodation::find($get('bookable_id'))?->rooms->mapWithKeys(fn ($r) => [$r->id => $r->tr('name').' ('.$r->board?->value.')']) ?? []),
+            Forms\Components\Select::make('room_number')->label(__('Room / unit number'))->searchable()
+                ->visible(fn (Get $get) => $get('bookable_type') === 'accommodation' && (bool) \App\Models\AccommodationRoom::find($get('accommodation_room_id'))?->unit_numbers)
+                ->options(function (Get $get, ?Booking $record) {
+                    $room = \App\Models\AccommodationRoom::find($get('accommodation_room_id'));
+                    $taken = $room ? Booking::takenUnits($room->id, $get('date_from'), $get('date_to'), $record?->id) : [];
+
+                    return collect((array) $room?->unit_numbers)->mapWithKeys(fn ($n) => [$n => $n.(isset($taken[$n]) ? ' – '.__('taken').' ('.$taken[$n].')' : '')])->all();
+                })
+                ->disableOptionWhen(function (string $value, Get $get, ?Booking $record) {
+                    $taken = Booking::takenUnits((int) $get('accommodation_room_id'), $get('date_from'), $get('date_to'), $record?->id);
+
+                    return isset($taken[$value]) && $value !== $record?->room_number;
+                })
+                ->helperText(__('Taken numbers (overlapping bookings) cannot be chosen.')),
             Forms\Components\TextInput::make('room_number')->label(__('Room / unit number'))->placeholder('A6/1st.fl/DBL bed')
-                ->visible(fn (Get $get) => in_array($get('bookable_type'), ['accommodation', 'tour'], true)),
+                ->visible(fn (Get $get) => in_array($get('bookable_type'), ['accommodation', 'tour'], true) && ! ($get('bookable_type') === 'accommodation' && \App\Models\AccommodationRoom::find($get('accommodation_room_id'))?->unit_numbers)),
             Forms\Components\Select::make('event_ticket_id')->label(__('Ticket'))
                 ->visible(fn (Get $get) => $get('bookable_type') === 'event' && $get('bookable_id'))
                 ->options(fn (Get $get) => Event::find($get('bookable_id'))?->tickets->mapWithKeys(fn ($t) => [$t->id => $t->tr('name').' — '.$t->price]) ?? []),
@@ -408,7 +422,39 @@ class BookingResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Duplicate::action(null, ['external_ref', 'confirmed_at', 'paid_amount', 'status', 'payment_status']),
             ])
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('export')->label(__('Export to Excel (CSV)'))->icon('heroicon-o-arrow-down-tray')->deselectRecordsAfterCompletion()
+                    ->action(fn (\Illuminate\Database\Eloquent\Collection $records) => static::exportCsv($records)),
+            ])
             ->defaultSort('created_at', 'desc');
+    }
+
+    /** One row per passenger – for Expert / accounting (opens in Excel, Cyrillic kept) */
+    public static function exportCsv($records): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $records->loadMissing(['bookable', 'room', 'departure', 'departurePlace']);
+
+        return response()->streamDownload(function () use ($records) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Број', 'Креирана', 'Статус', 'Плаќање', 'Понуда', 'Соба', 'Број на соба', 'Од', 'До', 'Ноќевања', 'Носител', 'Телефон', 'Е-пошта',
+                'Патник', 'Датум на раѓање', 'Пасош', 'Категорија', 'Превоз', 'Место на поаѓање', 'Вкупно', 'Платено', 'Долг', 'Валута', 'Надворешна референца'], ';');
+            foreach ($records as $b) {
+                $pax = $b->passengerList() ?: [[]];
+                foreach ($pax as $i => $p) {
+                    fputcsv($out, [
+                        $b->reference, $b->created_at?->format('d.m.Y H:i'), $b->status?->getLabel(), $b->payment_status?->getLabel(), $b->itemTitle(),
+                        $b->room?->tr('name'), $b->room_number, $b->date_from?->format('d.m.Y'), $b->date_to?->format('d.m.Y'), $b->nights() ?: '',
+                        $b->customer_name, $b->customer_phone, $b->customer_email,
+                        trim(($p['last_name'] ?? '').' '.($p['first_name'] ?? '')), ! empty($p['birth_date']) ? \Carbon\Carbon::parse($p['birth_date'])->format('d.m.Y') : '',
+                        $p['passport'] ?? '', $p['category'] ?? '', $b->transport, $b->departurePlace?->tr('name'),
+                        $i === 0 ? number_format((float) $b->total, 2, ',', '') : '', $i === 0 ? number_format((float) $b->paid_amount, 2, ',', '') : '',
+                        $i === 0 ? number_format($b->balance(), 2, ',', '') : '', $b->currency, $b->external_ref,
+                    ], ';');
+                }
+            }
+            fclose($out);
+        }, 'rezervacii-'.now()->format('Y-m-d-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public static function getRelations(): array

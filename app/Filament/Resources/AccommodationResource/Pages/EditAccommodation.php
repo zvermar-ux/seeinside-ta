@@ -13,7 +13,7 @@ class EditAccommodation extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [$this->aiActions(), 
+        return [\App\Filament\Support\WebsitePreview::action('accommodation'), $this->aiActions(), 
             Actions\Action::make('calendar')->label(__('Availability calendar'))->icon('heroicon-o-calendar-days')->color('gray')
                 ->visible(fn () => \App\Filament\Pages\AvailabilityCalendar::canAccess())
                 ->url(fn () => \App\Filament\Pages\AvailabilityCalendar::getUrl(['accommodation' => $this->record->id])),

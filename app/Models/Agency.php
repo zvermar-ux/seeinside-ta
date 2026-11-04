@@ -22,6 +22,7 @@ class Agency extends Model
             'documents' => 'array',
             'messaging' => 'encrypted:array',
             'modules' => 'array',
+            'contact_info' => 'array',
         ];
     }
 
@@ -74,6 +75,27 @@ class Agency extends Model
         return $cache[$u->agency_id.'|'.$module] ??= (bool) self::find($u->agency_id)?->hasModule($module);
     }
 
+    /** Phones, social networks and newsletter for the website */
+    public function contactsForWebsite(): array
+    {
+        $c = (array) $this->contact_info;
+        $digits = fn ($n) => preg_replace('/\D+/', '', (string) $n);
+        $phones = collect((array) ($c['phones'] ?? []))->filter(fn ($p) => filled($p['number'] ?? null))->map(fn ($p) => [
+            'number' => trim($p['number']), 'tel' => '+'.ltrim(\App\Services\Messaging\Channels::phone($p['number'], $this) ?? $digits($p['number']), '+'),
+            'label' => $p['label'] ?? null, 'type' => $p['type'] ?? 'landline',
+            'viber' => in_array('viber', (array) ($p['apps'] ?? []), true), 'whatsapp' => in_array('whatsapp', (array) ($p['apps'] ?? []), true),
+        ])->values()->all();
+        if (! $phones && $this->phone) {
+            $phones[] = ['number' => $this->phone, 'tel' => '+'.ltrim((string) \App\Services\Messaging\Channels::phone($this->phone, $this), '+'), 'label' => null, 'type' => 'landline', 'viber' => false, 'whatsapp' => false];
+        }
+
+        return [
+            'phones' => $phones, 'email' => $this->email, 'address' => trim(($this->address ?? '').', '.($this->city ?? ''), ', '),
+            'social' => array_filter(array_intersect_key($c, array_flip(['facebook', 'instagram', 'youtube', 'tiktok', 'linkedin']))),
+            'newsletter_url' => $c['newsletter_url'] ?? null, 'working_hours' => $c['working_hours'] ?? null,
+        ];
+    }
+
     /** Messaging settings (channels, tokens, templates) */
     public function msg(string $key, mixed $default = null): mixed
     {
@@ -93,6 +115,7 @@ class Agency extends Model
             'payment_clause' => 'Плаќањето е исклучиво во денарска противвредност по куповниот курс на деловна банка за откуп на девизи од девизен пазар (т.е. продажен курс према организаторот).',
             'terms_clause' => 'Општите услови на патување се составен дел на договорот.',
             'declaration' => 'Изјавувам дека сум запознат со програмата и со општите услови на патување и дека во целост ги прифаќам.',
+            'invoice_footer' => "Плаќање на фактурата во рок од :days дена.\nВо случај на спор надлежен е основниот суд во :city.\nРекламации примаме во рок од 5 дена.",
             'invoice_text' => 'Ве задолжуваме за',
         ];
 

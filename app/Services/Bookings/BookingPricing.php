@@ -63,6 +63,13 @@ class BookingPricing
                     $lines[] = self::line('base', trim($room->tr('name').' · '.$nights.' '.__('nights')), $qty, (float) $offer['total']);
                 }
             }
+            // organized transport sold with the stay
+            if ($item->hasTransport() && in_array($b->transport, ['bus', 'flight'], true)) {
+                $tp = $item->transportPrice((int) $b->adults, (array) $b->children_ages, (int) $b->children);
+                if ($tp > 0) {
+                    $lines[] = self::line('supplement', __('Transport').' ('.($b->transport === 'flight' ? __('Plane') : __('Bus')).($b->departurePlace ? ', '.$b->departurePlace->tr('name') : '').')', 1, $tp);
+                }
+            }
         } elseif ($item instanceof Event && ($t = $b->ticket)) {
             $lines[] = self::line('base', $t->tr('name'), max(1, (int) $b->quantity), (float) $t->price);
         } elseif ($item instanceof Charter) {

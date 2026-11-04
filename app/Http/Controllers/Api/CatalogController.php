@@ -66,6 +66,7 @@ class CatalogController extends Controller
             'agency' => [
                 'name' => $agency->name, 'email' => $agency->email, 'phone' => $agency->phone, 'website' => $agency->website,
                 'address' => $agency->address, 'city' => $agency->city, 'logo' => P::url($agency->logo), 'currency' => $agency->default_currency,
+                'contacts' => $agency->contactsForWebsite(),
             ],
             'slider' => $this->sliderItems($agency->id),
             'flights' => ['search_url' => $agency->flight_search_url, 'widget_code' => $agency->flight_widget_code],
@@ -232,6 +233,31 @@ class CatalogController extends Controller
     }
 
     /** Fixed terms of an accommodation with price and free units per room (website term table) */
+    /** Which hotels / apartments have a free room for the dates (website filter "free for my dates") */
+    public function available(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'from' => 'required|date|after_or_equal:today', 'to' => 'required|date|after:from',
+            'adults' => 'nullable|integer|min:1|max:20', 'children' => 'nullable|integer|min:0|max:10',
+        ]);
+        abort_if(Carbon::parse($data['from'])->diffInDays(Carbon::parse($data['to'])) > 60, 422, 'Max. 60 nights.');
+        $key = 'avail:'.$this->agencyId($request).':'.md5(json_encode($data));
+        $out = \Illuminate\Support\Facades\Cache::remember($key, 300, function () use ($request, $data) {
+        $out = [];
+        $q = $this->published(Accommodation::class, $request)->where('booking_enabled', true)->with('rooms.rates');
+        foreach ($q->limit(300)->get() as $a) {
+            $offers = $a->quote($data['from'], $data['to'], (int) ($data['adults'] ?? 2), (int) ($data['children'] ?? 0));
+            if ($offers) {
+                $out[] = ['id' => $a->id, 'slug' => $a->slug, 'total' => $offers[0]['total'], 'currency' => $offers[0]['currency'], 'nights' => $offers[0]['nights'], 'rooms' => count($offers)];
+            }
+        }
+
+        return $out;
+        });
+
+        return response()->json(['data' => $out]);
+    }
+
     public function terms(Request $request, string $slug): JsonResponse
     {
         $a = $this->published(Accommodation::class, $request)->where('slug', $slug)->firstOrFail();

@@ -75,6 +75,14 @@ class CatalogFields
                 Forms\Components\DatePicker::make('first_minute_until')->label(__('Book and pay until'))->native(false)->displayFormat('d.m.Y')
                     ->helperText(__('Shown on the website: the regular price is struck through and the date until which the discount is valid.')),
                 Forms\Components\TextInput::make('first_minute_label')->label(__('Promotion name on the website'))->placeholder('Early Booking')->maxLength(40),
+                Forms\Components\Repeater::make('early_booking_tiers')->label(__('Early booking in steps (instead of one discount)'))->columnSpanFull()
+                    ->defaultItems(0)->columns(2)->reorderable(false)->addActionLabel(__('Add step'))
+                    ->helperText(__('E.g. 20% for bookings until 30.11, 15% until 31.12, 10% until 31.03. The discount is for all services and changes by itself on the dates.'))
+                    ->itemLabel(fn (array $state) => filled($state['percent'] ?? null) ? '−'.$state['percent'].'% '.__('until').' '.(! empty($state['until']) ? \Illuminate\Support\Carbon::parse($state['until'])->format('d.m.Y') : '…') : null)
+                    ->schema([
+                        Forms\Components\TextInput::make('percent')->label(__('Discount'))->numeric()->suffix('%')->required()->minValue(0.5)->maxValue(90),
+                        Forms\Components\DatePicker::make('until')->label(__('For bookings until'))->native(false)->displayFormat('d.m.Y')->required(),
+                    ]),
             ]);
     }
 

@@ -8,16 +8,20 @@ $qo = get_queried_object();
 $map = STA_Listings_Admin::archive_map();
 $listId = $qo instanceof WP_Term ? ($map[$qo->taxonomy] ?? 0) : ($map[is_string($type) ? $type : ''] ?? 0);
 $list = $listId ? STA_Listings::get((int) $listId) : null;
+// hotels: filters on the left (type, destination, beach, transport, free dates…)
+$finder = ! $list && (is_post_type_archive('sta_hotel') || is_tax('sta_hotel_type'));
 ?>
 <main class="sta sta-archive">
     <header class="sta-archive-head">
         <h1 class="sta-archive-title"><?php echo is_tax() ? esc_html(single_term_title('', false)) : esc_html(post_type_archive_title('', false)); ?></h1>
         <?php if (is_tax() && term_description()) : ?><div class="sta-prose"><?php echo wp_kses_post(term_description()); ?></div><?php endif; ?>
-        <?php if (! $list || $list['layout'] !== 'filters') : ?>
+        <?php if (! $finder && (! $list || $list['layout'] !== 'filters')) : ?>
             <?php echo STA_Frontend::sc_search(['types' => $searchTypes[is_string($type) ? $type : 'sta_tour'] ?? 'tour']); ?>
         <?php endif; ?>
     </header>
-    <?php if ($list) :
+    <?php if ($finder) :
+        echo STA_Finder::shortcode([]); // phpcs:ignore
+    elseif ($list) :
         if ($qo instanceof WP_Term && $list['filter_tax'] !== $qo->taxonomy) {
             $list['terms'][$qo->taxonomy] = [$qo->slug];
         }

@@ -2512,6 +2512,188 @@ msgstr "Покажете го во хотелот, на водичот или в
 msgid "Save the QR code"
 msgstr "Зачувај го QR кодот"
 
+msgid "%1$s per adult, %2$s per child (%3$d–%4$d years)"
+msgstr "%1$s по возрасен, %2$s по дете (%3$d–%4$d год.)"
+
+msgid "%s to the beach"
+msgstr "%s до плажа"
+
+msgid "Accommodation"
+msgstr "Сместување"
+
+msgid "Add flight"
+msgstr "Додај авионски превоз"
+
+msgid "Add organized bus transport"
+msgstr "Додај организиран автобуски превоз"
+
+msgid "All phones (office, mobile with Viber / WhatsApp, emergency), e-mail, address, social networks. show=\"main\" or show=\"emergency\" for one group"
+msgstr "Сите телефони (канцелариски, мобилни со Viber / WhatsApp, итни), е-пошта, адреса, социјални мрежи. show=\"main\" или show=\"emergency\" за една група"
+
+msgid "Any"
+msgstr "Било кое"
+
+msgid "Bed & breakfast"
+msgstr "Ноќевање со појадок"
+
+msgid "By destination"
+msgstr "По дестинација"
+
+msgid "Checking which are free for your dates…"
+msgstr "Проверуваме кои се слободни за вашите датуми…"
+
+msgid "Clear all filters"
+msgstr "Исчисти ги филтрите"
+
+msgid "Closest to the beach"
+msgstr "Најблиску до плажа"
+
+msgid "Contact"
+msgstr "Контакт"
+
+msgid "Create main menu (groups & destinations)"
+msgstr "Креирај главно мени (групи и дестинации)"
+
+msgid "Distance from the beach"
+msgstr "Оддалеченост од плажа"
+
+msgid "E-mail & address"
+msgstr "Е-пошта и адреса"
+
+msgid "Early booking / last minute"
+msgstr "Рано резервирање / last minute"
+
+msgid "Emergency (24/7 during travel)"
+msgstr "Итни случаи (24/7 за време на патување)"
+
+msgid "Filters"
+msgstr "Филтри"
+
+msgid "Flight search: the official \"GOL IBE Search Form\" plugin when installed, otherwise the GOL IBE code / link from SeeInside"
+msgstr "Пребарување летови: официјалниот приклучок „GOL IBE Search Form“ ако е инсталиран, инаку GOL IBE кодот / линкот од SeeInside"
+
+msgid "Follow us"
+msgstr "Следете не"
+
+msgid "Full board"
+msgstr "Полн пансион"
+
+msgid "Half board"
+msgstr "Полупансион"
+
+msgid "Hotels, apartments and villas with filters on the left (type, destination, beach, transport, free dates, stars, board, amenities, price)"
+msgstr "Хотели, апартмани и вили со филтри лево (тип, дестинација, плажа, превоз, слободни датуми, ѕвезди, услуга, содржини, цена)"
+
+msgid "Menu \"%1$s\" ready (%2$d items). Check it in Appearance → Menus."
+msgstr "Менито „%1$s“ е подготвено (%2$d ставки). Проверете го во Изглед → Менија."
+
+msgid "Mobile · Viber · WhatsApp"
+msgstr "Мобилни · Viber · WhatsApp"
+
+msgid "Newsletter (Mailchimp) sign-up button"
+msgstr "Копче за пријава на билтен (Mailchimp)"
+
+msgid "Nothing matches these filters – remove one of them."
+msgstr "Ништо не одговара на овие филтри – отстранете некој од нив."
+
+msgid "Offers and last minute deals first – in your inbox."
+msgstr "Понудите и last minute први – во вашето сандаче."
+
+msgid "Office phones"
+msgstr "Фиксни телефони"
+
+msgid "One phone with Viber / WhatsApp buttons – for the header or footer"
+msgstr "Еден телефон со Viber / WhatsApp копчиња – за заглавјето или подножјето"
+
+msgid "Organized tours → groups, Accommodation → types and destinations, Events, Visas, Last minute, Flights, Contact. Run it again after adding new groups or destinations."
+msgstr "Аранжмани → групи, Сместување → типови и дестинации, Настани, Визи, Last minute, Авио карти, Контакт. Пуштете го повторно по додавање нови групи или дестинации."
+
+msgid "Organized transport"
+msgstr "Организиран превоз"
+
+msgid "Price up to"
+msgstr "Цена до"
+
+msgid "Recommended"
+msgstr "Препорачано"
+
+msgid "Room only"
+msgstr "Само ноќевање"
+
+msgid "SeeInside – main menu"
+msgstr "SeeInside – главно мени"
+
+msgid "Show free places"
+msgstr "Прикажи слободни"
+
+msgid "Showing only places that are free for your dates, with the total price."
+msgstr "Прикажани се само сместувањата што се слободни за вашите датуми, со вкупната цена."
+
+msgid "Social network icons (Facebook, Instagram, YouTube…)"
+msgstr "Икони на социјалните мрежи (Facebook, Instagram, YouTube…)"
+
+msgid "Sort"
+msgstr "Подреди"
+
+msgid "Stars / category"
+msgstr "Ѕвезди / категорија"
+
+msgid "Subscribe to the newsletter"
+msgstr "Пријави се на билтенот"
+
+msgid "The menu \"SeeInside – main menu\" is rebuilt from the groups, destinations and types. Continue?"
+msgstr "Менито „SeeInside – главно мени“ се креира одново од групите, дестинациите и типовите. Продолжи?"
+
+msgid "The menu could not be created."
+msgstr "Менито не може да се креира."
+
+msgid "The offer is not on the website yet. If you just saved it, the website receives it in a few seconds – this page refreshes by itself. Check that the offer is active and marked \"Show on website\"."
+msgstr "Понудата сè уште ја нема на веб-страницата. Ако штотуку ја зачувавте, ќе стигне за неколку секунди – оваа страница се освежува сама. Проверете дали понудата е активна и означена „Прикажи на веб-страница“."
+
+msgid "This offer is on the website but not published (inactive or hidden). Activate it in SeeInside."
+msgstr "Понудата е на веб-страницата, но не е објавена (неактивна или скриена). Активирајте ја во SeeInside."
+
+msgid "Type of accommodation"
+msgstr "Тип на сместување"
+
+msgid "With organized transport"
+msgstr "Со организиран превоз"
+
+msgid "Your dates"
+msgstr "Вашите датуми"
+
+msgid "e.g. Vila Afroditi"
+msgstr "на пр. Вила Афродити"
+
+msgid "filters"
+msgstr "филтри"
+
+msgid "free for your dates"
+msgstr "слободни за вашите датуми"
+
+msgid "now"
+msgstr "сега"
+
+msgid "until %s"
+msgstr "до %s"
+
+msgid "up to 1 km"
+msgstr "до 1 km"
+
+msgid "up to 100 m"
+msgstr "до 100 m"
+
+msgid "up to 300 m"
+msgstr "до 300 m"
+
+msgid "up to 500 m"
+msgstr "до 500 m"
+
+msgid "%d place to stay"
+msgid_plural "%d places to stay"
+msgstr[0] "%d сместување"
+msgstr[1] "%d сместувања"
+
 msgid "Only %d left!"
 msgid_plural "Only %d left!"
 msgstr[0] "Само уште %d!"

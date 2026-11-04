@@ -24,6 +24,6 @@ class EditCustomRecord extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [Actions\DeleteAction::make()->successRedirectUrl(CustomRecordResource::getUrl('index', ['type' => $this->record->recordType?->slug]))];
+        return [\App\Filament\Support\WebsitePreview::action('custom'), Actions\DeleteAction::make()->successRedirectUrl(CustomRecordResource::getUrl('index', ['type' => $this->record->recordType?->slug]))];
     }
 }

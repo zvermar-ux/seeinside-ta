@@ -46,6 +46,7 @@ class Accommodation extends Model
             'book_by_terms' => 'boolean',
             'pricing_rules' => 'array',
             'galleries' => 'array',
+            'transport' => 'array',
             'lease_from' => 'date',
             'lease_to' => 'date',
         ];
@@ -58,6 +59,33 @@ class Accommodation extends Model
                 $a->price_from = $a->computePriceFrom();
             }
         });
+    }
+
+    /** Organized transport offered with the stay (bus / plane) */
+    public function hasTransport(): bool
+    {
+        return ! empty($this->transport['enabled']) && (float) ($this->transport['price_adult'] ?? 0) > 0;
+    }
+
+    /** Price of the transport for a party; children by age (infants free, children's price, older = adult) */
+    public function transportPrice(int $adults, array $childAges = [], int $children = 0): float
+    {
+        if (! $this->hasTransport()) {
+            return 0.0;
+        }
+        $t = (array) $this->transport;
+        $adult = (float) ($t['price_adult'] ?? 0);
+        $child = (float) (($t['price_child'] ?? null) !== null && $t['price_child'] !== '' ? $t['price_child'] : $adult);
+        $free = (int) ($t['free_under'] ?? 2);
+        $childTo = (int) ($t['child_age_to'] ?? 12);
+        $sum = $adults * $adult;
+        $ages = array_values(array_filter($childAges, fn ($a) => $a !== null && $a !== ''));
+        for ($i = 0; $i < max($children, count($ages)); $i++) {
+            $age = isset($ages[$i]) ? (int) $ages[$i] : null;
+            $sum += $age === null ? $child : ($age < $free ? 0 : ($age <= $childTo ? $child : $adult));
+        }
+
+        return round($sum, 2);
     }
 
     public function computePriceFrom(): ?float

@@ -26,6 +26,7 @@ class AccommodationRoom extends Model
             'board' => Board::class,
             'is_active' => 'boolean',
             'price' => 'decimal:2',
+            'unit_numbers' => 'array',
         ];
     }
 
@@ -34,6 +35,11 @@ class AccommodationRoom extends Model
         static::saving(function (AccommodationRoom $r) {
             $r->is_active = $r->is_active ?? true;
             $r->max_children = (int) $r->max_children;
+            $nums = array_values(array_unique(array_filter(array_map(fn ($v) => trim((string) $v), (array) $r->unit_numbers))));
+            $r->unit_numbers = $nums ?: null;
+            if ($nums) {
+                $r->units = count($nums);
+            }
         });
         static::saved(fn (AccommodationRoom $r) => $r->accommodation?->touch());
         static::deleted(fn (AccommodationRoom $r) => $r->accommodation?->touch());

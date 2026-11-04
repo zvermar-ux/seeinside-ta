@@ -20,6 +20,7 @@ Route::prefix('public/{site}')->middleware([\App\Http\Middleware\AuthenticatePub
     Route::get('accommodations/{slug}/quote', [CatalogController::class, 'quote'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
     Route::get('accommodations/{slug}/availability', [CatalogController::class, 'availability'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
     Route::get('accommodations/{slug}/terms', [CatalogController::class, 'terms'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
+    Route::get('accommodations-available', [CatalogController::class, 'available'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations')->middleware('throttle:60,1');
     Route::post('bookings', [BookingController::class, 'store'])->middleware(\App\Http\Middleware\AgencyModule::class);
     Route::post('visa-applications', [BookingController::class, 'visaApplication'])->middleware(\App\Http\Middleware\AgencyModule::class.':visas');
     Route::get('bookings/{reference}', [BookingController::class, 'status']);
@@ -62,6 +63,7 @@ Route::middleware([AuthenticateApiClient::class, 'throttle:website'])->group(fun
     Route::get('accommodations/{slug}/quote', [CatalogController::class, 'quote'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
     Route::get('accommodations/{slug}/availability', [CatalogController::class, 'availability'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
     Route::get('accommodations/{slug}/terms', [CatalogController::class, 'terms'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
+    Route::get('accommodations-available', [CatalogController::class, 'available'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations')->middleware('throttle:60,1');
 
     Route::get('custom-records', [CatalogController::class, 'customRecords']);
     Route::get('custom-records/{slug}', [CatalogController::class, 'customRecord']);

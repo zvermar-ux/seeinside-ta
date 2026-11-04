@@ -10,6 +10,8 @@ $title = [
     'accommodation' => __('Check prices & book', 'seeinside-travel'),
     'event' => __('Buy tickets', 'seeinside-travel'),
 ][$type] ?? __('Send inquiry', 'seeinside-travel');
+$pre = fn ($k) => isset($_GET[$k]) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $_GET[$k]) ? (string) $_GET[$k] : '';   // phpcs:ignore -- dates from the hotel finder
+$tr = $type === 'accommodation' && ! empty($d['transport']) ? $d['transport'] : null;
 $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array($x['status'], ['sold_out', 'cancelled'], true)));
 ?>
 <form class="sta-form sta-booking" data-sta-booking data-type="<?php echo esc_attr($type); ?>" data-slug="<?php echo esc_attr($d['slug']); ?>" data-currency="<?php echo esc_attr($currency); ?>" novalidate>
@@ -55,8 +57,8 @@ $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array(
         <input type="hidden" name="date_to" value="">
     <?php elseif ($type === 'accommodation') : ?>
         <div class="sta-row">
-            <label class="sta-field"><span><?php esc_html_e('Check-in', 'seeinside-travel'); ?> *</span><input type="date" name="date_from" required min="<?php echo esc_attr(wp_date('Y-m-d')); ?>"></label>
-            <label class="sta-field"><span><?php esc_html_e('Check-out', 'seeinside-travel'); ?> *</span><input type="date" name="date_to" required min="<?php echo esc_attr(wp_date('Y-m-d')); ?>"></label>
+            <label class="sta-field"><span><?php esc_html_e('Check-in', 'seeinside-travel'); ?> *</span><input type="date" name="date_from" required min="<?php echo esc_attr(wp_date('Y-m-d')); ?>" value="<?php echo esc_attr($pre('from')); ?>"></label>
+            <label class="sta-field"><span><?php esc_html_e('Check-out', 'seeinside-travel'); ?> *</span><input type="date" name="date_to" required min="<?php echo esc_attr(wp_date('Y-m-d')); ?>" value="<?php echo esc_attr($pre('to')); ?>"></label>
         </div>
         <input type="hidden" name="room_id" value="">
     <?php elseif ($type === 'custom') : ?>
@@ -85,6 +87,23 @@ $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array(
             <label class="sta-field"><span><?php esc_html_e('Children', 'seeinside-travel'); ?></span><input type="number" name="children" min="0" max="10" value="0"></label>
         </div>
         <div class="sta-row sta-ages" data-sta-ages></div>
+    <?php endif; ?>
+
+    <?php if ($tr) : ?>
+        <fieldset class="sta-transport" data-sta-transport data-adult="<?php echo esc_attr($tr['price_adult'] ?? 0); ?>" data-child="<?php echo esc_attr($tr['price_child'] ?? ($tr['price_adult'] ?? 0)); ?>" data-free="<?php echo esc_attr($tr['free_under'] ?? 2); ?>" data-child-to="<?php echo esc_attr($tr['child_age_to'] ?? 12); ?>">
+            <label class="sta-check"><input type="checkbox" name="with_transport" value="1"> <span><b><?php echo esc_html(($tr['type'] ?? 'bus') === 'flight' ? __('Add flight', 'seeinside-travel') : __('Add organized bus transport', 'seeinside-travel')); ?></b>
+                <?php echo esc_html(sprintf(__('%1$s per adult, %2$s per child (%3$d–%4$d years)', 'seeinside-travel'), sta_money($tr['price_adult'] ?? 0, $currency), sta_money($tr['price_child'] ?? ($tr['price_adult'] ?? 0), $currency), (int) ($tr['free_under'] ?? 2), (int) ($tr['child_age_to'] ?? 12))); ?></span></label>
+            <?php if (! empty($tr['places'])) : ?>
+                <label class="sta-field" data-sta-transport-place hidden><span><?php esc_html_e('Departure place', 'seeinside-travel'); ?></span>
+                    <select name="departure_place_id">
+                        <?php foreach ($tr['places'] as $p) : ?>
+                            <option value="<?php echo (int) $p['id']; ?>"><?php echo esc_html(sta_t($p['name'])); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+            <?php endif; ?>
+            <?php if (! empty($tr['note'])) : ?><small class="sta-muted"><?php echo esc_html(sta_t($tr['note'])); ?></small><?php endif; ?>
+        </fieldset>
     <?php endif; ?>
 
     <?php if ($type === 'accommodation') : ?>

@@ -432,3 +432,79 @@ body.sta-has-cta .sta-chat { bottom: 92px; }
 .sta-qr div { display: grid; gap: .25rem; font-size: .9rem; }
 .sta-qr small { color: var(--sta-muted, #64748b); }
 .sta-qr a { color: var(--sta-primary); font-weight: 600; font-size: .88rem; }
+
+/* ---------- hotel finder: filters on the left ---------- */
+.sta-finder { margin: 0 0 2.5rem; }
+.sta-finder-wrap { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 28px; align-items: start; }
+.sta-finder-side { position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow: auto; background: #fff; border: 1px solid var(--sta-line); border-radius: var(--sta-radius); padding: 4px 18px 18px; scrollbar-width: thin; }
+.sta-ff { padding: 14px 0; border-bottom: 1px solid var(--sta-line); }
+.sta-ff h4 { margin: 0 0 .55rem; font-size: .95rem; font-weight: 700; display: flex; justify-content: space-between; gap: .5rem; }
+.sta-ff h4 output { color: var(--sta-primary); }
+.sta-ff label { display: block; font-size: .85rem; color: var(--sta-muted); margin: 0 0 .45rem; }
+.sta-ff input[type="date"], .sta-ff input[type="number"], .sta-ff input[type="search"], .sta-ff select { width: 100%; margin-top: .2rem; padding: .5rem .6rem; border: 1px solid var(--sta-line); border-radius: 8px; font: inherit; color: var(--sta-ink); background: #fff; }
+.sta-ff-row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.sta-ff-dates { background: color-mix(in srgb, var(--sta-primary) 7%, #fff); margin: 14px -8px 0; padding: 12px 8px; border-radius: 10px; border: 0; }
+.sta-ff .sta-ff-opt { display: flex; align-items: center; gap: .5rem; color: var(--sta-ink); font-size: .92rem; cursor: pointer; margin: 0 0 .35rem; }
+.sta-ff-opt input { accent-color: var(--sta-primary); width: 17px; height: 17px; margin: 0; flex-shrink: 0; }
+.sta-ff-opt span { flex: 1; }
+.sta-ff-opt small { color: var(--sta-muted); font-size: .8rem; }
+.sta-ff input[type="range"] { width: 100%; accent-color: var(--sta-primary); }
+.sta-ff-clear { display: inline-block; margin-top: 12px; font-size: .88rem; color: var(--sta-primary); }
+.sta-finder-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin: 0 0 14px; }
+.sta-finder-head b { font-size: 1.1rem; }
+.sta-finder-head label { font-size: .9rem; color: var(--sta-muted); display: flex; align-items: center; gap: .5rem; }
+.sta-finder-head select { padding: .4rem .6rem; border: 1px solid var(--sta-line); border-radius: 8px; font: inherit; }
+.sta-finder-note { padding: .6rem .9rem; border-radius: 10px; background: #ecfdf5; color: #065f46; margin: 0 0 14px; font-size: .92rem; }
+.sta-finder-note.is-empty { background: #fff7ed; color: #9a3412; }
+.sta-finder-cell { display: flex; flex-direction: column; }
+.sta-finder-cell[hidden] { display: none !important; }
+.sta-finder-tags { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
+.sta-finder-tags span { font-size: .78rem; padding: .2rem .55rem; border-radius: 999px; background: var(--sta-soft); border: 1px solid var(--sta-line); color: var(--sta-muted); }
+.sta-finder-avail { margin-top: .5rem; padding: .5rem .7rem; border-radius: 10px; background: #ecfdf5; color: #065f46; font-size: .9rem; }
+.sta-finder-avail strong { color: var(--sta-ink); }
+.sta-finder.is-loading .sta-finder-main { opacity: .5; pointer-events: none; transition: opacity .2s; }
+.sta-finder-toggle { display: none; }
+@media (max-width: 900px) {
+  .sta-finder-wrap { grid-template-columns: 1fr; }
+  .sta-finder .sta-finder-toggle { display: inline-flex; align-items: center; gap: .4rem; margin: 0 0 12px; padding: .55rem 1rem; border: 1px solid var(--sta-line); border-radius: 999px; background: #fff; color: var(--sta-ink); font: inherit; font-weight: 600; cursor: pointer; }
+  .sta-finder-side { display: none; position: static; max-height: none; }
+  .sta-finder.is-open .sta-finder-side { display: block; }
+}
+
+/* ---------- organized transport in the booking form ---------- */
+.sta-transport { border: 1px solid var(--sta-line); border-radius: 12px; padding: .8rem 1rem; margin: .5rem 0 1rem; background: var(--sta-soft); }
+.sta-transport .sta-field { margin-top: .6rem; }
+.sta-transport .sta-field[hidden] { display: none; }
+
+/* ---------- early booking steps ---------- */
+.sta-eb-steps { list-style: none; margin: .6rem 0 .8rem; padding: 0; display: grid; gap: .3rem; font-size: .9rem; }
+.sta-eb-steps li { display: flex; gap: .5rem; align-items: baseline; padding: .3rem .6rem; border-radius: 8px; background: var(--sta-soft); color: var(--sta-muted); }
+.sta-eb-steps li b { color: #16a34a; min-width: 3.2em; }
+.sta-eb-steps li.is-now { background: #dcfce7; color: #14532d; font-weight: 600; }
+.sta-eb-steps small { margin-left: auto; text-transform: uppercase; font-size: .7rem; letter-spacing: .05em; }
+
+/* ---------- contacts, social, newsletter ---------- */
+.sta-contacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+.sta-contacts ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.sta-ct-group h4 { margin: 0 0 .7rem; font-size: 1rem; }
+.sta-ct-emergency h4 { color: var(--sta-bad); }
+.sta-contacts li { display: flex; align-items: center; gap: .5rem; }
+.sta-contacts li > a, .sta-ct-hours { display: flex; align-items: center; gap: .6rem; flex: 1; padding: .55rem .75rem; border-radius: 10px; border: 1px solid var(--sta-line); background: #fff; color: var(--sta-ink); text-decoration: none; min-width: 0; }
+.sta-contacts li > a:hover { border-color: var(--sta-primary); }
+.sta-contacts li > a .sta-ico, .sta-ct-hours .sta-ico { color: var(--sta-primary); }
+.sta-contacts li > a > span, .sta-ct-hours > span { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; text-align: left; }
+.sta-contacts li small { color: var(--sta-muted); font-size: .8rem; }
+.sta-ct-emergency li > a .sta-ico { color: var(--sta-bad); }
+.sta-contacts .sta-ct-apps { display: flex; flex-direction: row; gap: .35rem; flex-shrink: 0; }
+.sta-ct-apps a { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; color: #fff; }
+.sta-ct-viber { background: #7360f2; } .sta-ct-wa { background: #25d366; }
+.sta-contacts--inline { display: inline-flex; list-style: none; margin: 0; padding: 0; }
+.sta-contacts--inline li > a { border: 0; padding: 0; background: none; }
+.sta-social { display: flex; flex-wrap: wrap; gap: .5rem; }
+.sta-social a { width: var(--so, 40px); height: var(--so, 40px); border-radius: 50%; display: grid; place-items: center; color: #fff; background: #334155; transition: transform .15s; }
+.sta-social a:hover { transform: translateY(-2px); }
+.sta-so-facebook { background: #1877f2 !important; } .sta-so-instagram { background: radial-gradient(circle at 30% 107%, #fdf497 0, #fd5949 45%, #d6249f 60%, #285aeb 90%) !important; }
+.sta-so-youtube { background: #ff0000 !important; } .sta-so-tiktok { background: #111 !important; } .sta-so-linkedin { background: #0a66c2 !important; }
+.sta-newsletter { margin-top: 1rem; } .sta-newsletter p { margin: 0 0 .5rem; color: var(--sta-muted); font-size: .92rem; }
+.sta-contacts li > a > span b { white-space: nowrap; font-size: 1.02rem; }
+.sta-contacts li > a, .sta-ct-hours { font-size: .95rem; }

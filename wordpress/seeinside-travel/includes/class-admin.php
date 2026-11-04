@@ -169,7 +169,9 @@ class STA_Admin
         } else {
             echo '<p>'.esc_html__('Single pages use the automatic layout. On pages use the blocks "SeeInside Travel" (Gutenberg) or the shortcodes from the Help tab – they work in every builder.', 'seeinside-travel').'</p>';
         }
-        echo '<p>'.self::button('pages', __('Create pages (tours, hotels, events, visas, last minute, charters, flights, booking check)', 'seeinside-travel')).'</p></div>';
+        echo '<p>'.self::button('pages', __('Create pages (tours, hotels, events, visas, last minute, charters, flights, booking check)', 'seeinside-travel')).'</p>';
+        echo '<p>'.self::button('menu', __('Create main menu (groups & destinations)', 'seeinside-travel'), 'button', __('The menu "SeeInside – main menu" is rebuilt from the groups, destinations and types. Continue?', 'seeinside-travel')).' <span class="description">'
+            .esc_html__('Organized tours → groups, Accommodation → types and destinations, Events, Visas, Last minute, Flights, Contact. Run it again after adding new groups or destinations.', 'seeinside-travel').'</span></p></div>';
 
         $layout = $s['layout_mode'] ?? 'auto';
         echo '<div class="sta-card"><h2>'.esc_html__('Layout', 'seeinside-travel').'</h2><table class="form-table">';
@@ -206,7 +208,12 @@ class STA_Admin
             ['[sta_reviews limit="6" layout="grid" form="yes"]', __('Reviews. type: tour, event, accommodation, visa, agency · layout: grid, slider, list · featured="yes" · on an offer page: that offer', 'seeinside-travel')],
             ['[sta_reviews layout="testimonials" subtitle="Рецензии" title="Што велат нашите патници" limit="9" min_rating="4"]', __('Testimonials carousel: the middle card is raised; per_view="3", autoplay="6" (0 = off), role="Patnik" (text under the name), featured="yes"', 'seeinside-travel')],
             ['[sta_review_form]', __('Only the form for a new review', 'seeinside-travel')],
-            ['[sta_flight_search]', __('Flight search (GOL IBE widget from SeeInside)', 'seeinside-travel')],
+            ['[sta_flight_search]', __('Flight search: the official "GOL IBE Search Form" plugin when installed, otherwise the GOL IBE code / link from SeeInside', 'seeinside-travel')],
+            ['[sta_hotel_finder]', __('Hotels, apartments and villas with filters on the left (type, destination, beach, transport, free dates, stars, board, amenities, price)', 'seeinside-travel')],
+            ['[sta_contacts]', __('All phones (office, mobile with Viber / WhatsApp, emergency), e-mail, address, social networks. show="main" or show="emergency" for one group', 'seeinside-travel')],
+            ['[sta_phone type="mobile"]', __('One phone with Viber / WhatsApp buttons – for the header or footer', 'seeinside-travel')],
+            ['[sta_social]', __('Social network icons (Facebook, Instagram, YouTube…)', 'seeinside-travel')],
+            ['[sta_newsletter]', __('Newsletter (Mailchimp) sign-up button', 'seeinside-travel')],
             ['[sta_booking_status]', __('Customer checks a booking / visa application (number + e-mail)', 'seeinside-travel')],
             ['[sta_section name="program"]', __('One part of the current tour/hotel/event/visa page. Names:', 'seeinside-travel').' '.$sections],
             ['[sta_booking] [sta_program] [sta_gallery] …', __('Short form of the same', 'seeinside-travel')],
@@ -304,6 +311,11 @@ class STA_Admin
             case 'templates_replace':
                 $r = STA_Templates::create_elementor_templates($_GET['do'] === 'templates_replace');
                 self::back('display', isset($r['error']) ? $r['error'] : sprintf(__('Templates ready: %s', 'seeinside-travel'), $r['made'] ? implode(', ', $r['made']) : __('already existed', 'seeinside-travel')), ! isset($r['error']));
+                // no break
+            case 'menu':
+                STA_Templates::create_pages();
+                $r = STA_Site::build_menu();
+                self::back('display', isset($r['error']) ? $r['error'] : sprintf(__('Menu "%1$s" ready (%2$d items). Check it in Appearance → Menus.', 'seeinside-travel'), $r['name'], $r['items']), ! isset($r['error']));
                 // no break
             case 'pages':
                 $r = STA_Templates::create_pages();

@@ -149,6 +149,26 @@ class AccommodationResource extends Resource
                         Forms\Components\Placeholder::make('rooms_hint')->hiddenLabel()->columnSpanFull()
                             ->content(__('Rooms and seasonal prices are entered in the "Rooms & price list" tab after saving.')),
                     ]),
+                    Forms\Components\Section::make(__('Organized transport'))->columns(4)->collapsible()
+                        ->description(__('Bus or plane sold together with the stay – shown on the website as an option and added to the booking as a separate line (also on the invoice).'))
+                        ->schema([
+                            Forms\Components\Toggle::make('transport.enabled')->label(__('Transport offered'))->live()->inline(false),
+                            Forms\Components\Select::make('transport.type')->label(__('Transport'))->options(['bus' => __('Bus'), 'flight' => __('Plane')])->default('bus')
+                                ->visible(fn (Get $get) => (bool) $get('transport.enabled')),
+                            Forms\Components\TextInput::make('transport.price_adult')->label(__('Price per adult (return)'))->numeric()
+                                ->visible(fn (Get $get) => (bool) $get('transport.enabled')),
+                            Forms\Components\TextInput::make('transport.price_child')->label(__('Price per child'))->numeric()
+                                ->visible(fn (Get $get) => (bool) $get('transport.enabled')),
+                            Forms\Components\TextInput::make('transport.free_under')->label(__('Free under (years)'))->numeric()->default(2)
+                                ->visible(fn (Get $get) => (bool) $get('transport.enabled')),
+                            Forms\Components\TextInput::make('transport.child_age_to')->label(__('Child price up to (years)'))->numeric()->default(12)
+                                ->visible(fn (Get $get) => (bool) $get('transport.enabled')),
+                            Forms\Components\Select::make('transport.places')->label(__('Departure places'))->multiple()->columnSpan(2)
+                                ->options(fn () => \App\Models\DeparturePlace::orderBy('sort_order')->get()->mapWithKeys(fn ($p) => [$p->id => $p->tr('name')]))
+                                ->visible(fn (Get $get) => (bool) $get('transport.enabled')),
+                            Forms\Components\TextInput::make('transport.note')->label(__('Note (departure time, meeting point…)'))->columnSpanFull()
+                                ->visible(fn (Get $get) => (bool) $get('transport.enabled')),
+                        ]),
                     Forms\Components\Section::make(__('Source'))->columns(2)->collapsible()->schema([
                         Forms\Components\Select::make('supplier_connection_id')->label(__('Booking system (API)'))
                             ->options(fn (Get $get) => SupplierConnection::query()

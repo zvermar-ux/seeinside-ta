@@ -96,6 +96,29 @@ class AgencyResource extends Resource
                     Forms\Components\KeyValue::make('payment_settings')->label(__('Payment access keys'))->columnSpanFull()
                         ->keyLabel(__('Name'))->valueLabel(__('Value'))->helperText(__('Stored encrypted.')),
                 ]),
+            Forms\Components\Section::make(__('Contacts & social networks (website)'))
+                ->description(__('Shown on the website with [sta_contacts] and [sta_social]: tap to call, Viber and WhatsApp on phones.'))
+                ->collapsible()
+                ->columns(2)
+                ->schema([
+                    Forms\Components\Repeater::make('contact_info.phones')->label(__('Phones'))->columnSpanFull()->columns(6)->defaultItems(0)->reorderable()
+                        ->addActionLabel(__('Add phone'))
+                        ->itemLabel(fn (array $state) => trim(($state['number'] ?? '').' · '.($state['label'] ?? ''), ' ·') ?: null)
+                        ->schema([
+                            Forms\Components\TextInput::make('number')->label(__('Number'))->tel()->required()->placeholder('+389 47 224 155')->columnSpan(2),
+                            Forms\Components\TextInput::make('label')->label(__('Description'))->placeholder(__('e.g. Switchboard (5 lines)'))->columnSpan(2),
+                            Forms\Components\Select::make('type')->label(__('Type'))->default('landline')->selectablePlaceholder(false)
+                                ->options(['landline' => __('Landline'), 'mobile' => __('Mobile'), 'emergency' => __('Emergency (24/7)')]),
+                            Forms\Components\CheckboxList::make('apps')->label(__('Apps'))->options(['viber' => 'Viber', 'whatsapp' => 'WhatsApp'])->columns(2),
+                        ]),
+                    Forms\Components\TextInput::make('contact_info.facebook')->label('Facebook')->url()->placeholder('https://www.facebook.com/...'),
+                    Forms\Components\TextInput::make('contact_info.instagram')->label('Instagram')->url()->placeholder('https://www.instagram.com/...'),
+                    Forms\Components\TextInput::make('contact_info.youtube')->label('YouTube')->url(),
+                    Forms\Components\TextInput::make('contact_info.tiktok')->label('TikTok')->url(),
+                    Forms\Components\TextInput::make('contact_info.linkedin')->label('LinkedIn')->url(),
+                    Forms\Components\TextInput::make('contact_info.newsletter_url')->label(__('Newsletter sign-up link (Mailchimp)'))->url()->placeholder('http://eepurl.com/...'),
+                    Forms\Components\TextInput::make('contact_info.working_hours')->label(__('Working hours'))->placeholder(__('Mon–Fri 08–20, Sat 09–14'))->columnSpanFull(),
+                ]),
             Forms\Components\Section::make(__('Modules'))
                 ->description(__('Parts of the application this agency uses. Turned off = hidden in the admin and on the website.'))
                 ->visible(fn () => $withAdminFields && Auth::user()?->isSuperAdmin())
