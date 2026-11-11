@@ -413,9 +413,18 @@ html.sta-noscroll { overflow: hidden; }
 .sta-pax { border: 1px solid var(--sta-line); border-radius: calc(var(--sta-radius) * .8); padding: .8rem 1rem 0; margin: 0 0 1rem; }
 .sta-pax legend { font-weight: 700; padding: 0 .35rem; }
 .sta-pax-hint { margin: 0 0 .6rem; font-size: .85rem; }
-.sta-pax-row { padding: .5rem 0 .25rem; border-top: 1px dashed var(--sta-line); }
+.sta-pax-row { border-top: 1px dashed var(--sta-line); }
 .sta-pax-row:first-child { border-top: 0; }
-.sta-pax-title { font-size: .8rem; font-weight: 700; color: var(--sta-primary); text-transform: uppercase; letter-spacing: .04em; margin-bottom: .35rem; }
+.sta-pax-title { font-size: .8rem; font-weight: 700; color: var(--sta-primary); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+button.sta-pax-head { display: flex !important; align-items: center; gap: .6rem; width: 100% !important; margin: 0 !important; padding: .75rem 0 !important; border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; color: inherit !important; font: inherit !important; text-align: left; text-transform: none !important; letter-spacing: normal !important; cursor: pointer; min-height: 0 !important; }
+.sta-pax-sum { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .9rem; color: var(--sta-muted); }
+.sta-pax-ok { display: none; width: 1.3rem; height: 1.3rem; border-radius: 50%; background: #16a34a; color: #fff; font-size: .75rem; line-height: 1.3rem; text-align: center; flex-shrink: 0; }
+.sta-pax-row.is-done .sta-pax-ok { display: inline-block; }
+.sta-pax-arrow { width: .55rem; height: .55rem; margin: 0 .3rem; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .2s; flex-shrink: 0; color: var(--sta-muted); }
+.sta-pax-row.is-open .sta-pax-arrow { transform: rotate(-135deg) translateY(-2px); }
+.sta-pax-row:not(.is-open) .sta-pax-body { display: none !important; }
+.sta-pax-body { padding-bottom: .4rem; }
+.sta-pax-row:has(.is-invalid) .sta-pax-title { color: var(--sta-bad); }
 .sta-pax .sta-row { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 
 /* itinerary map */

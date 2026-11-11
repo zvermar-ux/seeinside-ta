@@ -38,6 +38,7 @@
     });
     if (!ok) {
       // say what is missing – a theme may hide checkboxes, so a silent focus is not enough
+      $$('.sta-pax-row', form).forEach(function (r) { if ($('.is-invalid', r)) { r.classList.add('is-open'); var h = $('.sta-pax-head', r); if (h) h.setAttribute('aria-expanded', 'true'); } });
       var miss = $$('.is-invalid', form), consent = miss.some(function (x) { return x.classList.contains('sta-consent'); });
       msg(form, esc(consent && miss.length <= 2 ? T.needConsent : T.needFields), false);
       var first = miss[0]; if (first) { first.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (first.focus) first.focus({ preventScroll: true }); }
@@ -179,8 +180,8 @@
       var ad = Math.max(0, Math.min(20, +(($('[name="adults"]', form) || {}).value || 0))), ch = Math.max(0, Math.min(10, +(children ? children.value : 0) || 0)), n = ad + ch;
       var rows = $$('.sta-pax-row', paxRows);
       for (var k = rows.length; k < n; k++) {
-        var r = document.createElement('div'); r.className = 'sta-pax-row';
-        r.innerHTML = '<div class="sta-pax-title"></div><div class="sta-row">'
+        var r = document.createElement('div'); r.className = 'sta-pax-row' + (k === 0 ? ' is-open' : '');
+        r.innerHTML = '<button type="button" class="sta-pax-head" aria-expanded="' + (k === 0) + '"><span class="sta-pax-title"></span><span class="sta-pax-sum"></span><span class="sta-pax-ok" aria-hidden="true">✓</span><span class="sta-pax-arrow" aria-hidden="true"></span></button><div class="sta-row sta-pax-body">'
           + '<label class="sta-field"><span>' + esc(T.firstName) + ' *</span><input name="passengers[' + k + '][first_name]" required autocomplete="off"></label>'
           + '<label class="sta-field"><span>' + esc(T.lastName) + ' *</span><input name="passengers[' + k + '][last_name]" required autocomplete="off"></label>'
           + '<label class="sta-field"><span>' + esc(T.birthDate) + ' *</span><input type="date" name="passengers[' + k + '][birth_date]" required max="' + new Date().toISOString().slice(0, 10) + '"></label>'
@@ -192,12 +193,35 @@
       $$('.sta-pax-row', paxRows).forEach(function (r, k) {
         if (k >= n) { r.remove(); return; }
         $('.sta-pax-title', r).textContent = T.passenger + ' ' + (k + 1) + ' · ' + (k < ad ? T.adult : T.child);
+        paxSum(r);
       });
+      if (!$('.sta-pax-row.is-open', paxRows) && rows.length === 0) { var f = $('.sta-pax-row', paxRows); if (f) paxOpen(f, true); }
       paxBox.hidden = n === 0;
     }
     form.addEventListener('input', function (e) { if (e.target.name === 'adults' || e.target.name === 'children') pax(); });
     form.addEventListener('change', function (e) { if (e.target.name === 'adults' || e.target.name === 'children') pax(); });
     form.addEventListener('sta:pax', pax);
+    // each passenger folds: the header shows the name when filled in, a click opens / closes the fields
+    function paxOpen(r, open) {
+      r.classList.toggle('is-open', open); $('.sta-pax-head', r).setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    function paxSum(r) {
+      var v = function (n) { var el = $('[name$="[' + n + ']"]', r); return el ? String(el.value || '').trim() : ''; };
+      var bd = v('birth_date'), name = (v('first_name') + ' ' + v('last_name')).trim();
+      $('.sta-pax-sum', r).textContent = name ? name + (bd ? ' · ' + bd.split('-').reverse().join('.') : '') : '';
+      r.classList.toggle('is-done', $$('[required]', r).every(function (el) { return String(el.value || '').trim() && (!el.validity || el.validity.valid); }));
+    }
+    if (paxRows) {
+      paxRows.addEventListener('click', function (e) {
+        var h = e.target.closest('.sta-pax-head'); if (!h) return;
+        var r = h.parentNode, open = !r.classList.contains('is-open');
+        if (open) $$('.sta-pax-row.is-open', paxRows).forEach(function (x) { if (x !== r) paxOpen(x, false); });
+        paxOpen(r, open);
+        if (open) { var first = $('input', r); if (first && !first.value) first.focus({ preventScroll: true }); }
+      });
+      paxRows.addEventListener('input', function (e) { var r = e.target.closest('.sta-pax-row'); if (r) paxSum(r); });
+      paxRows.addEventListener('change', function (e) { var r = e.target.closest('.sta-pax-row'); if (r) paxSum(r); });
+    }
     pax();
 
     // fixed terms: the term sets the dates
