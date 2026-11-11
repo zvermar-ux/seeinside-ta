@@ -98,6 +98,19 @@
     });
   });
 
+  /* ---------- gallery as slider ---------- */
+  $$('[data-sta-gslider]').forEach(function (g) {
+    var track = $('.sta-gs-track', g), items = $$('.sta-gs-item', g), n = $('[data-sta-gs-n]', g), th = g.nextElementSibling && g.nextElementSibling.matches('[data-sta-gs-thumbs]') ? $$('button', g.nextElementSibling) : [];
+    function cur() { return Math.round(track.scrollLeft / (track.clientWidth || 1)); }
+    function go(k) { k = (k + items.length) % items.length; track.scrollTo({ left: k * track.clientWidth }); }
+    $$('.sta-gs-nav', g).forEach(function (b) { b.addEventListener('click', function () { go(cur() + (+b.dataset.dir)); }); });
+    th.forEach(function (b) { b.addEventListener('click', function () { go(+b.dataset.i); }); });
+    track.addEventListener('scroll', function () {
+      var k = cur(); if (n) n.textContent = (k + 1) + ' / ' + items.length;
+      th.forEach(function (b, x) { b.classList.toggle('is-on', x === k); if (x === k) b.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
+    }, { passive: true });
+  });
+
   /* ---------- slider ---------- */
   $$('.sta-slider').forEach(function (s) {
     var slides = $$('.sta-slides > *', s), dots = $$('.sta-dots span', s), i = 0, timer;

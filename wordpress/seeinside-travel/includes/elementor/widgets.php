@@ -117,6 +117,16 @@ class STA_Widget_Section extends STA_Elementor_Widget
         ]);
         $this->add_control('heading', ['label' => __('Own title (empty = default)', 'seeinside-travel'), 'type' => Controls_Manager::TEXT]);
         $this->add_control('hide_heading', ['label' => __('Hide the title', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER]);
+        $this->add_control('g_layout', ['label' => __('Gallery look', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => '', 'separator' => 'before', 'condition' => ['section' => 'gallery'], 'options' => [
+            '' => __('As in Settings → Display', 'seeinside-travel'),
+            'mosaic' => __('Mosaic – big photo + 4 small', 'seeinside-travel'),
+            'mosaic3' => __('Mosaic – big photo + 2 small', 'seeinside-travel'),
+            'slider' => __('Slider – one photo with arrows and thumbnails', 'seeinside-travel'),
+            'grid' => __('Grid – all photos the same size', 'seeinside-travel'),
+        ]]);
+        $this->add_control('g_height', ['label' => __('Height (computer)', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'size_units' => ['px'], 'range' => ['px' => ['min' => 150, 'max' => 900, 'step' => 10]], 'condition' => ['section' => 'gallery']]);
+        $this->add_control('g_height_m', ['label' => __('Height (phone)', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'size_units' => ['px'], 'range' => ['px' => ['min' => 150, 'max' => 700, 'step' => 10]], 'condition' => ['section' => 'gallery']]);
+        $this->add_control('g_gap', ['label' => __('Space between photos', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'size_units' => ['px'], 'range' => ['px' => ['min' => 0, 'max' => 30]], 'condition' => ['section' => 'gallery'], 'selectors' => ['{{WRAPPER}} .sta-gallery' => '--g-gap: {{SIZE}}px']]);
         $this->end_controls_section();
 
         $this->start_controls_section('style', ['label' => __('Colours', 'seeinside-travel'), 'tab' => Controls_Manager::TAB_STYLE]);
@@ -142,6 +152,17 @@ class STA_Widget_Section extends STA_Elementor_Widget
             $args['title'] = false;
         } elseif (! empty($s['heading'])) {
             $args['title'] = $s['heading'];
+        }
+        if (($s['section'] ?? '') === 'gallery') {
+            if (! empty($s['g_layout'])) {
+                $args['layout'] = $s['g_layout'];
+            }
+            if (! empty($s['g_height']['size'])) {
+                $args['height'] = (int) $s['g_height']['size'];
+            }
+            if (! empty($s['g_height_m']['size'])) {
+                $args['height_mobile'] = (int) $s['g_height_m']['size'];
+            }
         }
         $html = STA_Render::section($s['section'] ?: 'facts', $postId, $args);
         if (! empty($args['title']) && is_string($args['title'])) {

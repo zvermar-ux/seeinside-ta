@@ -100,7 +100,7 @@ class STA_Frontend
 
     public static function shortcodes(): void
     {
-        add_shortcode('sta_section', fn ($a) => STA_Render::section(sanitize_key($a['name'] ?? 'layout'), ! empty($a['id']) ? (int) $a['id'] : null, self::title_arg($a)));
+        add_shortcode('sta_section', fn ($a) => STA_Render::section(sanitize_key($a['name'] ?? 'layout'), ! empty($a['id']) ? (int) $a['id'] : null, self::title_arg((array) $a)));
         foreach (array_keys(STA_Render::SECTIONS) as $name) {
             add_shortcode('sta_'.$name, fn ($a) => STA_Render::section($name, ! empty($a['id']) ? (int) $a['id'] : null, self::title_arg((array) $a)));
         }
@@ -116,7 +116,15 @@ class STA_Frontend
 
     protected static function title_arg(array $a): array
     {
-        return isset($a['title']) ? ['title' => in_array($a['title'], ['0', 'no', 'false'], true) ? false : $a['title']] : [];
+        $out = isset($a['title']) ? ['title' => in_array($a['title'], ['0', 'no', 'false'], true) ? false : $a['title']] : [];
+        // gallery look: layout="slider|mosaic|mosaic3|grid" height="500" height_mobile="280"
+        foreach (['layout', 'height', 'height_mobile'] as $k) {
+            if (isset($a[$k]) && $a[$k] !== '') {
+                $out[$k] = sanitize_key((string) $a[$k]);
+            }
+        }
+
+        return $out;
     }
 
     /** Grid of cards (tours / hotels / events / visas) */

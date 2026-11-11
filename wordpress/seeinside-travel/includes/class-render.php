@@ -222,10 +222,40 @@ class STA_Render
         if (! $ids) {
             return '';
         }
-        $html = '<div class="sta-gallery sta-gallery-'.min(5, count($ids)).'" data-sta-lightbox>';
+        // look: Settings → Display → Gallery, or per widget / shortcode (layout="slider" height="500" height_mobile="280")
+        $layout = sanitize_key((string) ($args['layout'] ?? sta_setting('gallery_layout', 'mosaic')));
+        $layout = in_array($layout, ['mosaic', 'mosaic3', 'slider', 'grid'], true) ? $layout : 'mosaic';
+        $h = (int) ($args['height'] ?? sta_setting('gallery_height', 420));
+        $hm = (int) ($args['height_mobile'] ?? sta_setting('gallery_height_mobile', 260));
+        $style = ($h >= 120 ? '--g-h:'.$h.'px;' : '').($hm >= 120 ? '--g-hm:'.$hm.'px;' : '');
+        $n = count($ids);
+
+        if ($layout === 'slider') {
+            $html = '<div class="sta-gallery-slider" data-sta-lightbox data-sta-gslider style="'.esc_attr($style).'"><div class="sta-gs-track">';
+            foreach ($ids as $i => $id) {
+                $html .= '<a href="'.esc_url(wp_get_attachment_image_url($id, 'full')).'" class="sta-gs-item">'.wp_get_attachment_image($id, 'large', false, ['loading' => $i ? 'lazy' : 'eager']).'</a>';
+            }
+            $html .= '</div>'.($n > 1 ? '<button type="button" class="sta-gs-nav sta-gs-prev" data-dir="-1" aria-label="‹">‹</button><button type="button" class="sta-gs-nav sta-gs-next" data-dir="1" aria-label="›">›</button><span class="sta-gs-n" data-sta-gs-n>1 / '.$n.'</span>' : '').'</div>';
+            if ($n > 1) {
+                $html .= '<div class="sta-gs-thumbs" data-sta-gs-thumbs>';
+                foreach ($ids as $i => $id) {
+                    $html .= '<button type="button" data-i="'.$i.'"'.($i === 0 ? ' class="is-on"' : '').'>'.wp_get_attachment_image($id, 'thumbnail', false, ['loading' => 'lazy']).'</button>';
+                }
+                $html .= '</div>';
+            }
+
+            return $html;
+        }
+        $show = $layout === 'grid' ? $n : ($layout === 'mosaic3' ? 3 : 5);
+        $html = '<div class="sta-gallery sta-gallery--'.$layout.' sta-gallery-'.min($show, $n).'" data-sta-lightbox style="'.esc_attr($style).'">';
         foreach ($ids as $i => $id) {
             $full = wp_get_attachment_image_url($id, 'full');
-            $html .= '<a href="'.esc_url($full).'" class="sta-gallery-item'.($i > 4 ? ' sta-hidden' : '').'">'.wp_get_attachment_image($id, $i === 0 ? 'large' : 'medium_large', false, ['loading' => $i ? 'lazy' : 'eager']).($i === 4 && count($ids) > 5 ? '<span class="sta-more">+'.(count($ids) - 5).'</span>' : '').'</a>';
+            $more = $i === $show - 1 && $n > $show ? '<span class="sta-more">+'.($n - $show).'</span>' : '';
+            $html .= '<a href="'.esc_url($full).'" class="sta-gallery-item'.($i >= $show ? ' sta-hidden' : '').'">'.wp_get_attachment_image($id, $i === 0 ? 'large' : 'medium_large', false, ['loading' => $i ? 'lazy' : 'eager']).$more.'</a>';
+        }
+        // phones: the first photo with the number of all photos
+        if ($layout !== 'grid' && $n > 1) {
+            $html .= '<span class="sta-gallery-all">'.sta_icon('camera').' '.(int) $n.'</span>';
         }
 
         return $html.'</div>';

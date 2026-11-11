@@ -182,6 +182,15 @@ class STA_Admin
             .esc_html(! empty($chat['enabled']) ? __('The chat is turned on in SeeInside (AI & Live chat → Live chat settings).', 'seeinside-travel') : __('The chat is turned off in SeeInside. Turn it on in AI & Live chat → Live chat settings.', 'seeinside-travel')).'</p></td></tr>';
         echo '<tr><th>'.esc_html__('Offers per page', 'seeinside-travel').'</th><td><input type="number" min="3" max="60" name="per_page" value="'.esc_attr($s['per_page'] ?? 12).'"></td></tr>';
         echo '<tr><th>'.esc_html__('Colours', 'seeinside-travel').'</th><td><label>'.esc_html__('Main', 'seeinside-travel').' <input type="color" name="color_primary" value="'.esc_attr($s['color_primary'] ?? '#0ea5e9').'"></label> &nbsp; <label>'.esc_html__('Accent (badges)', 'seeinside-travel').' <input type="color" name="color_accent" value="'.esc_attr($s['color_accent'] ?? '#f97316').'"></label><p class="description">'.esc_html__('Elementor widgets also have their own colour settings.', 'seeinside-travel').'</p></td></tr>';
+        $gl = $s['gallery_layout'] ?? 'mosaic';
+        $gopts = ['mosaic' => __('Mosaic – big photo + 4 small', 'seeinside-travel'), 'mosaic3' => __('Mosaic – big photo + 2 small', 'seeinside-travel'), 'slider' => __('Slider – one photo with arrows and thumbnails', 'seeinside-travel'), 'grid' => __('Grid – all photos the same size', 'seeinside-travel')];
+        echo '<tr><th>'.esc_html__('Photo gallery', 'seeinside-travel').'</th><td><select name="gallery_layout">';
+        foreach ($gopts as $k => $l) {
+            echo '<option value="'.esc_attr($k).'"'.selected($gl, $k, false).'>'.esc_html($l).'</option>';
+        }
+        echo '</select><p><label>'.esc_html__('Height (computer)', 'seeinside-travel').' <input type="number" min="150" max="900" step="10" name="gallery_height" value="'.esc_attr($s['gallery_height'] ?? 420).'" style="width:90px"> px</label> &nbsp; '
+            .'<label>'.esc_html__('Height (phone)', 'seeinside-travel').' <input type="number" min="150" max="700" step="10" name="gallery_height_mobile" value="'.esc_attr($s['gallery_height_mobile'] ?? 260).'" style="width:90px"> px</label></p>'
+            .'<p class="description">'.esc_html__('For all offers. In an Elementor template the "Travel: section" widget (Gallery) can set its own look and height.', 'seeinside-travel').'</p></td></tr>';
         echo '</table></div>';
 
         echo '<div class="sta-card"><h2>'.esc_html__('Addresses (URL)', 'seeinside-travel').'</h2><table class="form-table">';
@@ -269,6 +278,9 @@ class STA_Admin
             $s['color_accent'] = sanitize_hex_color(wp_unslash($_POST['color_accent'] ?? '')) ?: '';
             $s['delete_mode'] = ($_POST['delete_mode'] ?? '') === 'delete' ? 'delete' : 'trash';
             $s['chat_off'] = ! empty($_POST['chat_off']);
+            $s['gallery_layout'] = in_array($_POST['gallery_layout'] ?? '', ['mosaic', 'mosaic3', 'slider', 'grid'], true) ? $_POST['gallery_layout'] : 'mosaic';
+            $s['gallery_height'] = max(150, min(900, (int) ($_POST['gallery_height'] ?? 420)));
+            $s['gallery_height_mobile'] = max(150, min(700, (int) ($_POST['gallery_height_mobile'] ?? 260)));
             $s['slugs'] = array_map('sanitize_title', array_intersect_key((array) wp_unslash($_POST['slugs'] ?? []), STA_Schema::post_types()));
             update_option('sta_settings', $s);
             if ($old != $s['slugs']) {

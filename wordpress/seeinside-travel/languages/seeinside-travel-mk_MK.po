@@ -2731,6 +2731,33 @@ msgstr "уште"
 msgid "Age"
 msgstr "Возраст"
 
+msgid "Mosaic – big photo + 4 small"
+msgstr "Мозаик – голема слика + 4 мали"
+
+msgid "Mosaic – big photo + 2 small"
+msgstr "Мозаик – голема слика + 2 мали"
+
+msgid "Slider – one photo with arrows and thumbnails"
+msgstr "Слајдер – една слика со стрелки и мали слики"
+
+msgid "Grid – all photos the same size"
+msgstr "Мрежа – сите слики со иста големина"
+
+msgid "Photo gallery"
+msgstr "Галерија со слики"
+
+msgid "For all offers. In an Elementor template the \"Travel: section\" widget (Gallery) can set its own look and height."
+msgstr "За сите понуди. Во Elementor шаблон, виџетот „Travel: section“ (Галерија) може да има свој изглед и висина."
+
+msgid "Gallery look"
+msgstr "Изглед на галеријата"
+
+msgid "As in Settings → Display"
+msgstr "Како во Поставки → Приказ"
+
+msgid "Space between photos"
+msgstr "Простор меѓу сликите"
+
 msgid "%d place to stay"
 msgid_plural "%d places to stay"
 msgstr[0] "%d сместување"
