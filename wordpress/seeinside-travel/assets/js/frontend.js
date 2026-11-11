@@ -358,7 +358,8 @@
   });
 
   /* ---------- availability calendar + quick booking (pick arrival → departure, like Booking) ---------- */
-  $$('[data-sta-calendar]').forEach(function (cal) {
+  function initCal(cal) {
+    if (cal.dataset.ready) return; cal.dataset.ready = 1;
     var grid = $('.sta-cal-grid', cal), label = $('.sta-cal-month', cal), room = $('.sta-cal-room', cal), cache = {};
     var pickable = cal.classList.contains('is-pickable'), pickBox = $('[data-sta-cal-pick]', cal), hint = $('[data-sta-cal-hint]', cal);
     var dlg = $('[data-sta-quick-dialog]', cal), qform = dlg && $('form', dlg), cur = cal.dataset.currency || 'EUR';
@@ -458,6 +459,37 @@
     // more people → new price (and the room may not fit)
     if (qform) ['adults', 'children'].forEach(function (n) { $('[name="' + n + '"]', qform).addEventListener('change', function () { if (start && end) priceFor(start, end).then(function () { fillSum(); }); }); });
     load();
+  }
+  $$('[data-sta-calendar]:not([data-lazy])').forEach(initCal);
+
+  /* ---------- room details: photos, description, amenities, prices, availability ---------- */
+  document.addEventListener('click', function (e) {
+    var o = e.target.closest('[data-sta-room-open]');
+    if (o) {
+      var dl = $('[data-sta-room-dlg="' + o.dataset.staRoomOpen + '"]');
+      if (!dl) return;
+      e.preventDefault();
+      dl.showModal ? dl.showModal() : dl.setAttribute('open', '');
+      var c = $('[data-sta-calendar][data-lazy]', dl); if (c) initCal(c);
+      return;
+    }
+    var d = e.target.closest('[data-sta-room-dlg]');
+    if (!d) return;
+    if (e.target === d || e.target.closest('[data-close]')) { d.close ? d.close() : d.removeAttribute('open'); return; }
+    var st = e.target.closest('[data-sta-rg-step],[data-sta-rg-i]');
+    if (st) {
+      var thumbs = $$('[data-sta-rg-i]', d), n = thumbs.length; if (!n) return;
+      var cur = thumbs.findIndex(function (t) { return t.classList.contains('is-on'); });
+      var k = st.dataset.staRgI !== undefined ? +st.dataset.staRgI : (cur + (+st.dataset.staRgStep) + n) % n;
+      thumbs.forEach(function (t, x) { t.classList.toggle('is-on', x === k); });
+      $('[data-sta-rg-img]', d).src = $('img', thumbs[k]).src;
+      var lab = $('[data-sta-rg-n]', d); if (lab) lab.textContent = (k + 1) + ' / ' + n;
+      thumbs[k].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    var d = $('[data-sta-room-dlg][open]'); if (!d || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    var b = $('[data-sta-rg-step="' + (e.key === 'ArrowLeft' ? -1 : 1) + '"]', d); if (b) b.click();
   });
 
   /* ---------- fixed terms table (15–22.05 …): click a price → quick booking ---------- */

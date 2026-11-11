@@ -2689,6 +2689,48 @@ msgstr "до 300 m"
 msgid "up to 500 m"
 msgstr "до 500 m"
 
+msgid "General"
+msgstr "Општо"
+
+msgid "In the rooms"
+msgstr "Во собите"
+
+msgid "Pool & wellness"
+msgstr "Базен и велнес"
+
+msgid "Food & drinks"
+msgstr "Храна и пијалоци"
+
+msgid "For children"
+msgstr "За деца"
+
+msgid "Sport"
+msgstr "Спорт"
+
+msgid "Room details"
+msgstr "Детали за собата"
+
+msgid "Details, photos & availability"
+msgstr "Детали, слики и достапност"
+
+msgid "Capacity"
+msgstr "Капацитет"
+
+msgid "Choose this room"
+msgstr "Избери ја оваа соба"
+
+msgid "Ski lift"
+msgstr "Ски-лифт"
+
+msgid "Airport"
+msgstr "Аеродром"
+
+msgid "more"
+msgstr "уште"
+
+msgid "Age"
+msgstr "Возраст"
+
 msgid "%d place to stay"
 msgid_plural "%d places to stay"
 msgstr[0] "%d сместување"

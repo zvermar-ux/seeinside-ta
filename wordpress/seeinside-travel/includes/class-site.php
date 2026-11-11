@@ -10,6 +10,15 @@ class STA_Site
     public static function init(): void
     {
         add_action('template_redirect', [self::class, 'preview'], 1);
+        // SEO title / description entered in SeeInside
+        add_filter('document_title_parts', [self::class, 'seo_title_parts'], 20);
+        add_action('wp_head', [self::class, 'seo_head'], 2);
+        add_filter('wpseo_title', fn ($t) => self::seo('title') ?: $t);
+        add_filter('wpseo_metadesc', fn ($t) => self::seo('description') ?: $t);
+        add_filter('wpseo_opengraph_title', fn ($t) => self::seo('title') ?: $t);
+        add_filter('wpseo_opengraph_desc', fn ($t) => self::seo('description') ?: $t);
+        add_filter('rank_math/frontend/title', fn ($t) => self::seo('title') ?: $t);
+        add_filter('rank_math/frontend/description', fn ($t) => self::seo('description') ?: $t);
         add_action('init', function () {
             add_shortcode('sta_contacts', [self::class, 'sc_contacts']);
             add_shortcode('sta_social', [self::class, 'sc_social']);
@@ -57,6 +66,54 @@ class STA_Site
             .'<title>'.esc_html__('Preview', 'seeinside-travel').'</title><style>body{font:16px/1.6 system-ui,sans-serif;display:grid;place-items:center;min-height:90vh;margin:0;background:#f6f7f9;color:#1f2937}div{max-width:520px;background:#fff;padding:28px 32px;border-radius:14px;box-shadow:0 6px 30px rgba(0,0,0,.08)}</style></head><body><div><h2>'
             .esc_html__('Preview', 'seeinside-travel').'</h2><p>'.esc_html($msg).'</p><p><a href="'.esc_url(home_url('/')).'">'.esc_html(get_bloginfo('name')).'</a></p></div></body></html>';
         exit;
+    }
+
+    /* ======================== SEO ======================== */
+
+    /** SEO title / description of the offer shown (from SeeInside), or the short description */
+    public static function seo(string $what): string
+    {
+        if (! is_singular() || ! ($id = get_queried_object_id()) || strpos((string) get_post_type($id), 'sta_') !== 0) {
+            return '';
+        }
+        $d = sta_data($id);
+        $v = trim((string) sta_t($d['seo'][$what] ?? null));
+        if ($v === '' && $what === 'description') {
+            $v = wp_trim_words(wp_strip_all_tags((string) sta_t($d['short_description'] ?? null) ?: (string) sta_t($d['description'] ?? ($d['overview'] ?? null))), 28, '…');
+        }
+
+        return $v;
+    }
+
+    protected static function seo_plugin(): bool
+    {
+        return defined('WPSEO_VERSION') || class_exists('RankMath') || defined('AIOSEO_VERSION') || defined('SEOPRESS_VERSION');
+    }
+
+    public static function seo_title_parts(array $parts): array
+    {
+        if (! self::seo_plugin() && ($t = self::seo('title'))) {
+            $parts['title'] = $t;
+        }
+
+        return $parts;
+    }
+
+    public static function seo_head(): void
+    {
+        if (self::seo_plugin() || ! is_singular()) {
+            return;
+        }
+        $desc = self::seo('description');
+        if ($desc === '') {
+            return;
+        }
+        $id = get_queried_object_id();
+        $img = get_the_post_thumbnail_url($id, 'large');
+        echo '<meta name="description" content="'.esc_attr($desc).'">'."\n"
+            .'<meta property="og:type" content="website"><meta property="og:title" content="'.esc_attr(self::seo('title') ?: get_the_title($id)).'">'
+            .'<meta property="og:description" content="'.esc_attr($desc).'"><meta property="og:url" content="'.esc_url(get_permalink($id)).'">'
+            .($img ? '<meta property="og:image" content="'.esc_url($img).'">' : '')."\n";
     }
 
     /* ======================== contacts & social ======================== */

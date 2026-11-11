@@ -155,12 +155,72 @@ function sta_icon(string $name): string
         'wave' => '<path d="M2 12c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 17c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/>',
         'phone' => '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
         'mail' => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+        'camera' => '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.5"/>',
         'filter' => '<path d="M4 5h16M7 12h10M10 19h4"/>',
         'home' => '<path d="m3 11 9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
     ];
     $path = $icons[$name] ?? $icons['check'];
 
     return '<svg class="sta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$path.'</svg>';
+}
+
+/** Icon of an amenity (by its key in SeeInside; own amenities get one by their heroicon name or a check mark) */
+function sta_amenity_icon(string $key, ?string $hero = null): string
+{
+    $p = [
+        'wifi' => '<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.8 16a5 5 0 0 1 6.4 0"/><circle cx="12" cy="19.3" r=".9" fill="currentColor"/>',
+        'parking' => '<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M10 17V7h3a3 3 0 0 1 0 6h-3"/>',
+        'kitchen' => '<path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11M17 21V3c-2 1-3 4-3 7h3"/>',
+        'air_conditioning' => '<path d="M12 2v20M4.9 6.5l14.2 11M19.1 6.5 4.9 17.5M9.5 3.5 12 6l2.5-2.5M9.5 20.5 12 18l2.5 2.5"/>',
+        'fitness' => '<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
+        'jacuzzi' => '<path d="M3 13h18v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4zM7 13V6a2 2 0 0 1 4 0M9 9.5c.8-.8.8-1.7 0-2.5M14 9.5c.8-.8.8-1.7 0-2.5M18 9.5c.8-.8.8-1.7 0-2.5"/>',
+        'kids_club' => '<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/>',
+        'pool' => '<path d="M2 18c2 0 2-1.5 4-1.5s2 1.5 4 1.5 2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5M8 15V5a2 2 0 0 1 4 0M16 15V5a2 2 0 0 0-4 0M8 8h8M8 12h8"/>',
+        'indoor_pool' => '<path d="m3 9 9-6 9 6M2 19c2 0 2-1.5 4-1.5s2 1.5 4 1.5 2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5M9 16V9M15 16V9M9 12h6"/>',
+        'sauna' => '<path d="M8 21c-2-2-2-4 0-6s2-4 0-6M12 21c-2-2-2-4 0-6s2-4 0-6M16 21c-2-2-2-4 0-6s2-4 0-6"/>',
+        'spa' => '<path d="M12 20c-4.5 0-8-3-8-7 3 0 6 1.5 8 4 2-2.5 5-4 8-4 0 4-3.5 7-8 7ZM12 17c-2-2.5-2-6.5 0-10 2 3.5 2 7.5 0 10Z"/>',
+        'ski_shuttle' => '<rect x="4" y="3" width="16" height="15" rx="2"/><path d="M4 11h16M8 18v2M16 18v2"/>',
+        'ski_storage' => '<path d="M7 21 17 3M11 21 21 3M4 17l4 2M8 17l4 2"/>',
+        'airport_transfer' => '<path d="M10.5 13.5 3 11l1.5-1.5 7 1 4-4a2 2 0 0 1 3 3l-4 4 1 7L19 22l-2.5-7.5"/>',
+        'restaurant' => '<path d="M7 3v8a2 2 0 0 0 2 2v8M5 3v5M9 3v5M17 21V3a4 4 0 0 0-3 4v7h3"/>',
+        'bar' => '<path d="M5 4h14l-7 8zM12 12v8M8 20h8"/>',
+        'beach' => '<path d="M3 20h18M12 20V9M4 9a8 8 0 0 1 16 0zM12 4V2"/>',
+        'sunbeds' => '<path d="M3 17h18M5 17l2-5h11l2 5M7 12l-2-5M15 3 9 9"/>',
+        'balcony' => '<path d="M4 12h16v8H4zM8 12v8M12 12v8M16 12v8M7 12V4h10v8"/>',
+        'sea_view' => '<path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+        'tv' => '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/>',
+        'fridge' => '<rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M6 10h12M9 6v2M9 13v3"/>',
+        'elevator' => '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="m9 9 3-3 3 3M9 15l3 3 3-3"/>',
+        'reception_24h' => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+        'pets' => '<circle cx="5.5" cy="11" r="2"/><circle cx="9" cy="6.5" r="2"/><circle cx="15" cy="6.5" r="2"/><circle cx="18.5" cy="11" r="2"/><path d="M12 12c-3 0-5 3.5-5 5.5S9 20 12 19.5 17 19.5 17 17.5 15 12 12 12Z"/>',
+        'accessible' => '<circle cx="11" cy="4.5" r="1.8"/><path d="M11 8v6h5l2 5M11 11h5M8.5 10.5a5.5 5.5 0 1 0 6.8 8"/>',
+        'playground' => '<path d="M4 21V8l4-4 4 4v13M4 13h8M12 11l8 10M16 3v5"/>',
+        'laundry' => '<rect x="4" y="2.5" width="16" height="19" rx="2"/><circle cx="12" cy="13" r="4.5"/><path d="M7 6h.01M10 6h.01"/>',
+    ];
+    $byHero = ['heroicon-o-wifi' => 'wifi', 'heroicon-o-truck' => 'ski_shuttle', 'heroicon-o-fire' => 'sauna', 'heroicon-o-sun' => 'beach', 'heroicon-o-tv' => 'tv',
+        'heroicon-o-home' => 'balcony', 'heroicon-o-eye' => 'sea_view', 'heroicon-o-clock' => 'reception_24h', 'heroicon-o-heart' => 'pets', 'heroicon-o-user' => 'accessible',
+        'heroicon-o-face-smile' => 'kids_club', 'heroicon-o-paper-airplane' => 'airport_transfer', 'heroicon-o-cake' => 'restaurant', 'heroicon-o-beaker' => 'bar',
+        'heroicon-o-lifebuoy' => 'pool', 'heroicon-o-sparkles' => 'spa', 'heroicon-o-cube' => 'fridge', 'heroicon-o-bolt' => 'fitness', 'heroicon-o-arrows-up-down' => 'elevator'];
+    $path = $p[$key] ?? $p[$byHero[$hero ?? ''] ?? ''] ?? '<path d="m5 12 4.5 4.5L19 7"/>';
+
+    return '<svg class="sta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$path.'</svg>';
+}
+
+/** Amenities as icon + name (hotel or room) */
+function sta_amenities_html(array $list, string $class = ''): string
+{
+    $h = '';
+    foreach ($list as $a) {
+        if (is_string($a)) {
+            $a = ['key' => $a, 'name' => ucfirst(str_replace('_', ' ', $a))];
+        }
+        $name = sta_t($a['name'] ?? '');
+        if ($name !== '') {
+            $h .= '<li>'.sta_amenity_icon((string) ($a['key'] ?? ''), $a['icon'] ?? null).'<span>'.esc_html($name).'</span></li>';
+        }
+    }
+
+    return $h ? '<ul class="sta-amen '.esc_attr($class).'">'.$h.'</ul>' : '';
 }
 
 /** "push": the app sends everything (this server cannot reach the app); "pull": the plugin reads the API */

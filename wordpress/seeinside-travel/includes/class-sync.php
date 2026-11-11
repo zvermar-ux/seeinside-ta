@@ -488,7 +488,7 @@ class STA_Sync
                         'room_type' => $r['room_type']['value'] ?? '', 'board' => $r['board']['value'] ?? '',
                         'max_adults' => $r['max_adults'], 'max_children' => $r['max_children'], 'beds' => $r['beds'] ?? '', 'size_m2' => $r['size_m2'] ?? null,
                         'description' => $mk($r['description']), 'description_en' => $en($r['description']),
-                        'room_amenities' => implode(', ', $r['amenities'] ?? []), 'price' => $r['price'], 'price_type' => $r['price_type'],
+                        'room_amenities' => implode(', ', array_map(fn ($a) => is_array($a) ? $mk($a['name'] ?? '') : (string) $a, $r['amenities'] ?? [])), 'price' => $r['price'], 'price_type' => $r['price_type'],
                         'rates' => array_map(fn ($x) => [
                             'from' => $x['from'], 'to' => $x['to'], 'price' => $x['price'], 'price_type' => $x['price_type'],
                             'min_nights' => $x['min_nights'], 'is_last_minute' => ! empty($x['is_last_minute']),

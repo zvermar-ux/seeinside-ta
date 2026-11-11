@@ -226,11 +226,24 @@ class CatalogPresenter
             'price_regular' => $a->price_regular !== null && (float) $a->price_regular > (float) $a->price_from ? (float) $a->price_regular : null,
             'currency' => $a->currency,
             'image' => static::url($a->cover_image),
-            'amenities' => $a->amenities->map(fn ($m) => ['key' => $m->key, 'name' => $m->trAll('name'), 'icon' => $m->icon])->values()->all(),
+            'amenities' => $a->amenities->map(fn ($m) => ['key' => $m->key, 'name' => $m->trAll('name'), 'icon' => $m->icon, 'category' => $m->category])->values()->all(),
             'is_featured' => $a->is_featured,
             'promotions' => $a->promoArray(),
             'updated_at' => $a->updated_at?->toIso8601String(),
         ];
+    }
+
+    /** Room amenities (stored as keys) with names and icons, in the order of the amenity list */
+    protected static function roomAmenities(array $keys): array
+    {
+        static $all = null;
+        if (! $keys) {
+            return [];
+        }
+        // a plain collection: Eloquent's only() would match primary keys, not amenity keys
+        $all ??= collect(\App\Models\Amenity::query()->where('is_active', true)->orderBy('sort_order')->get()->keyBy('key')->all());
+
+        return $all->only(array_values($keys))->map(fn ($m) => ['key' => $m->key, 'name' => $m->trAll('name'), 'icon' => $m->icon, 'category' => $m->category])->values()->all();
     }
 
     public static function accommodation(Accommodation $a): array
@@ -258,7 +271,8 @@ class CatalogPresenter
                 'beds' => $r->beds,
                 'size_m2' => $r->size_m2,
                 'description' => $r->trAll('description'),
-                'amenities' => array_values($r->room_amenities ?? []),
+                'amenities' => static::roomAmenities($r->room_amenities ?? []),
+                'units' => $r->units ? (int) $r->units : null,
                 'price' => static::money($r->price),
                 'price_type' => $r->price_type,
                 'rates' => $r->rates->filter(fn ($x) => $x->date_to->gte(today()))->map(fn ($x) => [

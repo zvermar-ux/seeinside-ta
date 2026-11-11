@@ -508,3 +508,48 @@ body.sta-has-cta .sta-chat { bottom: 92px; }
 .sta-newsletter { margin-top: 1rem; } .sta-newsletter p { margin: 0 0 .5rem; color: var(--sta-muted); font-size: .92rem; }
 .sta-contacts li > a > span b { white-space: nowrap; font-size: 1.02rem; }
 .sta-contacts li > a, .sta-ct-hours { font-size: .95rem; }
+
+/* ---------- amenities with icons ---------- */
+.sta-amen { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: .55rem 1.2rem; }
+.sta-amen li { display: flex; align-items: center; gap: .6rem; font-size: .95rem; color: var(--sta-ink); }
+.sta-amen .sta-ico { width: 22px; height: 22px; flex-shrink: 0; color: var(--sta-primary); }
+.sta-amen-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 1.4rem 2rem; }
+.sta-amen-group h4 { margin: 0 0 .6rem; font-size: 1rem; }
+.sta-amen-group .sta-amen { grid-template-columns: 1fr; }
+.sta-amen-chips { display: inline-flex; flex-wrap: wrap; gap: .35rem; margin: .2rem 0 .3rem; }
+.sta-amen-chips li { font-size: .82rem; gap: .3rem; padding: .2rem .55rem; border-radius: 999px; background: var(--sta-soft); border: 1px solid var(--sta-line); color: var(--sta-muted); }
+.sta-amen-chips .sta-ico { width: 15px; height: 15px; }
+.sta-amen-more { font-size: .82rem; color: var(--sta-muted); margin-left: .35rem; }
+
+/* ---------- room card + details dialog ---------- */
+button.sta-room-img { position: relative; display: block; padding: 0 !important; margin: 0; border: 0 !important; border-radius: 0 !important; background: none !important; cursor: zoom-in; min-height: 0 !important; }
+.sta-room-count { position: absolute; right: .5rem; bottom: .5rem; display: inline-flex; align-items: center; gap: .25rem; padding: .15rem .5rem; border-radius: 999px; background: rgba(15, 23, 42, .7); color: #fff; font-size: .78rem; }
+.sta-room-count .sta-ico { width: 13px; height: 13px; }
+.sta-room-desc { margin: .3rem 0 .4rem; }
+button.sta-room-more { display: inline-block; margin-top: .35rem; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; color: var(--sta-primary) !important; font: inherit; font-size: .92rem !important; font-weight: 600; cursor: pointer; min-height: 0 !important; text-transform: none !important; letter-spacing: normal !important; }
+button.sta-room-more:hover { text-decoration: underline; }
+.sta-room-side .sta-btn { width: 100%; justify-content: center; text-align: center; }
+.sta-room-dlg { width: min(880px, calc(100vw - 1.5rem)); }
+.sta-rg-main { position: relative; background: #0f172a; }
+.sta-rg-main img { display: block; width: 100% !important; height: min(52vh, 460px) !important; object-fit: cover; }
+button.sta-rg-nav { position: absolute !important; top: 50%; transform: translateY(-50%); width: 2.6rem !important; height: 2.6rem !important; padding: 0 !important; border: 0 !important; border-radius: 50% !important; background: rgba(255, 255, 255, .92) !important; color: #111827 !important; font-size: 1.6rem !important; line-height: 1 !important; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, .2) !important; min-height: 0 !important; }
+.sta-rg-prev { left: .7rem; } .sta-rg-next { right: .7rem; }
+.sta-rg-n { position: absolute; left: .8rem; bottom: .7rem; padding: .15rem .55rem; border-radius: 999px; background: rgba(15, 23, 42, .7); color: #fff; font-size: .8rem; }
+.sta-rg-thumbs { display: flex; gap: .4rem; padding: .5rem; overflow-x: auto; background: #f8fafc; scrollbar-width: thin; }
+.sta-rg-thumbs button { flex: 0 0 auto; width: 84px; height: 60px; padding: 0 !important; border: 2px solid transparent !important; border-radius: 8px !important; overflow: hidden; background: none !important; cursor: pointer; opacity: .7; min-height: 0 !important; }
+.sta-rg-thumbs button.is-on { border-color: var(--sta-primary) !important; opacity: 1; }
+.sta-rg-thumbs img { width: 100% !important; height: 100% !important; object-fit: cover; display: block; }
+.sta-room-dlg-body { padding: 1.2rem 1.4rem 1.4rem; }
+.sta-room-dlg-body h3 { margin: 0 0 .8rem; font-size: 1.35rem; }
+.sta-room-dlg-body h4 { margin: 1.3rem 0 .6rem; font-size: 1.05rem; }
+.sta-room-facts { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); gap: .6rem; }
+.sta-room-facts li { display: flex; gap: .5rem; align-items: flex-start; padding: .55rem .7rem; border-radius: 10px; background: var(--sta-soft); }
+.sta-room-facts .sta-ico { width: 20px; height: 20px; color: var(--sta-primary); flex-shrink: 0; margin-top: .1rem; }
+.sta-room-facts span { display: flex; flex-direction: column; font-size: .92rem; font-weight: 600; }
+.sta-room-facts small { font-weight: 400; color: var(--sta-muted); font-size: .78rem; }
+.sta-room-dlg .sta-cal { margin-top: .3rem; }
+.sta-room-dlg-acts { position: sticky; bottom: -1.4rem; margin: 1.2rem -1.4rem -1.4rem; padding: .9rem 1.4rem; background: #fff; border-top: 1px solid var(--sta-line); display: flex; justify-content: flex-end; }
+@media (max-width: 600px) { .sta-room-dlg { width: 100vw; max-height: 100vh; border-radius: 0; } .sta-rg-main img { height: 260px !important; } .sta-room-dlg-body { padding: 1rem; } .sta-room-dlg-acts { margin: 1rem -1rem -1rem; bottom: -1rem; } .sta-room-dlg-acts .sta-btn { width: 100%; } }
+.sta-room-body button.sta-room-more { display: block; }
+.sta-room-desc { font-size: .95rem; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.sta-dialog-close:focus:not(:focus-visible) { outline: none !important; }

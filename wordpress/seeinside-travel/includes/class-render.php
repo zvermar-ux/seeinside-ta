@@ -103,11 +103,16 @@ class STA_Render
             $add('users', __('Performer', 'seeinside-travel'), $d['performer'] ?? null);
             $add('clock', __('Doors open', 'seeinside-travel'), $d['doors_open'] ?? null);
             $add('ticket', __('Category', 'seeinside-travel'), sta_t($d['category']['label'] ?? null));
+            $add('clock', __('Ends', 'seeinside-travel'), ! empty($d['ends_at']) ? sta_date($d['ends_at'], true) : null);
+            $add('users', __('Organizer', 'seeinside-travel'), $d['organizer'] ?? null);
+            $add('shield', __('Age', 'seeinside-travel'), ! empty($d['age_restriction']) ? (is_numeric($d['age_restriction']) ? $d['age_restriction'].'+' : $d['age_restriction']) : null);
         } elseif ($type === 'accommodation') {
             $add('star', __('Category', 'seeinside-travel'), ! empty($d['stars']) ? str_repeat('★', (int) $d['stars']) : sta_t($d['accommodation_type']['label'] ?? null));
             $add('pin', __('Location', 'seeinside-travel'), trim(($d['place'] ?? '').', '.($d['country'] ?? ''), ', '));
             $add('wave', __('Beach', 'seeinside-travel'), isset($d['distances']['beach_m']) && $d['distances']['beach_m'] !== null ? $d['distances']['beach_m'].' m' : null);
             $add('home', __('Centre', 'seeinside-travel'), isset($d['distances']['center_m']) && $d['distances']['center_m'] !== null ? $d['distances']['center_m'].' m' : null);
+            $add('flag', __('Ski lift', 'seeinside-travel'), isset($d['distances']['ski_lift_m']) && $d['distances']['ski_lift_m'] !== null ? $d['distances']['ski_lift_m'].' m' : null);
+            $add('plane', __('Airport', 'seeinside-travel'), isset($d['distances']['airport_km']) && $d['distances']['airport_km'] !== null ? $d['distances']['airport_km'].' km' : null);
             $add('clock', __('Check-in / out', 'seeinside-travel'), trim(($d['check_in'] ?? '').' / '.($d['check_out'] ?? ''), ' /'));
             $add('bed', __('Board', 'seeinside-travel'), implode(', ', $d['board_types'] ?? []));
         } elseif ($type === 'visa') {
@@ -367,6 +372,9 @@ class STA_Render
                 $html .= '<details class="sta-acc"><summary>'.esc_html($label).'</summary><div class="sta-prose">'.wp_kses_post(wpautop($text)).'</div></details>';
             }
         }
+        if (! empty($d['price_list_pdf'])) {
+            $html .= '<p><a class="sta-btn sta-btn-ghost" href="'.esc_url($d['price_list_pdf']).'" target="_blank" rel="noopener">'.sta_icon('doc').' '.esc_html__('Price list (PDF)', 'seeinside-travel').'</a></p>';
+        }
         foreach ($d['links'] ?? [] as $l) {
             if (! empty($l['url'])) {
                 $html .= '<p><a href="'.esc_url($l['url']).'" target="_blank" rel="noopener">'.esc_html($l['label'] ?: $l['url']).' ↗</a></p>';
@@ -382,26 +390,102 @@ class STA_Render
             return '';
         }
         $currency = $d['currency'] ?? 'EUR';
+        $bookable = ! isset($d['booking']['enabled']) || ! empty($d['booking']['enabled']);
         $html = self::heading(__('Rooms & prices', 'seeinside-travel')).'<div class="sta-rooms">';
         foreach ($d['rooms'] as $r) {
+            $rid = (int) $r['id'];
             $img = $r['cover_image'] ?? ($r['images'][0]['url'] ?? null);
-            $html .= '<div class="sta-room">'
-                .($img ? '<div class="sta-room-img"><img src="'.esc_url($img).'" alt="" loading="lazy"></div>' : '')
-                .'<div class="sta-room-body"><h4>'.esc_html(sta_t($r['name'])).'</h4>'
-                .'<p class="sta-muted">'.esc_html(implode(' · ', array_filter([sta_t($r['board']['label'] ?? null), $r['beds'] ?? null, $r['size_m2'] ? $r['size_m2'].' m²' : null, sprintf(__('max %1$d adults + %2$d children', 'seeinside-travel'), $r['max_adults'], $r['max_children'])]))).'</p>'
-                .(sta_t($r['description']) ? '<p>'.esc_html(sta_t($r['description'])).'</p>' : '');
-            if (! empty($r['rates'])) {
-                $html .= '<details class="sta-acc sta-acc-sm"><summary>'.esc_html__('Prices by period', 'seeinside-travel').'</summary><table class="sta-table sta-table-sm"><tbody>';
-                foreach ($r['rates'] as $rate) {
-                    $html .= '<tr><td>'.esc_html(sta_date($rate['from']).' – '.sta_date($rate['to'])).'</td><td><b>'.esc_html(sta_money($rate['price'], $currency)).'</b> '.esc_html($rate['price_type'] === 'per_person' ? __('per person', 'seeinside-travel') : __('per room', 'seeinside-travel')).'</td><td>'.($rate['min_nights'] > 1 ? esc_html(sprintf(__('min. %d nights', 'seeinside-travel'), $rate['min_nights'])) : '').($rate['is_last_minute'] ? ' <span class="sta-badge sta-badge-lm">LM</span>' : '').'</td></tr>';
-                }
-                $html .= '</tbody></table></details>';
-            }
+            $facts = array_filter([sta_t($r['board']['label'] ?? null), $r['beds'] ?? null, ! empty($r['size_m2']) ? $r['size_m2'].' m²' : null, sprintf(__('max %1$d adults + %2$d children', 'seeinside-travel'), $r['max_adults'], $r['max_children'])]);
+            $desc = sta_t($r['description'] ?? null);
+            $amen = array_values(array_filter((array) ($r['amenities'] ?? []), 'is_array'));
             $from = $r['price'] ?? (count($r['rates'] ?? []) ? min(array_column($r['rates'], 'price')) : null);
-            $html .= '</div><div class="sta-room-side">'.($from !== null ? '<small>'.esc_html__('from', 'seeinside-travel').'</small><b>'.esc_html(sta_money($from, $currency)).'</b><small>'.esc_html__('per night', 'seeinside-travel').'</small>' : '').'<a class="sta-btn sta-btn-sm" href="#sta-booking" data-sta-room="'.(int) $r['id'].'">'.esc_html__('Choose', 'seeinside-travel').'</a></div></div>';
+            $photos = count($r['images'] ?? []) ?: ($img ? 1 : 0);
+            $choose = '<a class="sta-btn sta-btn-sm" href="#sta-booking" data-sta-room="'.$rid.'">'.esc_html__('Choose', 'seeinside-travel').'</a>';
+
+            $html .= '<div class="sta-room">'
+                .($img ? '<button type="button" class="sta-room-img" data-sta-room-open="'.$rid.'" aria-label="'.esc_attr__('Room details', 'seeinside-travel').'"><img src="'.esc_url($img).'" alt="" loading="lazy">'.($photos > 1 ? '<span class="sta-room-count">'.sta_icon('camera').' '.(int) $photos.'</span>' : '').'</button>' : '')
+                .'<div class="sta-room-body"><h4>'.esc_html(sta_t($r['name'])).'</h4>'
+                .'<p class="sta-muted">'.esc_html(implode(' · ', $facts)).'</p>'
+                .($desc ? '<p class="sta-room-desc">'.esc_html(wp_trim_words($desc, 32)).'</p>' : '');
+            if ($amen) {
+                $html .= sta_amenities_html(array_slice($amen, 0, 6), 'sta-amen-chips').(count($amen) > 6 ? '<span class="sta-amen-more">+'.(count($amen) - 6).' '.esc_html__('more', 'seeinside-travel').'</span>' : '');
+            }
+            $html .= '<button type="button" class="sta-room-more" data-sta-room-open="'.$rid.'">'.esc_html__('Details, photos & availability', 'seeinside-travel').' →</button>';
+            $html .= '</div><div class="sta-room-side">'.($from !== null ? '<small>'.esc_html__('from', 'seeinside-travel').'</small><b>'.esc_html(sta_money($from, $currency)).'</b><small>'.esc_html__('per night', 'seeinside-travel').'</small>' : '')
+                .'<button type="button" class="sta-btn sta-btn-sm sta-btn-ghost" data-sta-room-open="'.$rid.'">'.esc_html__('Details', 'seeinside-travel').'</button>'.$choose.'</div></div>';
+
+            $html .= self::room_dialog($d, $r, $currency, $bookable);
         }
 
         return $html.'</div>';
+    }
+
+    /** Everything about one room: photos, description, amenities, prices by period, availability calendar */
+    protected static function room_dialog(array $d, array $r, string $currency, bool $bookable): string
+    {
+        $rid = (int) $r['id'];
+        $imgs = array_values(array_filter(array_map(fn ($g) => $g['url'] ?? null, (array) ($r['images'] ?? []))));
+        if (! $imgs && ! empty($r['cover_image'])) {
+            $imgs = [$r['cover_image']];
+        } elseif (! empty($r['cover_image']) && ! in_array($r['cover_image'], $imgs, true)) {
+            array_unshift($imgs, $r['cover_image']);
+        }
+        $name = sta_t($r['name']);
+        $h = '<dialog class="sta-dialog sta-room-dlg" data-sta-room-dlg="'.$rid.'" aria-label="'.esc_attr($name).'"><button type="button" class="sta-dialog-close" data-close aria-label="'.esc_attr__('Close', 'seeinside-travel').'">×</button>';
+        if ($imgs) {
+            $h .= '<div class="sta-rg" data-sta-rg><div class="sta-rg-main"><img src="'.esc_url($imgs[0]).'" alt="'.esc_attr($name).'" data-sta-rg-img>'
+                .(count($imgs) > 1 ? '<button type="button" class="sta-rg-nav sta-rg-prev" data-sta-rg-step="-1" aria-label="‹">‹</button><button type="button" class="sta-rg-nav sta-rg-next" data-sta-rg-step="1" aria-label="›">›</button><span class="sta-rg-n" data-sta-rg-n>1 / '.count($imgs).'</span>' : '')
+                .'</div>';
+            if (count($imgs) > 1) {
+                $h .= '<div class="sta-rg-thumbs">';
+                foreach ($imgs as $i => $u) {
+                    $h .= '<button type="button" data-sta-rg-i="'.$i.'"'.($i === 0 ? ' class="is-on"' : '').'><img src="'.esc_url($u).'" alt="" loading="lazy"></button>';
+                }
+                $h .= '</div>';
+            }
+            $h .= '</div>';
+        }
+        $h .= '<div class="sta-room-dlg-body"><h3>'.esc_html($name).'</h3>';
+        $facts = [
+            ['bed', __('Room type', 'seeinside-travel'), sta_t($r['room_type']['label'] ?? null)],
+            ['star', __('Board', 'seeinside-travel'), sta_t($r['board']['label'] ?? null)],
+            ['bed', __('Beds', 'seeinside-travel'), $r['beds'] ?? null],
+            ['home', __('Size', 'seeinside-travel'), ! empty($r['size_m2']) ? $r['size_m2'].' m²' : null],
+            ['users', __('Capacity', 'seeinside-travel'), sprintf(__('max %1$d adults + %2$d children', 'seeinside-travel'), $r['max_adults'], $r['max_children'])],
+        ];
+        $h .= '<ul class="sta-room-facts">';
+        foreach ($facts as [$ic, $label, $val]) {
+            if ($val) {
+                $h .= '<li>'.sta_icon($ic).'<span><small>'.esc_html($label).'</small>'.esc_html($val).'</span></li>';
+            }
+        }
+        $h .= '</ul>';
+        if ($desc = sta_t($r['description'] ?? null)) {
+            $h .= '<div class="sta-prose">'.wp_kses_post(wpautop($desc)).'</div>';
+        }
+        $amen = array_values(array_filter((array) ($r['amenities'] ?? []), 'is_array'));
+        if ($amen) {
+            $h .= '<h4>'.esc_html__('Room amenities', 'seeinside-travel').'</h4>'.sta_amenities_html($amen, 'sta-amen-grid');
+        }
+        if (! empty($r['rates'])) {
+            $h .= '<h4>'.esc_html__('Prices by period', 'seeinside-travel').'</h4><table class="sta-table sta-table-sm"><tbody>';
+            foreach ($r['rates'] as $rate) {
+                $h .= '<tr><td>'.esc_html(sta_date($rate['from']).' – '.sta_date($rate['to'])).'</td><td><b>'.esc_html(sta_money($rate['price'], $currency)).'</b> '.esc_html($rate['price_type'] === 'per_person' ? __('per person', 'seeinside-travel') : __('per room', 'seeinside-travel')).'</td><td>'.($rate['min_nights'] > 1 ? esc_html(sprintf(__('min. %d nights', 'seeinside-travel'), $rate['min_nights'])) : '').($rate['is_last_minute'] ? ' <span class="sta-badge sta-badge-lm">LM</span>' : '').'</td></tr>';
+            }
+            $h .= '</tbody></table>';
+        }
+        if (empty($d['book_by_terms'])) {
+            $h .= '<h4>'.esc_html__('Availability', 'seeinside-travel').'</h4>'
+                .'<div class="sta-cal" data-sta-calendar data-lazy data-slug="'.esc_attr($d['slug']).'" data-currency="'.esc_attr($currency).'">'
+                .'<div class="sta-cal-head"><select class="sta-cal-room" hidden><option value="'.$rid.'">'.esc_html($name).'</option></select><div class="sta-cal-nav"><button type="button" data-dir="-1" aria-label="‹">‹</button><b class="sta-cal-month"></b><button type="button" data-dir="1" aria-label="›">›</button></div></div>'
+                .'<div class="sta-cal-grid"></div>'
+                .'<div class="sta-cal-legend"><span class="is-free"></span>'.esc_html__('Free', 'seeinside-travel').' <span class="is-booked"></span>'.esc_html__('Booked', 'seeinside-travel').'</div></div>';
+        }
+        if ($bookable) {
+            $h .= '<div class="sta-room-dlg-acts"><a class="sta-btn" href="#sta-booking" data-sta-room="'.$rid.'" data-close>'.esc_html__('Choose this room', 'seeinside-travel').'</a></div>';
+        }
+
+        return $h.'</div></dialog>';
     }
 
     protected static function s_amenities(array $d, string $type): string
@@ -409,8 +493,28 @@ class STA_Render
         if (empty($d['amenities'])) {
             return '';
         }
+        $groups = [
+            'general' => __('General', 'seeinside-travel'), 'room' => __('In the rooms', 'seeinside-travel'), 'wellness' => __('Pool & wellness', 'seeinside-travel'),
+            'food' => __('Food & drinks', 'seeinside-travel'), 'family' => __('For children', 'seeinside-travel'), 'sport' => __('Sport', 'seeinside-travel'),
+            'transport' => __('Transport', 'seeinside-travel'),
+        ];
+        $by = [];
+        foreach ($d['amenities'] as $a) {
+            $by[isset($groups[$a['category'] ?? '']) ? $a['category'] : 'general'][] = $a;
+        }
+        $html = self::heading(__('Amenities', 'seeinside-travel'));
+        // few amenities (or no categories yet) → one list
+        if (count($d['amenities']) <= 8 || count($by) < 2) {
+            return $html.sta_amenities_html($d['amenities'], 'sta-amen-grid');
+        }
+        $html .= '<div class="sta-amen-groups">';
+        foreach ($groups as $k => $label) {
+            if (! empty($by[$k])) {
+                $html .= '<div class="sta-amen-group"><h4>'.esc_html($label).'</h4>'.sta_amenities_html($by[$k]).'</div>';
+            }
+        }
 
-        return self::heading(__('Amenities', 'seeinside-travel')).self::list_html(array_map(fn ($a) => sta_t($a['name']), $d['amenities']), 'check', 'sta-list-grid');
+        return $html.'</div>';
     }
 
     protected static function s_tickets(array $d, string $type): string
@@ -709,7 +813,7 @@ class STA_Render
     /** The whole page in a sensible order (used when no builder template exists) */
     protected static function s_layout(array $d, string $type, int $postId): string
     {
-        $main = ['gallery', 'facts', 'fields', 'description', 'info_cards', 'highlights', 'program', 'route_map', 'departures', 'rooms', 'terms', 'availability', 'tickets', 'requirements', 'included', 'extras', 'amenities', 'info', 'galleries', 'videos', 'map'];
+        $main = ['gallery', 'facts', 'fields', 'description', 'amenities', 'info_cards', 'highlights', 'program', 'route_map', 'departures', 'rooms', 'terms', 'availability', 'tickets', 'requirements', 'included', 'extras', 'info', 'galleries', 'videos', 'map'];
         // aside first: on narrow screens the price / booking button comes before the details
         $html = '<div class="sta-page"><aside class="sta-aside"><div class="sta-sticky">'.self::section('price', $postId).'</div></aside><div class="sta-main">';
         foreach ($main as $s) {
