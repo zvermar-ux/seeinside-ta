@@ -10,6 +10,13 @@
   function h(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function uuid() { return (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); })); }
   function money(v, cur) { cur = cur || S.currency || 'EUR'; var n = Number(v || 0).toLocaleString('de-DE', { maximumFractionDigits: 0 }); return cur === 'MKD' ? n + ' ден.' : (cur === 'EUR' ? '€' : cur + ' ') + n; }
+  /* escaped text → clickable links (http…, www…, e-mail, phone) */
+  function linkify(s) {
+    return esc(s)
+      .replace(/(^|[\s(])((?:https?:\/\/|www\.)[^\s<)]+[^\s<).,!?;:])/g, function (m, pre, url) { var href = /^www\./.test(url) ? 'https://' + url : url; var own = href.indexOf(location.host) > -1; return pre + '<a href="' + href + '"' + (own ? '' : ' target="_blank" rel="noopener"') + '>' + url.replace(/^https?:\/\//, '').slice(0, 60) + '</a>'; })
+      .replace(/(^|[\s(])([\w.+-]+@[\w-]+\.[\w.-]+[a-z])/gi, '$1<a href="mailto:$2">$2</a>')
+      .replace(/\n/g, '<br>');
+  }
   function date(s) { if (!s) return ''; var d = new Date(s); return isNaN(d) ? '' : ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + d.getFullYear(); }
 
   var ICON = {
@@ -120,7 +127,7 @@
   }
   function draw(m) {
     var b = h('div', 'sta-chat-bubble is-' + m.role);
-    b.innerHTML = (m.role === 'operator' ? '<span class="sta-chat-who">' + esc(m.name || T.agent) + '</span>' : '') + esc(m.body).replace(/\n/g, '<br>');
+    b.innerHTML = (m.role === 'operator' ? '<span class="sta-chat-who">' + esc(m.name || T.agent) + '</span>' : '') + (m.role === 'visitor' ? esc(m.body).replace(/\n/g, '<br>') : linkify(m.body));
     var thread = body.querySelector('.sta-chat-thread') || body;
     thread.appendChild(b);
     if (m.items && m.items.length) { var cards = h('div', 'sta-chat-cards'); m.items.forEach(function (it) { cards.appendChild(itemCard(it)); }); thread.appendChild(cards); }

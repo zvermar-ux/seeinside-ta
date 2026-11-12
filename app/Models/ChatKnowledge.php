@@ -21,6 +21,6 @@ class ChatKnowledge extends Model
 
     public static function sources(): array
     {
-        return ['manual' => __('Entered by an operator'), 'analysis' => __('Website analysis'), 'correction' => __('Corrected answer')];
+        return ['manual' => __('Entered by an operator'), 'analysis' => __('Website analysis'), 'correction' => __('Corrected answer'), 'suggestion' => __('Suggested from chats')];
     }
 }

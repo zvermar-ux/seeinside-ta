@@ -96,12 +96,32 @@ class ChatCatalog
         ];
     }
 
-    protected static function words(string $text): array
+    /** Cyrillic and Latin spelling of the same word end up equal: "Грција", "Grcija", "Grčija" → "grcija" */
+    public static function latin(string $text): string
     {
-        $text = mb_strtolower(strip_tags($text));
+        static $map = [
+            'а' => 'a', 'б' => 'b', 'в' => 'v', 'г' => 'g', 'д' => 'd', 'ѓ' => 'gj', 'ђ' => 'gj', 'е' => 'e', 'ж' => 'zh', 'з' => 'z', 'ѕ' => 'dz',
+            'и' => 'i', 'ј' => 'j', 'й' => 'j', 'к' => 'k', 'л' => 'l', 'љ' => 'lj', 'м' => 'm', 'н' => 'n', 'њ' => 'nj', 'о' => 'o', 'п' => 'p',
+            'р' => 'r', 'с' => 's', 'т' => 't', 'ќ' => 'kj', 'ћ' => 'kj', 'у' => 'u', 'ф' => 'f', 'х' => 'h', 'ц' => 'c', 'ч' => 'ch', 'џ' => 'dz',
+            'ш' => 'sh', 'ы' => 'y', 'э' => 'e', 'ю' => 'ju', 'я' => 'ja', 'ь' => '', 'ъ' => '',
+            'č' => 'ch', 'ć' => 'kj', 'š' => 'sh', 'ž' => 'zh', 'đ' => 'gj', 'ü' => 'u', 'ö' => 'o', 'ç' => 'c', 'ş' => 'sh', 'ğ' => 'g', 'ı' => 'i',
+        ];
+
+        return strtr(mb_strtolower($text), $map);
+    }
+
+    public static function words(string $text): array
+    {
+        $text = static::latin(strip_tags($text));
         $words = preg_split('/[^\p{L}\p{N}]+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
 
         return array_values(array_unique(array_map(fn ($w) => mb_substr($w, 0, 5), array_filter($words, fn ($w) => mb_strlen($w) >= 3))));
+    }
+
+    /** How well an item matches the words of a question (0 = no common word) */
+    protected static function score(array $q, array $i): int
+    {
+        return count(array_intersect($q, static::words($i['line'].' '.$i['name'].' '.$i['slug']))) * 10;
     }
 
     /** The items that best match the question (simple keyword search, featured and last minute first) */
@@ -114,13 +134,54 @@ class ChatCatalog
         $q = static::words($query);
         $scored = [];
         foreach ($items as $key => $i) {
-            $w = static::words($i['line'].' '.$i['name']);
-            $score = count(array_intersect($q, $w)) * 10 + ($i['featured'] ? 2 : 0) + ($i['last_minute'] ? 2 : 0) + ($i['date'] ? 1 : 0);
-            $scored[$key] = $score;
+            $scored[$key] = static::score($q, $i) + ($i['featured'] ? 2 : 0) + ($i['last_minute'] ? 2 : 0) + ($i['date'] ? 1 : 0);
         }
         arsort($scored);
 
         return array_intersect_key($items, array_slice($scored, 0, $limit, true));
+    }
+
+    /**
+     * Keys of the best offers to show with an answer when the AI did not pick any:
+     * real keyword matches first, otherwise featured / last minute / nearest departure.
+     */
+    public static function best(int $agencyId, string $query, int $limit = 2, array $exclude = []): array
+    {
+        $items = array_diff_key(static::items($agencyId), array_flip($exclude));
+        $q = static::words($query);
+        $scored = [];
+        foreach ($items as $key => $i) {
+            $scored[$key] = static::score($q, $i) * 10 + ($i['featured'] ? 3 : 0) + ($i['last_minute'] ? 3 : 0) + ($i['date'] ? 1 : 0);
+        }
+        arsort($scored);
+
+        return array_slice(array_keys($scored), 0, $limit);
+    }
+
+    /** The offer the visitor is looking at, from the page address (…/aranzmani/<slug>/) */
+    public static function fromUrl(int $agencyId, ?string $url): ?string
+    {
+        $path = trim(rawurldecode((string) parse_url((string) $url, PHP_URL_PATH)), '/');
+        if ($path === '') {
+            return null;
+        }
+        $parts = explode('/', $path);
+        $slug = mb_strtolower(end($parts));
+        foreach (static::items($agencyId) as $key => $i) {
+            if ($i['slug'] && mb_strtolower((string) $i['slug']) === $slug) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    /** One line "key | name | details" for the prompt */
+    public static function line(int $agencyId, string $key): ?string
+    {
+        $i = static::items($agencyId)[$key] ?? null;
+
+        return $i ? "{$key} | {$i['name']} | {$i['line']}" : null;
     }
 
     /** Short overview of the whole offer (counts per type, destinations) */

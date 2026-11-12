@@ -1802,5 +1802,16 @@
     "With room numbers below: counted automatically.": "Со броеви на соби подолу: се брои автоматски.",
     "e.g. A4, A5, Б201 – type and press Enter": "на пр. A4, A5, Б201 – внесете и притиснете Enter",
     "e.g. Switchboard (5 lines)": "на пр. Централа (5 линии)",
-    "taken": "зафатена"
+    "taken": "зафатена",
+    "Suggested from chats": "Предлог од разговорите",
+    "Learn from conversations": "Учи од разговорите",
+    "AI reads the recent chats (badly rated answers, chats handed to an agent and the agents' answers first), finds wrong, vague or missing answers and writes suggestions. They are saved switched off: check them, fill in [ДОПОЛНИ: …] and turn them on.": "AI ги чита последните разговори (прво лошо оценетите одговори, разговорите префрлени на агент и одговорите на агентите), ги наоѓа погрешните, нејасните и недостасувачките одговори и пишува предлози. Се зачувуваат исклучени: проверете ги, дополнете ги [ДОПОЛНИ: …] и вклучете ги.",
+    "Analyse the chats": "Анализирај ги разговорите",
+    "Last 7 days": "Последни 7 дена",
+    "Last 14 days": "Последни 14 дена",
+    "Last 30 days": "Последни 30 дена",
+    "Last 90 days": "Последни 90 дена",
+    ":count suggestions written. Filter by source \"Suggested from chats\", check them and turn them on.": ":count предлози се напишани. Филтрирај по извор „Предлог од разговорите“, провери ги и вклучи ги.",
+    "There are no conversations in the last :days days to learn from.": "Нема разговори во последните :days дена од кои може да се учи.",
+    "Turn on": "Вклучи"
 }

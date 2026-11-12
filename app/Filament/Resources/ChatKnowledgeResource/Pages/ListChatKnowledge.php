@@ -40,6 +40,23 @@ class ListChatKnowledge extends ListRecords
                         Notification::make()->danger()->title(__('AI'))->body($e->getMessage())->persistent()->send();
                     }
                 }),
+            Actions\Action::make('learn')->label(__('Learn from conversations'))->icon('heroicon-o-academic-cap')->color('success')
+                ->modalHeading(__('Learn from conversations'))
+                ->modalDescription(__('AI reads the recent chats (badly rated answers, chats handed to an agent and the agents\' answers first), finds wrong, vague or missing answers and writes suggestions. They are saved switched off: check them, fill in [ДОПОЛНИ: …] and turn them on.'))
+                ->modalSubmitActionLabel(__('Analyse the chats'))
+                ->form(fn () => array_filter([
+                    Auth::user()->isSuperAdmin() ? Forms\Components\Select::make('agency_id')->label(__('Agency'))->required()->options(Agency::query()->orderBy('name')->pluck('name', 'id')) : null,
+                    Forms\Components\Select::make('days')->label(__('Period'))->default(14)->required()
+                        ->options([7 => __('Last 7 days'), 14 => __('Last 14 days'), 30 => __('Last 30 days'), 90 => __('Last 90 days')]),
+                ]))
+                ->action(function (array $data) {
+                    try {
+                        $n = ChatTrainer::review((int) ($data['agency_id'] ?? Auth::user()->agency_id), (int) ($data['days'] ?? 14));
+                        Notification::make()->success()->title(__('Done'))->body(__(':count suggestions written. Filter by source "Suggested from chats", check them and turn them on.', ['count' => $n]))->persistent()->send();
+                    } catch (AiException $e) {
+                        Notification::make()->danger()->title(__('AI'))->body($e->getMessage())->persistent()->send();
+                    }
+                }),
             Actions\Action::make('test')->label(__('Test the bot'))->icon('heroicon-o-beaker')->color('gray')->url(fn () => ChatPlayground::getUrl()),
             Actions\CreateAction::make()->icon('heroicon-o-plus'),
         ];

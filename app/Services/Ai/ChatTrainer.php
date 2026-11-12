@@ -4,6 +4,7 @@ namespace App\Services\Ai;
 
 use App\Models\Agency;
 use App\Models\ApiClient;
+use App\Models\ChatConversation;
 use App\Models\ChatKnowledge;
 use App\Models\ChatQuestionnaire;
 use App\Models\Group;
@@ -90,6 +91,60 @@ class ChatTrainer
         ChatKnowledge::withoutGlobalScopes()->where('agency_id', $agencyId)->where('source', 'analysis')->delete();
         foreach ($entries as $e) {
             ChatKnowledge::create(['agency_id' => $agencyId, 'title' => Str::limit($e['title'], 190), 'content' => $e['content'], 'source' => 'analysis', 'created_by' => Auth::id()]);
+        }
+
+        return $entries->count();
+    }
+
+    /**
+     * Learning from real conversations: AI reads the recent chats (badly rated, handed to an agent and answered by an agent first),
+     * finds wrong, weak or missing answers and writes knowledge suggestions. They are saved switched off
+     * (source "suggestion") – an operator checks them and turns them on with one click. Returns the number of suggestions.
+     */
+    public static function review(int $agencyId, int $days = 14, int $max = 30): int
+    {
+        $convs = ChatConversation::withoutGlobalScopes()->where('agency_id', $agencyId)
+            ->where('last_message_at', '>=', now()->subDays($days))->where('messages_count', '>=', 2)
+            ->with(['messages' => fn ($q) => $q->orderBy('id')])
+            ->latest('last_message_at')->limit(200)->get()
+            ->sortByDesc(fn (ChatConversation $c) => ($c->messages->where('rating', 'bad')->count() * 10)
+                + ($c->needs_human ? 5 : 0) + ($c->messages->where('role', 'operator')->count() ? 5 : 0) + min(5, $c->messages->count() / 3))
+            ->take($max);
+        if ($convs->isEmpty()) {
+            throw new AiException(__('There are no conversations in the last :days days to learn from.', ['days' => $days]));
+        }
+        $catalog = ChatCatalog::items($agencyId);
+        $transcripts = $convs->map(function (ChatConversation $c) use ($catalog) {
+            return "=== CHAT #{$c->id}".($c->page_url ? " (page {$c->page_url})" : '')."\n".$c->messages->where('role', '!=', 'system')->map(function ($m) use ($catalog) {
+                $who = ['visitor' => 'VISITOR', 'bot' => 'BOT', 'operator' => 'AGENT'][$m->role] ?? strtoupper($m->role);
+                $shown = collect($m->items ?? [])->map(fn ($i) => $catalog[($i['type'] ?? '').':'.($i['id'] ?? '')]['name'] ?? null)->filter()->implode('; ');
+
+                return $who.($m->rating === 'bad' ? ' [rated BAD]' : '').': '.Str::limit((string) $m->body, 700).($shown ? " [shown: {$shown}]" : '');
+            })->implode("\n");
+        })->implode("\n\n");
+
+        $known = ChatKnowledge::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->latest('id')->limit(150)
+            ->get()->map(fn ($k) => "### {$k->title}\n".Str::limit($k->content, 400))->implode("\n");
+        $offer = collect($catalog)->take(150)->map(fn ($i, $k) => "{$k} | {$i['name']} | {$i['line']}")->implode("\n");
+
+        $prompt = "Below are real website chats between visitors and the travel agency chatbot (sometimes an agent took over). Find where the bot:\n"
+            ."1) gave a wrong or invented fact (compare with ACTIVE OFFER and KNOWN FACTS), 2) could not answer and passed the visitor to an agent, "
+            ."3) answered vaguely, 4) did not recommend a fitting offer, 5) was answered better by the AGENT (learn from the agent's answers!).\n"
+            ."Write knowledge entries that fix these cases for the future, in Macedonian. Each entry: \"title\" = the visitor's question as visitors ask it, "
+            ."\"content\" = the correct answer the bot should give (facts only from the data or from the agent's answers; when a needed fact is unknown, write [ДОПОЛНИ: what is missing] so the agent fills it in), "
+            ."\"reason\" = one short sentence about what went wrong, \"chat\" = chat number. Do not repeat what KNOWN FACTS already say correctly. Max 15 entries, the most frequent and costly problems first.\n"
+            .'Return {"entries": [{"title": "", "content": "", "reason": "", "chat": 0}]}'
+            ."\n\nKNOWN FACTS:\n{$known}\n\nACTIVE OFFER:\n{$offer}\n\nCHATS:\n{$transcripts}";
+        $out = Ai::json($agencyId, 'training', 'You are a strict quality reviewer of customer-service chatbots for travel agencies.', [['role' => 'user', 'content' => Str::limit($prompt, 80000)]], 6000, Auth::id(), 'learning from chats');
+
+        $entries = collect($out['entries'] ?? [])->filter(fn ($e) => filled($e['title'] ?? null) && filled($e['content'] ?? null));
+        ChatKnowledge::withoutGlobalScopes()->where('agency_id', $agencyId)->where('source', 'suggestion')->where('is_active', false)->delete();
+        foreach ($entries as $e) {
+            $note = trim(($e['reason'] ?? '').(! empty($e['chat']) ? ' (#'.(int) $e['chat'].')' : ''));
+            ChatKnowledge::create([
+                'agency_id' => $agencyId, 'title' => Str::limit($e['title'], 190), 'content' => trim($e['content']).($note ? "\n\n— ".$note : ''),
+                'source' => 'suggestion', 'is_active' => false, 'created_by' => Auth::id(),
+            ]);
         }
 
         return $entries->count();

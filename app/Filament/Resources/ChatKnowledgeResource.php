@@ -68,7 +68,7 @@ class ChatKnowledgeResource extends Resource
                     ->description(fn (ChatKnowledge $r) => \Illuminate\Support\Str::limit($r->content, 140)),
                 Tables\Columns\TextColumn::make('source')->label(__('Source'))->badge()
                     ->formatStateUsing(fn (string $state) => ChatKnowledge::sources()[$state] ?? $state)
-                    ->color(fn (string $state) => ['manual' => 'primary', 'analysis' => 'info', 'correction' => 'warning'][$state] ?? 'gray'),
+                    ->color(fn (string $state) => ['manual' => 'primary', 'analysis' => 'info', 'correction' => 'warning', 'suggestion' => 'success'][$state] ?? 'gray'),
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active')),
                 Tables\Columns\TextColumn::make('updated_at')->label(__('Changed'))->since()->sortable(),
                 AgencyField::column(),
@@ -78,7 +78,11 @@ class ChatKnowledgeResource extends Resource
                 AgencyField::filter(),
             ])
             ->actions([Tables\Actions\EditAction::make()->iconButton(), Tables\Actions\DeleteAction::make()->iconButton()])
-            ->bulkActions([Tables\Actions\DeleteBulkAction::make()]);
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('activate')->label(__('Turn on'))->icon('heroicon-o-check-circle')->color('success')
+                    ->action(fn (\Illuminate\Support\Collection $records) => $records->each->update(['is_active' => true]))->deselectRecordsAfterCompletion(),
+                Tables\Actions\DeleteBulkAction::make(),
+            ]);
     }
 
     public static function getPages(): array
