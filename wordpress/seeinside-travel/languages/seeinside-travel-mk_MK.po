@@ -2860,6 +2860,42 @@ msgstr "Check in – out"
 msgid "Tours tab name"
 msgstr "Име на табот за патувања"
 
+msgid "Places and regions"
+msgstr "Места и региони"
+
+msgid "Also here"
+msgstr "Исто тука"
+
+msgid "No offers here at the moment."
+msgstr "Моментално нема понуди тука."
+
+msgid "Page"
+msgstr "Страница"
+
+msgid "Templates made by the plugin (%d) – edit in Elementor"
+msgstr "Темплејти од плагинот (%d) – уредете во Elementor"
+
+msgid "Pages of destinations, places, groups, tour types and accommodation types each have their own template; every accommodation type (hotel, apartment, villa…) also has its own single page. Click \"Create Elementor templates\" again after adding a new accommodation type."
+msgstr "Страниците на дестинации, места, групи, типови тури и типови сместување имаат свој темплејт; секој тип сместување (хотел, апартман, вила…) има и своја страница. Кликнете „Креирај Elementor темплејти“ повторно по додавање нов тип сместување."
+
+msgid "Travel: page header (destination, place, group, type)"
+msgstr "Travel: наслов на страница (дестинација, место, група, тип)"
+
+msgid "Travel: offers of this page"
+msgstr "Travel: понуди на оваа страница"
+
+msgid "Preview in the editor with"
+msgstr "Преглед во уредникот со"
+
+msgid "Accommodation (with filters)"
+msgstr "Сместување (со филтри)"
+
+msgid "Sub-destinations / places as tiles"
+msgstr "Под-дестинации / места како плочки"
+
+msgid "Height"
+msgstr "Висина"
+
 msgid "%d place to stay"
 msgid_plural "%d places to stay"
 msgstr[0] "%d сместување"

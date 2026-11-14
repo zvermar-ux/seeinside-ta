@@ -447,7 +447,48 @@ class STA_Widget_Search_Box extends STA_Simple_Widget
     }
 }
 
+class STA_Widget_Term_Header extends STA_Simple_Widget
+{
+    public function get_name(): string { return 'sta-term-header'; }
+    public function get_title(): string { return __('Travel: page header (destination, place, group, type)', 'seeinside-travel'); }
+    public function get_icon(): string { return 'eicon-header'; }
+    protected function extra_controls(): void
+    {
+        $this->add_control('preview_tax', ['label' => __('Preview in the editor with', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'sta_destination', 'options' => sta_term_page_taxonomies()]);
+        $this->add_control('height', ['label' => __('Height', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => 340]);
+    }
+    protected function html(array $s): string { return STA_Term_Page::header(['preview_tax' => $s['preview_tax'] ?? '', 'height' => $s['height'] ?? 340]); }
+}
+
+class STA_Widget_Term_Offers extends STA_Simple_Widget
+{
+    public function get_name(): string { return 'sta-term-offers'; }
+    public function get_title(): string { return __('Travel: offers of this page', 'seeinside-travel'); }
+    public function get_icon(): string { return 'eicon-posts-grid'; }
+    protected function extra_controls(): void
+    {
+        $this->add_control('preview_tax', ['label' => __('Preview in the editor with', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'sta_destination', 'options' => sta_term_page_taxonomies()]);
+        $this->add_control('types', ['label' => __('Show', 'seeinside-travel'), 'type' => Controls_Manager::SELECT2, 'multiple' => true, 'default' => ['tour', 'accommodation', 'event'], 'options' => [
+            'tour' => __('Organized tours', 'seeinside-travel'), 'accommodation' => __('Accommodation (with filters)', 'seeinside-travel'), 'event' => __('Events', 'seeinside-travel'),
+        ]]);
+        $this->add_control('children', ['label' => __('Sub-destinations / places as tiles', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes']);
+        $this->add_control('columns', ['label' => __('Columns', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => 3]);
+    }
+    protected function html(array $s): string
+    {
+        return STA_Term_Page::offers(['preview_tax' => $s['preview_tax'] ?? '', 'types' => implode(',', (array) ($s['types'] ?: ['tour', 'accommodation', 'event'])), 'children' => ($s['children'] ?? '') === 'yes' ? '1' : '', 'columns' => $s['columns'] ?? 3]);
+    }
+}
+
+function sta_term_page_taxonomies(): array
+{
+    return [
+        'sta_destination' => __('Destination', 'seeinside-travel'), 'sta_place' => __('Place', 'seeinside-travel'), 'sta_group' => __('Group', 'seeinside-travel'),
+        'sta_tour_type' => __('Tour type', 'seeinside-travel'), 'sta_hotel_type' => __('Accommodation type', 'seeinside-travel'), 'sta_event_category' => __('Event category', 'seeinside-travel'),
+    ];
+}
+
 function sta_elementor_widget_classes(): array
 {
-    return [STA_Widget_Search_Box::class, STA_Widget_Section::class, STA_Widget_List::class, STA_Widget_Slider::class, STA_Widget_Listing::class, STA_Widget_Reviews::class, STA_Widget_Search::class, STA_Widget_Flights::class, STA_Widget_Charters::class, STA_Widget_Status::class, STA_Widget_Destinations::class];
+    return [STA_Widget_Search_Box::class, STA_Widget_Term_Header::class, STA_Widget_Term_Offers::class, STA_Widget_Section::class, STA_Widget_List::class, STA_Widget_Slider::class, STA_Widget_Listing::class, STA_Widget_Reviews::class, STA_Widget_Search::class, STA_Widget_Flights::class, STA_Widget_Charters::class, STA_Widget_Status::class, STA_Widget_Destinations::class];
 }

@@ -164,6 +164,14 @@ class STA_Admin
                 .self::button('templates', __('Create Elementor templates', 'seeinside-travel'), 'button button-primary').' '
                 .self::button('templates_replace', __('Re-create (overwrite my changes)', 'seeinside-travel'), 'button', __('Your design changes in these templates will be lost. Continue?', 'seeinside-travel')).' '
                 .'<a class="button" href="'.esc_url(admin_url('edit.php?post_type=elementor_library&tabs_group=theme')).'">'.esc_html__('Open Theme Builder', 'seeinside-travel').'</a></p>';
+            $known = array_filter((array) get_option('sta_elementor_templates', []), fn ($id) => get_post_status($id));
+            if ($known) {
+                echo '<details><summary>'.esc_html(sprintf(__('Templates made by the plugin (%d) – edit in Elementor', 'seeinside-travel'), count($known))).'</summary><ul class="sta-tpl-list">';
+                foreach ($known as $id) {
+                    echo '<li><a href="'.esc_url(admin_url('post.php?post='.(int) $id.'&action=elementor')).'">'.esc_html(get_the_title($id)).'</a></li>';
+                }
+                echo '</ul><p class="description">'.esc_html__('Pages of destinations, places, groups, tour types and accommodation types each have their own template; every accommodation type (hotel, apartment, villa…) also has its own single page. Click "Create Elementor templates" again after adding a new accommodation type.', 'seeinside-travel').'</p></details>';
+            }
         } elseif ($builder === 'elementor') {
             echo '<p>'.esc_html__('Elementor (free): single pages use the automatic layout; on any page you can use the "Travel" widgets (lists, slider, search…). With Elementor Pro the plugin also creates Theme Builder templates.', 'seeinside-travel').'</p>';
         } else {

@@ -9,7 +9,15 @@ $map = STA_Listings_Admin::archive_map();
 $listId = $qo instanceof WP_Term ? ($map[$qo->taxonomy] ?? 0) : ($map[is_string($type) ? $type : ''] ?? 0);
 $list = $listId ? STA_Listings::get((int) $listId) : null;
 // hotels: filters on the left (type, destination, beach, transport, free dates…)
-$finder = ! $list && (is_post_type_archive('sta_hotel') || is_tax('sta_hotel_type'));
+$finder = ! $list && is_post_type_archive('sta_hotel');
+// destination / place / group / type pages: banner, sub-destinations, tours and hotels of the page
+$termPage = ! $list && is_tax(['sta_destination', 'sta_place', 'sta_group', 'sta_tour_type', 'sta_hotel_type', 'sta_event_category']);
+if ($termPage) {
+    echo '<main class="sta sta-archive sta-term-page">'.STA_Term_Page::header().STA_Term_Page::offers().'</main>'; // phpcs:ignore
+    get_footer();
+
+    return;
+}
 ?>
 <main class="sta sta-archive">
     <header class="sta-archive-head">

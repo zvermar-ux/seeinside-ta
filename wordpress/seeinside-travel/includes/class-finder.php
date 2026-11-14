@@ -96,7 +96,7 @@ class STA_Finder
             'type' => array_map($slug, $type), 'dest' => $slug($dest), 'place' => $slug(self::g('f_place', $atts['place'] ?? (is_tax('sta_place') && ($qp = get_queried_object()) instanceof WP_Term ? $qp->slug : ''))), 'beach' => (int) self::g('f_beach', 0), 'transport' => self::g('f_transport') === '1',
             'stars' => array_map('intval', (array) self::g('f_stars', [])), 'board' => array_map('strtoupper', (array) self::g('f_board', [])),
             'amen' => array_map($slug, (array) self::g('f_amen', [])), 'price' => (float) self::g('f_price', 0), 'pmin' => (float) self::g('f_pmin', 0),
-            'group' => array_map($slug, (array) self::g('f_group', [])), 'promo' => self::g('f_promo') === '1',
+            'group' => array_map($slug, (array) self::g('f_group', []) ?: array_filter([$atts['group'] ?? '', is_tax('sta_group') && ($qg = get_queried_object()) instanceof WP_Term ? $qg->slug : ''])), 'promo' => self::g('f_promo') === '1',
             'from' => self::g('f_from'), 'to' => self::g('f_to'), 'ad' => max(1, (int) self::g('f_ad', 2)), 'ch' => max(0, (int) self::g('f_ch', 0)),
             'sort' => self::g('f_sort', 'recommended'), 'q' => self::g('f_q'),
         ];
@@ -150,7 +150,7 @@ class STA_Finder
 
     public static function shortcode($atts = []): string
     {
-        $atts = shortcode_atts(['destination' => '', 'place' => '', 'type' => '', 'per_page' => 12, 'columns' => 3], $atts, 'sta_hotel_finder');
+        $atts = shortcode_atts(['destination' => '', 'place' => '', 'group' => '', 'type' => '', 'per_page' => 12, 'columns' => 3], $atts, 'sta_hotel_finder');
         STA_Listings::enqueue();
         $f = self::filters($atts);
         $rows = self::rows();

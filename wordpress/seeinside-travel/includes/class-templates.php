@@ -130,7 +130,7 @@ class STA_Templates
     protected static function single_layout(string $postType): array
     {
         $type = STA_Schema::api_type($postType);
-        $main = ['gallery', 'facts', 'fields', 'description', 'info_cards', 'highlights', 'program', 'route_map', 'departures', 'rooms', 'terms', 'availability', 'tickets', 'requirements', 'included', 'extras', 'amenities', 'info', 'galleries', 'videos', 'map', 'booking', 'reviews'];
+        $main = ['gallery', 'facts', 'fields', 'description', 'amenities', 'info_cards', 'highlights', 'program', 'route_map', 'departures', 'rooms', 'terms', 'availability', 'tickets', 'requirements', 'included', 'extras', 'info', 'galleries', 'videos', 'map', 'booking', 'reviews'];
         $skip = [
             'tour' => ['rooms', 'availability', 'tickets', 'requirements', 'amenities'],
             'event' => ['highlights', 'program', 'departures', 'rooms', 'availability', 'requirements', 'extras', 'amenities'],
@@ -161,6 +161,43 @@ class STA_Templates
         ];
     }
 
+    /** Page of a destination / place / group / tour type / accommodation type */
+    protected static function term_layout(string $tax): array
+    {
+        $types = [
+            'sta_tour_type' => 'tour', 'sta_hotel_type' => 'accommodation', 'sta_event_category' => 'event',
+        ][$tax] ?? 'tour,accommodation,event';
+
+        return [
+            self::section([['size' => 100, 'widgets' => [self::widget('sta-term-header', ['preview_tax' => $tax, 'height' => 340])]]], ['layout' => 'full_width', 'stretch_section' => 'section-stretched']),
+            self::section([['size' => 100, 'widgets' => [self::widget('sta-term-offers', ['preview_tax' => $tax, 'types' => explode(',', $types), 'children' => 'yes', 'columns' => 3])]]]),
+        ];
+    }
+
+    /** Which templates the plugin makes: key => [title, document type, layout, conditions] */
+    protected static function template_plan(): array
+    {
+        $plan = [];
+        foreach (STA_Schema::post_types() as $postType => $pt) {
+            $plan[$postType.':single-post'] = [$pt['plural'].' – SeeInside', 'single-post', fn () => self::single_layout($postType), ['include/singular/'.$postType]];
+            $plan[$postType.':archive'] = [__('List', 'seeinside-travel').': '.$pt['plural'].' – SeeInside', 'archive', fn () => self::archive_layout($postType), ['include/archive/'.$postType.'_archive']];
+        }
+        // one page design per taxonomy: destinations, places, groups, tour types, accommodation types, event categories
+        foreach (['sta_destination', 'sta_place', 'sta_group', 'sta_tour_type', 'sta_hotel_type', 'sta_event_category'] as $tax) {
+            $t = STA_Schema::taxonomies()[$tax] ?? null;
+            if ($t) {
+                $plan['tax:'.$tax] = [__('Page', 'seeinside-travel').': '.$t['plural'].' – SeeInside', 'archive', fn () => self::term_layout($tax), ['include/archive/'.$tax]];
+            }
+        }
+        // own single design per accommodation type (hotel, apartment, villa…) – starts as the hotel design
+        $hotelTypes = get_terms(['taxonomy' => 'sta_hotel_type', 'hide_empty' => false]);
+        foreach (is_wp_error($hotelTypes) ? [] : $hotelTypes as $ht) {
+            $plan['hoteltype:'.$ht->slug] = [__('Accommodation', 'seeinside-travel').': '.$ht->name.' – SeeInside', 'single-post', fn () => self::single_layout('sta_hotel'), ['include/singular/in_sta_hotel_type/'.$ht->term_id]];
+        }
+
+        return $plan;
+    }
+
     /**
      * Elementor Pro: create (or re-create) the Theme Builder templates. Existing templates made by the plugin
      * are left alone unless $replace is true, so the user's own design changes are kept.
@@ -173,43 +210,36 @@ class STA_Templates
         $made = [];
         $known = get_option('sta_elementor_templates', []);
 
-        foreach (STA_Schema::post_types() as $postType => $pt) {
-            foreach (['single-post' => self::single_layout($postType), 'archive' => self::archive_layout($postType)] as $docType => $layout) {
-                $key = $postType.':'.$docType;
-                $existing = (int) ($known[$key] ?? 0);
-                if ($existing && get_post_status($existing) && ! $replace) {
-                    continue;
-                }
-                $title = ($docType === 'archive' ? __('List', 'seeinside-travel').': ' : '').$pt['plural'].' – SeeInside';
-                $id = $existing && get_post_status($existing) ? $existing : wp_insert_post([
-                    'post_type' => 'elementor_library',
-                    'post_status' => 'publish',
-                    'post_title' => $title,
-                ]);
-                if (is_wp_error($id) || ! $id) {
-                    continue;
-                }
-                wp_set_object_terms($id, $docType, 'elementor_library_type');
-                update_post_meta($id, '_elementor_template_type', $docType);
-                update_post_meta($id, '_elementor_edit_mode', 'builder');
-                update_post_meta($id, '_elementor_version', ELEMENTOR_VERSION);
-                if (defined('ELEMENTOR_PRO_VERSION')) {
-                    update_post_meta($id, '_elementor_pro_version', ELEMENTOR_PRO_VERSION);
-                }
-                update_post_meta($id, '_elementor_data', wp_slash(wp_json_encode($layout)));
-                update_post_meta($id, '_elementor_page_settings', []);
-                $condition = $docType === 'archive' ? 'include/archive/'.$postType.'_archive' : 'include/singular/'.$postType;
-                update_post_meta($id, '_elementor_conditions', [$condition]);
-                if ($docType === 'archive') {
-                    // destination / group pages use the tour list
-                    if ($postType === 'sta_tour') {
-                        update_post_meta($id, '_elementor_conditions', [$condition, 'include/archive/sta_destination', 'include/archive/sta_place', 'include/archive/sta_group', 'include/archive/sta_tour_type']);
-                    }
-                }
-                delete_post_meta($id, '_elementor_css');
-                $known[$key] = $id;
-                $made[] = $title;
+        foreach (self::template_plan() as $key => [$title, $docType, $layoutFn, $conditions]) {
+            $existing = (int) ($known[$key] ?? 0);
+            if ($existing && get_post_status($existing) && ! $replace) {
+                continue;
             }
+            $id = $existing && get_post_status($existing) ? $existing : wp_insert_post([
+                'post_type' => 'elementor_library',
+                'post_status' => 'publish',
+                'post_title' => $title,
+            ]);
+            if (is_wp_error($id) || ! $id) {
+                continue;
+            }
+            wp_set_object_terms($id, $docType, 'elementor_library_type');
+            update_post_meta($id, '_elementor_template_type', $docType);
+            update_post_meta($id, '_elementor_edit_mode', 'builder');
+            update_post_meta($id, '_elementor_version', ELEMENTOR_VERSION);
+            if (defined('ELEMENTOR_PRO_VERSION')) {
+                update_post_meta($id, '_elementor_pro_version', ELEMENTOR_PRO_VERSION);
+            }
+            update_post_meta($id, '_elementor_data', wp_slash(wp_json_encode($layoutFn())));
+            update_post_meta($id, '_elementor_page_settings', []);
+            update_post_meta($id, '_elementor_conditions', $conditions);
+            delete_post_meta($id, '_elementor_css');
+            $known[$key] = $id;
+            $made[] = $title;
+        }
+        // older versions showed destination / group pages with the tour list – they now have their own pages
+        if (! empty($known['sta_tour:archive']) && get_post_status($known['sta_tour:archive'])) {
+            update_post_meta($known['sta_tour:archive'], '_elementor_conditions', ['include/archive/sta_tour_archive']);
         }
         update_option('sta_elementor_templates', $known, false);
 
