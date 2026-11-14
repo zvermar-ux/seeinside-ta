@@ -44,7 +44,7 @@ class STA_Finder
             [$price] = sta_price_info($d, 'accommodation');
             $rows[$id] = [
                 'id' => $id, 'slug' => $d['slug'] ?? '', 'title' => get_the_title($id),
-                'types' => $terms('sta_hotel_type'), 'dests' => self::with_parents($id),
+                'types' => $terms('sta_hotel_type'), 'dests' => self::with_parents($id), 'places' => self::with_parents($id, 'sta_place'),
                 'amen' => $terms('sta_amenity'),
                 'beach' => isset($d['distances']['beach_m']) && $d['distances']['beach_m'] !== null ? (int) $d['distances']['beach_m'] : (isset($d['beach_m']) ? (int) $d['beach_m'] : null),
                 'transport' => ! empty($d['transport']) || ! empty($d['has_transport']),
@@ -58,13 +58,13 @@ class STA_Finder
     }
 
     /** destination slugs of a hotel including the parent destinations (Lefkada → Greece) */
-    protected static function with_parents(int $id): array
+    protected static function with_parents(int $id, string $tax = 'sta_destination'): array
     {
         $out = [];
-        foreach (get_the_terms($id, 'sta_destination') ?: [] as $t) {
+        foreach (get_the_terms($id, $tax) ?: [] as $t) {
             $out[] = $t->slug;
-            foreach (get_ancestors($t->term_id, 'sta_destination') as $p) {
-                $pt = get_term($p, 'sta_destination');
+            foreach (get_ancestors($t->term_id, $tax) as $p) {
+                $pt = get_term($p, $tax);
                 if ($pt && ! is_wp_error($pt)) {
                     $out[] = $pt->slug;
                 }
@@ -93,7 +93,7 @@ class STA_Finder
         $slug = fn ($v) => $v === '' ? '' : sanitize_title(rawurldecode((string) $v));
 
         return [
-            'type' => array_map($slug, $type), 'dest' => $slug($dest), 'beach' => (int) self::g('f_beach', 0), 'transport' => self::g('f_transport') === '1',
+            'type' => array_map($slug, $type), 'dest' => $slug($dest), 'place' => $slug(self::g('f_place', $atts['place'] ?? (is_tax('sta_place') && ($qp = get_queried_object()) instanceof WP_Term ? $qp->slug : ''))), 'beach' => (int) self::g('f_beach', 0), 'transport' => self::g('f_transport') === '1',
             'stars' => array_map('intval', (array) self::g('f_stars', [])), 'board' => array_map('strtoupper', (array) self::g('f_board', [])),
             'amen' => array_map($slug, (array) self::g('f_amen', [])), 'price' => (float) self::g('f_price', 0), 'promo' => self::g('f_promo') === '1',
             'from' => self::g('f_from'), 'to' => self::g('f_to'), 'ad' => max(1, (int) self::g('f_ad', 2)), 'ch' => max(0, (int) self::g('f_ch', 0)),
@@ -108,6 +108,9 @@ class STA_Finder
             return false;
         }
         if ($skip !== 'dest' && $f['dest'] && ! in_array($f['dest'], $r['dests'], true)) {
+            return false;
+        }
+        if ($skip !== 'place' && $f['place'] && ! in_array($f['place'], $r['places'], true)) {
             return false;
         }
         if ($skip !== 'beach' && $f['beach'] && ($r['beach'] === null || $r['beach'] > $f['beach'])) {
@@ -140,7 +143,7 @@ class STA_Finder
 
     public static function shortcode($atts = []): string
     {
-        $atts = shortcode_atts(['destination' => '', 'type' => '', 'per_page' => 12, 'columns' => 3], $atts, 'sta_hotel_finder');
+        $atts = shortcode_atts(['destination' => '', 'place' => '', 'type' => '', 'per_page' => 12, 'columns' => 3], $atts, 'sta_hotel_finder');
         STA_Listings::enqueue();
         $f = self::filters($atts);
         $rows = self::rows();
@@ -236,9 +239,33 @@ class STA_Finder
             $h .= '<div class="sta-ff"><h4>'.esc_html__('Destination', 'seeinside-travel').'</h4><select name="f_dest"><option value="">'.esc_html__('All destinations', 'seeinside-travel').'</option>';
             foreach ($dests as $t) {
                 $n = $count('dest', fn ($r) => in_array($t->slug, $r['dests'], true));
-                $h .= '<option value="'.esc_attr($t->slug).'"'.selected($f['dest'], $t->slug, false).'>'.esc_html(str_repeat('— ', count(get_ancestors($t->term_id, 'sta_destination'))).$t->name).' ('.$n.')</option>';
+                $h .= '<option value="'.esc_attr(rawurldecode($t->slug)).'"'.selected($f['dest'], $t->slug, false).'>'.esc_html(str_repeat('— ', count(get_ancestors($t->term_id, 'sta_destination'))).$t->name).' ('.$n.')</option>';
             }
             $h .= '</select></div>';
+        }
+        // place (Sandanski, Lefkada › Nikiana) – only places with offers for the other filters
+        $places = get_terms(['taxonomy' => 'sta_place', 'hide_empty' => false]);
+        if (! is_wp_error($places) && $places) {
+            $opts = '';
+            $byParent = [];
+            foreach ($places as $t) {
+                $byParent[$t->parent][] = $t;
+            }
+            $walk = function (int $parent, int $depth) use (&$walk, &$opts, $byParent, $count, $f) {
+                $list = $byParent[$parent] ?? [];
+                usort($list, fn ($a, $b) => strcoll($a->name, $b->name));
+                foreach ($list as $t) {
+                    $n = $count('place', fn ($r) => in_array($t->slug, $r['places'], true));
+                    if ($n || $f['place'] === $t->slug) {
+                        $opts .= '<option value="'.esc_attr(rawurldecode($t->slug)).'"'.selected($f['place'], $t->slug, false).'>'.esc_html(str_repeat('— ', $depth).$t->name).' ('.$n.')</option>';
+                    }
+                    $walk($t->term_id, $depth + 1);
+                }
+            };
+            $walk(0, 0);
+            if ($opts) {
+                $h .= '<div class="sta-ff"><h4>'.esc_html__('Place', 'seeinside-travel').'</h4><select name="f_place"><option value="">'.esc_html__('All places', 'seeinside-travel').'</option>'.$opts.'</select></div>';
+            }
         }
         // type
         $types = get_terms(['taxonomy' => 'sta_hotel_type', 'hide_empty' => true]);

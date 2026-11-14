@@ -1802,5 +1802,12 @@
     "With room numbers below: counted automatically.": "Со броеви на соби подолу: се брои автоматски.",
     "e.g. A4, A5, Б201 – type and press Enter": "на пр. A4, A5, Б201 – внесете и притиснете Enter",
     "e.g. Switchboard (5 lines)": "на пр. Централа (5 линии)",
-    "taken": "зафатена"
+    "taken": "зафатена",
+    "Places": "Места",
+    "Belongs to (destination or place)": "Припаѓа на (дестинација или место)",
+    "E.g. Lefkada → Greece, Nikiana → Lefkada. A place under a place makes the hierarchy.": "На пр. Лефкада → Грција, Никиана → Лефкада. Место под место прави хиерархија.",
+    "Without destination": "Без дестинација",
+    "Town / resort, e.g. Sandanski or Lefkada › Nikiana. Places are kept in Groups & destinations.": "Град / летувалиште, на пр. Сандански или Лефкада › Никиана. Местата се во Групи, дестинации и места.",
+    "Group / destination / place": "Група / дестинација / место",
+    "Groups, destinations & places": "Групи, дестинации и места"
 }

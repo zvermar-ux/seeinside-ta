@@ -440,6 +440,7 @@ class STA_Sync
                     'fields' => $f, 'sort_date' => $d['next_departure'] ?? '',
                     'terms' => [
                         'sta_destination' => array_filter([$d['destination'] ?? null]),
+                        'sta_place' => self::place_terms($d),
                         'sta_group' => array_filter([$d['group'] ?? null]),
                         'sta_tour_type' => array_filter([$d['tour_type']['value'] ? ['slug' => $d['tour_type']['value'], 'name' => $d['tour_type']['label']] : null]),
                         'sta_country' => $country,
@@ -505,6 +506,8 @@ class STA_Sync
                     'fields' => $f,
                     'terms' => [
                         'sta_destination' => array_filter([$d['destination'] ?? null]),
+                        'sta_place' => self::place_terms($d),
+                        'sta_group' => array_filter([$d['group'] ?? null]),
                         'sta_hotel_type' => array_filter([$d['accommodation_type']['value'] ? ['slug' => $d['accommodation_type']['value'], 'name' => $d['accommodation_type']['label']] : null]),
                         'sta_amenity' => array_map(fn ($a) => ['slug' => $a['key'], 'name' => $a['name']], $d['amenities'] ?? []),
                         'sta_country' => $country,
@@ -549,6 +552,23 @@ class STA_Sync
     /**
      * $t: string (name) | ['id' => remote id, 'name' => {mk,en}] (destination / group) | ['slug' => …, 'name' => {mk,en}]
      */
+    /** The place of an offer (Nikiana), its parent places (Lefkada) are kept by the term hierarchy */
+    protected static function place_terms(array $d): array
+    {
+        $p = $d['locality'] ?? null;
+        if (! $p) {
+            return [];
+        }
+        $parents = array_reverse((array) ($p['parents'] ?? []));   // top first: Lefkada, then Nikiana
+        $prev = null;
+        foreach ($parents as $par) {
+            self::term('sta_place', ['id' => $par['id'], 'name' => $par['name']] + ($prev ? ['parent_id' => $prev] : []));
+            $prev = $par['id'];
+        }
+
+        return [['id' => $p['id'], 'name' => $p['name']] + ($prev ? ['parent_id' => $prev] : [])];
+    }
+
     public static function term(string $tax, $t): ?int
     {
         if (! $t) {
@@ -629,13 +649,16 @@ class STA_Sync
                 return;
             }
         }
-        foreach (['destinations' => 'sta_destination', 'groups' => 'sta_group'] as $key => $tax) {
+        foreach (['destinations' => 'sta_destination', 'groups' => 'sta_group', 'places' => 'sta_place'] as $key => $tax) {
             $items = $body[$key] ?? [];
             // parents first
             usort($items, fn ($a, $b) => (int) ! empty($a['parent_id']) <=> (int) ! empty($b['parent_id']));
             foreach ($items as $g) {
                 $termId = self::term($tax, ['id' => $g['id'], 'name' => $g['name'], 'parent_id' => $g['parent_id'] ?? null]);
                 if ($termId) {
+                    if ($tax === 'sta_place') {
+                        update_term_meta($termId, 'sta_destination_id', (int) ($g['destination_id'] ?? 0));
+                    }
                     update_term_meta($termId, 'sta_image', $g['image'] ?? '');
                     $att = ! empty($g['image']) ? self::attach($g['image']) : null;   // local copy when available
                     if ($att) {

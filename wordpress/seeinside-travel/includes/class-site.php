@@ -338,6 +338,39 @@ class STA_Site
                         $menuOf[$t->term_id] = $add($t->name, ['menu-item-type' => 'custom', 'menu-item-url' => add_query_arg('f_dest', $t->slug, $base)], $menuOf[$t->parent] ?? $d);
                     }
                 }
+                // places under their destination (Greece → Lefkada → Nikiana)
+                $places = get_terms(['taxonomy' => 'sta_place', 'hide_empty' => true, 'object_ids' => $hotelIds]);
+                if (! is_wp_error($places) && $places) {
+                    $pIds = wp_list_pluck($places, 'term_id');
+                    foreach ($places as $t) {
+                        foreach (get_ancestors($t->term_id, 'sta_place') as $anc) {
+                            if (! in_array($anc, $pIds, true) && ($at = get_term($anc, 'sta_place')) instanceof WP_Term) {
+                                $places[] = $at;
+                                $pIds[] = $anc;
+                            }
+                        }
+                    }
+                    $destTerm = function (int $remote) {
+                        $f = $remote ? get_terms(['taxonomy' => 'sta_destination', 'hide_empty' => false, 'meta_key' => 'sta_id', 'meta_value' => $remote, 'number' => 1]) : [];
+
+                        return $f && ! is_wp_error($f) ? $f[0] : null;
+                    };
+                    $menuOfPlace = [];
+                    foreach ([0, 1, 2, 3] as $level) {
+                        foreach ($places as $t) {
+                            if (count(get_ancestors($t->term_id, 'sta_place')) !== $level || isset($menuOfPlace[$t->term_id])) {
+                                continue;
+                            }
+                            if ($t->parent) {
+                                $parentItem = $menuOfPlace[$t->parent] ?? $d;
+                            } else {
+                                $dt = $destTerm((int) get_term_meta($t->term_id, 'sta_destination_id', true));
+                                $parentItem = $dt && isset($menuOf[$dt->term_id]) ? $menuOf[$dt->term_id] : $d;
+                            }
+                            $menuOfPlace[$t->term_id] = $add($t->name, ['menu-item-type' => 'custom', 'menu-item-url' => add_query_arg('f_place', $t->slug, $base)], $parentItem);
+                        }
+                    }
+                }
             }
         }
         if ($count('sta_event')) {

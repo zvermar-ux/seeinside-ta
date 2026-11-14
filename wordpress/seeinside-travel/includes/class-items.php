@@ -23,6 +23,7 @@ class STA_Items
             'slide' => [__('Homepage slider', 'seeinside-travel'), 'slide', ''],
             'destination' => [__('Destinations', 'seeinside-travel'), 'term', 'sta_destination'],
             'group' => [__('Groups', 'seeinside-travel'), 'term', 'sta_group'],
+            'place' => [__('Places', 'seeinside-travel'), 'term', 'sta_place'],
             'tour_type' => [__('Tour types', 'seeinside-travel'), 'term', 'sta_tour_type'],
             'event_category' => [__('Event categories', 'seeinside-travel'), 'term', 'sta_event_category'],
             'hotel_type' => [__('Accommodation types', 'seeinside-travel'), 'term', 'sta_hotel_type'],
@@ -44,12 +45,12 @@ class STA_Items
     public static function filter_taxonomies(string $source): array
     {
         $map = [
-            'tour' => ['sta_group', 'sta_destination', 'sta_tour_type', 'sta_country'],
-            'accommodation' => ['sta_destination', 'sta_hotel_type', 'sta_country'],
+            'tour' => ['sta_group', 'sta_destination', 'sta_place', 'sta_tour_type', 'sta_country'],
+            'accommodation' => ['sta_group', 'sta_destination', 'sta_place', 'sta_hotel_type', 'sta_country'],
             'event' => ['sta_event_category', 'sta_country'],
             'visa' => ['sta_country'],
             'custom' => ['sta_offer_type'],
-            'last_minute' => ['sta_group', 'sta_destination', 'sta_tour_type', 'sta_hotel_type', 'sta_country'],
+            'last_minute' => ['sta_group', 'sta_destination', 'sta_place', 'sta_tour_type', 'sta_hotel_type', 'sta_country'],
         ];
 
         return $map[$source] ?? [];

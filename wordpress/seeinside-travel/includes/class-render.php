@@ -87,6 +87,7 @@ class STA_Render
             $add('clock', __('Duration', 'seeinside-travel'), $days ? sprintf(_n('%d day', '%d days', $days, 'seeinside-travel'), $days).($nights ? ' / '.sprintf(_n('%d night', '%d nights', $nights, 'seeinside-travel'), $nights) : '') : null);
             $add($d['is_flight'] ? 'plane' : 'bus', __('Transport', 'seeinside-travel'), $d['is_flight'] ? trim(__('Flight', 'seeinside-travel').' '.($d['airline']['name'] ?? '')) : sta_t($d['tour_type']['label'] ?? null));
             $add('pin', __('Destination', 'seeinside-travel'), trim(($d['location'] ?? '').(! empty($d['country']) ? ', '.$d['country'] : ''), ', '));
+            $add('pin', __('Place', 'seeinside-travel'), ! empty($d['locality']) ? sta_t($d['locality']['path'] ?? $d['locality']['name']) : null);
             $add('calendar', __('Next departure', 'seeinside-travel'), sta_date($d['next_departure'] ?? null));
             $min = $d['group_size']['min'] ?? null;
             $max = $d['group_size']['max'] ?? null;

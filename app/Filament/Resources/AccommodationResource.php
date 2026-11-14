@@ -77,6 +77,7 @@ class AccommodationResource extends Resource
                                 ->options(fn (Get $get) => TravelObjectResource::operatorOptions(AgencyField::current($get)))->searchable(),
                             CatalogFields::groupSelect('group_id', GroupType::Group, __('Group')),
                             CatalogFields::groupSelect('destination_id', GroupType::Destination, __('Destination')),
+                            CatalogFields::placeSelect(),
                             Lang::tabs(fn (string $l) => [
                                 Lang::area('short_description', __('Short description'), $l, 2),
                                 Lang::editor('overview', __('Overview (general information)'), $l),
@@ -213,7 +214,9 @@ class AccommodationResource extends Resource
             ->filters([
                 AgencyField::filter(),
                 Tables\Filters\SelectFilter::make('type')->label(__('Type'))->options(AccommodationType::class),
-                Tables\Filters\SelectFilter::make('destination_id')->label(__('Destination'))
+Tables\Filters\SelectFilter::make('place_id')->label(__('Place'))->searchable()
+                    ->options(fn () => collect(\App\Filament\Resources\GroupResource::placeOptions(null))->collapse()->all()),
+                                Tables\Filters\SelectFilter::make('destination_id')->label(__('Destination'))
                     ->options(fn () => GroupResource::optionsFor(GroupType::Destination, null))->searchable(),
                 Tables\Filters\SelectFilter::make('stars')->label(__('Category'))->options([1 => '★', 2 => '★★', 3 => '★★★', 4 => '★★★★', 5 => '★★★★★']),
                 CatalogFields::lastMinuteFilter(),

@@ -131,7 +131,7 @@ class STA_Frontend
     public static function sc_list($atts = []): string
     {
         $a = shortcode_atts([
-            'type' => 'tour', 'limit' => 9, 'columns' => 3, 'destination' => '', 'group' => '', 'tour_type' => '', 'category' => '',
+            'type' => 'tour', 'limit' => 9, 'columns' => 3, 'destination' => '', 'place' => '', 'group' => '', 'tour_type' => '', 'category' => '',
             'country' => '', 'last_minute' => '', 'featured' => '', 'orderby' => 'date', 'order' => '', 'pagination' => '', 'search' => '', 'ids' => '',
             'query' => '',
         ], $atts, 'sta_list');
@@ -152,7 +152,7 @@ class STA_Frontend
                 'tax_query' => [],
                 'meta_query' => [],
             ];
-            foreach (['destination' => 'sta_destination', 'group' => 'sta_group', 'tour_type' => 'sta_tour_type', 'category' => 'sta_event_category', 'country' => 'sta_country'] as $att => $tax) {
+            foreach (['destination' => 'sta_destination', 'place' => 'sta_place', 'group' => 'sta_group', 'tour_type' => 'sta_tour_type', 'category' => 'sta_event_category', 'country' => 'sta_country'] as $att => $tax) {
                 if ($a[$att] !== '') {
                     $args['tax_query'][] = ['taxonomy' => $tax, 'field' => 'slug', 'terms' => array_map('trim', explode(',', $a[$att])), 'include_children' => true];
                 }

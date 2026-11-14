@@ -179,6 +179,12 @@ class Accommodation extends Model
         return $this->belongsTo(Group::class, 'destination_id');
     }
 
+    /** Place (Сандански, Лефкада › Никиана) – a group of type "place" */
+    public function placeGroup(): BelongsTo
+    {
+        return $this->belongsTo(Group::class, 'place_id');
+    }
+
     public function supplierConnection(): BelongsTo
     {
         return $this->belongsTo(SupplierConnection::class);

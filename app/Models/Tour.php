@@ -109,6 +109,12 @@ class Tour extends Model
         return $this->belongsTo(Group::class, 'destination_id');
     }
 
+    /** Place (Сандански, Лефкада › Никиана) – a group of type "place" */
+    public function placeGroup(): BelongsTo
+    {
+        return $this->belongsTo(Group::class, 'place_id');
+    }
+
     public function airline(): BelongsTo
     {
         return $this->belongsTo(Airline::class);

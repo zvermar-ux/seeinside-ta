@@ -57,6 +57,62 @@ class Group extends Model
         return $this->hasMany(TravelObject::class, 'destination_id');
     }
 
+    public function placeTours(): HasMany
+    {
+        return $this->hasMany(Tour::class, 'place_id');
+    }
+
+    public function placeAccommodations(): HasMany
+    {
+        return $this->hasMany(Accommodation::class, 'place_id');
+    }
+
+    /** Parents up to the top: [direct parent, …, root] (stops on loops) */
+    public function ancestors(): array
+    {
+        $out = [];
+        $seen = [$this->id => true];
+        $g = $this;
+        while ($g->parent_id && ! isset($seen[$g->parent_id]) && ($p = $g->parent()->withoutGlobalScopes()->first())) {
+            $out[] = $p;
+            $seen[$p->id] = true;
+            $g = $p;
+        }
+
+        return $out;
+    }
+
+    /** Place with its parent places: "Никиана, Лефкада" (destinations are not repeated) */
+    public function placePath(string $sep = ', ', ?string $locale = null): string
+    {
+        $parts = [$this->nameIn($locale)];
+        foreach ($this->ancestors() as $a) {
+            if ($a->type !== GroupType::Place) {
+                break;
+            }
+            $parts[] = $a->nameIn($locale);
+        }
+
+        return implode($sep, $parts);
+    }
+
+    /** The destination a place belongs to (the first destination among its parents) */
+    public function destinationOfPlace(): ?self
+    {
+        foreach ($this->ancestors() as $a) {
+            if ($a->type === GroupType::Destination) {
+                return $a;
+            }
+        }
+
+        return null;
+    }
+
+    public function nameIn(?string $locale = null): string
+    {
+        return $locale ? ((string) $this->getTranslation('name', $locale, false) ?: $this->display_name) : $this->display_name;
+    }
+
     public function scopeOfType(Builder $query, GroupType $type): Builder
     {
         return $query->where('type', $type->value);

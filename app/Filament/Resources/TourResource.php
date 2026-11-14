@@ -86,6 +86,7 @@ class TourResource extends Resource
                                 ->options(fn (Get $get) => TravelObjectResource::operatorOptions(AgencyField::current($get)))->searchable(),
                             CatalogFields::groupSelect('group_id', GroupType::Group, __('Group')),
                             CatalogFields::groupSelect('destination_id', GroupType::Destination, __('Destination')),
+                            CatalogFields::placeSelect(),
                             Forms\Components\TextInput::make('location')->label(__('Location / route'))->placeholder('Неапол, Соренто, Амалфи'),
                             Forms\Components\TextInput::make('country')->label(__('Country')),
                             ...CatalogFields::location(),
@@ -273,7 +274,9 @@ class TourResource extends Resource
             ->filters([
                 AgencyField::filter(),
                 Tables\Filters\SelectFilter::make('tour_type')->label(__('Tour type'))->options(TourType::class),
-                Tables\Filters\SelectFilter::make('destination_id')->label(__('Destination'))
+Tables\Filters\SelectFilter::make('place_id')->label(__('Place'))->searchable()
+                    ->options(fn () => collect(\App\Filament\Resources\GroupResource::placeOptions(null))->collapse()->all()),
+                                Tables\Filters\SelectFilter::make('destination_id')->label(__('Destination'))
                     ->options(fn () => GroupResource::optionsFor(GroupType::Destination, null))->searchable(),
                 CatalogFields::lastMinuteFilter(),
                 Tables\Filters\TernaryFilter::make('is_active')->label(__('Active')),

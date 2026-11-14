@@ -159,9 +159,44 @@ class CatalogFields
 
     public static function groupSelect(string $field, GroupType $type, string $label): Forms\Components\Select
     {
-        return Forms\Components\Select::make($field)->label($label)
+        $sel = Forms\Components\Select::make($field)->label($label)
             ->options(fn (Get $get) => GroupResource::optionsFor($type, AgencyField::current($get)))
             ->searchable();
+        if ($field === 'destination_id') {
+            // a place of another destination is cleared
+            $sel->live()->afterStateUpdated(function ($state, Get $get, \Filament\Forms\Set $set) {
+                $place = $get('place_id') ? \App\Models\Group::find($get('place_id')) : null;
+                if ($place && $state && $place->destinationOfPlace()?->id !== (int) $state) {
+                    $set('place_id', null);
+                }
+            });
+        }
+
+        return $sel;
+    }
+
+    /** Place after Group → Destination: only the places of the chosen destination; a new place can be added here */
+    public static function placeSelect(): Forms\Components\Select
+    {
+        return Forms\Components\Select::make('place_id')->label(__('Place'))
+            ->options(fn (Get $get) => GroupResource::placeOptions(AgencyField::current($get), $get('destination_id') ? (int) $get('destination_id') : null))
+            ->searchable()
+            ->helperText(__('Town / resort, e.g. Sandanski or Lefkada › Nikiana. Places are kept in Groups & destinations.'))
+            ->createOptionForm(fn (Get $get) => [
+                Forms\Components\TextInput::make('name')->label(__('Name'))->required()->maxLength(255),
+                Forms\Components\Select::make('parent_id')->label(__('Belongs to (destination or place)'))
+                    ->options(GroupResource::placeParentOptions(AgencyField::current($get)))
+                    ->default($get('destination_id'))->searchable(),
+            ])
+            ->createOptionUsing(function (array $data, Get $get) {
+                return \App\Models\Group::create([
+                    'agency_id' => AgencyField::current($get) ?? auth()->user()?->agency_id,
+                    'type' => GroupType::Place->value,
+                    'name' => ['mk' => $data['name']],
+                    'parent_id' => $data['parent_id'] ?? null,
+                    'is_active' => true,
+                ])->id;
+            });
     }
 
     /* ---------- table helpers ---------- */

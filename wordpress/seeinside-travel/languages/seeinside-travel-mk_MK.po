@@ -2758,6 +2758,12 @@ msgstr "Како во Поставки → Приказ"
 msgid "Space between photos"
 msgstr "Простор меѓу сликите"
 
+msgid "Places"
+msgstr "Места"
+
+msgid "All places"
+msgstr "Сите места"
+
 msgid "%d place to stay"
 msgid_plural "%d places to stay"
 msgstr[0] "%d сместување"

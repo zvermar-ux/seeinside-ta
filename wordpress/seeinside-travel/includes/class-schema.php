@@ -49,7 +49,7 @@ class STA_Schema
                 'plural' => __('Organized tours', 'seeinside-travel'),
                 'slug' => 'aranzmani',
                 'icon' => 'dashicons-palmtree',
-                'taxonomies' => ['sta_destination', 'sta_group', 'sta_tour_type', 'sta_country'],
+                'taxonomies' => ['sta_destination', 'sta_place', 'sta_group', 'sta_tour_type', 'sta_country'],
             ],
             'sta_event' => [
                 'singular' => __('Event', 'seeinside-travel'),
@@ -63,7 +63,7 @@ class STA_Schema
                 'plural' => __('Hotels & apartments', 'seeinside-travel'),
                 'slug' => 'smestuvanje',
                 'icon' => 'dashicons-building',
-                'taxonomies' => ['sta_destination', 'sta_hotel_type', 'sta_amenity', 'sta_country'],
+                'taxonomies' => ['sta_destination', 'sta_place', 'sta_group', 'sta_hotel_type', 'sta_amenity', 'sta_country'],
             ],
             'sta_visa' => [
                 'singular' => __('Visa', 'seeinside-travel'),
@@ -87,6 +87,7 @@ class STA_Schema
     {
         return [
             'sta_destination' => ['singular' => __('Destination', 'seeinside-travel'), 'plural' => __('Destinations', 'seeinside-travel'), 'slug' => 'destinacija', 'hierarchical' => true],
+            'sta_place' => ['singular' => __('Place', 'seeinside-travel'), 'plural' => __('Places', 'seeinside-travel'), 'slug' => 'mesto', 'hierarchical' => true],
             'sta_group' => ['singular' => __('Group', 'seeinside-travel'), 'plural' => __('Groups', 'seeinside-travel'), 'slug' => 'grupa', 'hierarchical' => true],
             'sta_tour_type' => ['singular' => __('Tour type', 'seeinside-travel'), 'plural' => __('Tour types', 'seeinside-travel'), 'slug' => 'tip-na-tura', 'hierarchical' => false],
             'sta_event_category' => ['singular' => __('Event category', 'seeinside-travel'), 'plural' => __('Event categories', 'seeinside-travel'), 'slug' => 'kategorija-nastan', 'hierarchical' => false],

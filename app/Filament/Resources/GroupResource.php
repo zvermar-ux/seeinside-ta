@@ -38,12 +38,12 @@ class GroupResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return mb_strtolower(__('Group / destination'));
+        return mb_strtolower(__('Group / destination / place'));
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Groups & destinations');
+        return __('Groups, destinations & places');
     }
 
     public static function getRecordTitle(?\Illuminate\Database\Eloquent\Model $record): string
@@ -65,6 +65,54 @@ class GroupResource extends Resource
             ->all();
     }
 
+    protected static function typeOf(Get $get): GroupType
+    {
+        $t = $get('type');
+
+        return $t instanceof GroupType ? $t : (GroupType::tryFrom((string) $t) ?? GroupType::Group);
+    }
+
+    /** Places with their parent places, by destination: [destination => [id => "Лефкада › Никиана"]] */
+    public static function placeOptions(?int $agencyId, ?int $destinationId = null, ?int $exceptId = null): array
+    {
+        $all = Group::query()->whereIn('type', [GroupType::Destination->value, GroupType::Place->value])
+            ->when($agencyId, fn (Builder $q) => $q->where('agency_id', $agencyId))->get()->keyBy('id');
+        $out = [];
+        foreach ($all->where('type', GroupType::Place) as $p) {
+            if ($p->id === $exceptId) {
+                continue;
+            }
+            $path = [$p->display_name];
+            $dest = null;
+            $seen = [$p->id => true];
+            for ($g = $p; $g->parent_id && isset($all[$g->parent_id]) && ! isset($seen[$g->parent_id]); $g = $all[$g->parent_id]) {
+                $seen[$g->parent_id] = true;
+                $par = $all[$g->parent_id];
+                if ($par->type === GroupType::Destination) {
+                    $dest = $par;
+                    break;
+                }
+                if ($par->id === $exceptId) {
+                    continue 2;   // own children cannot be the parent
+                }
+                array_unshift($path, $par->display_name);
+            }
+            if ($destinationId && $dest?->id !== $destinationId) {
+                continue;
+            }
+            $out[$dest?->display_name ?? __('Without destination')][$p->id] = implode(' › ', $path);
+        }
+        ksort($out);
+
+        return array_map(fn ($o) => collect($o)->sort()->all(), $out);
+    }
+
+    /** Parent of a place: a destination or another place */
+    public static function placeParentOptions(?int $agencyId, ?int $exceptId = null): array
+    {
+        return [__('Destinations') => static::optionsFor(GroupType::Destination, $agencyId)] + static::placeOptions($agencyId, null, $exceptId);
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -75,12 +123,12 @@ class GroupResource extends Resource
                         ->options(GroupType::class)->inline()->required()->live()
                         ->default(fn () => request()->query('type', GroupType::Group->value)),
                     Forms\Components\TextInput::make('name')->label(__('Name'))->required()->maxLength(255),
-                    Forms\Components\Select::make('parent_id')->label(__('Parent group'))
-                        ->options(fn (Get $get, ?Group $record) => static::optionsFor(
-                            GroupType::tryFrom((string) ($get('type') instanceof GroupType ? $get('type')->value : $get('type'))) ?? GroupType::Group,
-                            AgencyField::current($get),
-                            $record?->id,
-                        ))
+                    Forms\Components\Select::make('parent_id')
+                        ->label(fn (Get $get) => static::typeOf($get) === GroupType::Place ? __('Belongs to (destination or place)') : __('Parent group'))
+                        ->helperText(fn (Get $get) => static::typeOf($get) === GroupType::Place ? __('E.g. Lefkada → Greece, Nikiana → Lefkada. A place under a place makes the hierarchy.') : null)
+                        ->options(fn (Get $get, ?Group $record) => static::typeOf($get) === GroupType::Place
+                            ? static::placeParentOptions(AgencyField::current($get), $record?->id)
+                            : static::optionsFor(static::typeOf($get), AgencyField::current($get), $record?->id))
                         ->searchable(),
                     Forms\Components\RichEditor::make('description')->label(__('Description'))
                         ->columnSpanFull()
@@ -116,10 +164,16 @@ class GroupResource extends Resource
                     ->state(fn (Group $r) => $r->parent?->display_name)
                     ->placeholder('—')->badge()->color('gray')->icon('heroicon-m-folder')
                     ->sortable(query: fn (Builder $query, string $direction) => $query->orderByRaw('parent_id is null')->orderBy('parent_id', $direction)),
-                Tables\Columns\TextColumn::make('type')->label(__('Type'))->badge()->color(fn (Group $r) => $r->type === GroupType::Destination ? 'success' : 'info'),
+                Tables\Columns\TextColumn::make('type')->label(__('Type'))->badge()->color(fn (Group $r) => match ($r->type) {
+                    GroupType::Destination => 'success', GroupType::Place => 'warning', default => 'info',
+                }),
                 AgencyField::column(),
                 Tables\Columns\TextColumn::make('objects_count')->label(__('Arrangements & hotels'))->badge()->color('gray')
-                    ->state(fn (Group $r) => $r->type === GroupType::Destination ? $r->destination_objects_count : $r->group_objects_count),
+                    ->state(fn (Group $r) => match ($r->type) {
+                        GroupType::Destination => $r->destination_objects_count,
+                        GroupType::Place => $r->place_tours_count + $r->place_accommodations_count,
+                        default => $r->group_objects_count,
+                    }),
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active')),
                 Tables\Columns\ToggleColumn::make('show_on_homepage')->label(__('Homepage'))->toggleable(),
                 Tables\Columns\ToggleColumn::make('show_in_offer')->label(__('Offer'))->toggleable(),
@@ -128,9 +182,11 @@ class GroupResource extends Resource
             ->modifyQueryUsing(fn (Builder $query) => $query->with('parent')->withCount([
                 'travelObjects as group_objects_count',
                 'destinationObjects as destination_objects_count',
+                'placeTours', 'placeAccommodations',
             ]))
             ->filters([
                 AgencyField::filter(),
+                Tables\Filters\SelectFilter::make('type')->label(__('Type'))->options(GroupType::class),
                 Tables\Filters\TernaryFilter::make('has_parent')->label(__('Parent group'))
                     ->trueLabel(__('With parent group'))->falseLabel(__('Main groups only (no parent)'))
                     ->queries(
@@ -145,9 +201,11 @@ class GroupResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('objects')->label(__('Offer'))->icon('heroicon-o-list-bullet')->color('gray')->iconButton()->tooltip(__('Offer'))
-                    ->url(fn (Group $r) => TravelObjectResource::getUrl('index', ['tableFilters' => [
-                        $r->type === GroupType::Destination ? 'destination_id' : 'group_id' => ['value' => $r->id],
-                    ]])),
+                    ->url(fn (Group $r) => $r->type === GroupType::Place
+                        ? AccommodationResource::getUrl('index', ['tableFilters' => ['place_id' => ['value' => $r->id]]])
+                        : TravelObjectResource::getUrl('index', ['tableFilters' => [
+                            $r->type === GroupType::Destination ? 'destination_id' : 'group_id' => ['value' => $r->id],
+                        ]])),
                 Tables\Actions\EditAction::make(),
                 Duplicate::action(),
             ])

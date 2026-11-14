@@ -674,7 +674,7 @@
       var pr = $('[data-sta-price]', form); if (pr && !pr.dataset.dirty && !new URLSearchParams(location.search).get('f_price')) u.searchParams.delete('f_price');
       box.classList.add('is-loading'); location.href = u.toString();
     }, 250); }
-    form.addEventListener('change', function (e) { if (['f_from', 'f_to', 'f_ad', 'f_ch', 'f_q'].indexOf(e.target.name) < 0) go(); });
+    form.addEventListener('change', function (e) { if (e.target.name === 'f_dest' && form.f_place) form.f_place.value = ''; if (['f_from', 'f_to', 'f_ad', 'f_ch', 'f_q'].indexOf(e.target.name) < 0) go(); });
     form.addEventListener('submit', function (e) { e.preventDefault(); go(); });
     var pr = $('[data-sta-price]', form), out = $('[data-sta-price-out]', form);
     if (pr && out) pr.addEventListener('input', function () { pr.dataset.dirty = 1; out.textContent = pr.value; });

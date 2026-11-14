@@ -33,6 +33,19 @@ class CatalogPresenter
         return $g ? ['id' => $g->id, 'name' => ['mk' => $g->getTranslation('name', 'mk', false) ?: $g->display_name, 'en' => $g->getTranslation('name', 'en', false) ?: null]] : null;
     }
 
+    /** Place with its parent places: {id, name, path:{mk,en}, destination_id} */
+    public static function place(?Group $p): ?array
+    {
+        if (! $p) {
+            return null;
+        }
+
+        return static::group($p) + [
+            'path' => ['mk' => $p->placePath(', ', 'mk'), 'en' => $p->placePath(', ', 'en')],
+            'parents' => collect($p->ancestors())->filter(fn ($a) => $a->type === \App\Enums\GroupType::Place)->map(fn ($a) => static::group($a))->values()->all(),
+        ];
+    }
+
     /** Extra galleries: [{title:{mk,en}, images:[{url}]}] */
     public static function galleries($model): array
     {
@@ -65,6 +78,7 @@ class CatalogPresenter
             'country' => $t->country,
             'destination' => static::group($t->destination),
             'group' => static::group($t->group),
+            'locality' => static::place($t->placeGroup),
             'duration' => ['days' => $t->duration_days, 'nights' => $t->duration_nights],
             'price_from' => static::money($t->price_from),
             'price_regular' => $t->price_regular !== null && (float) $t->price_regular > (float) $t->price_from ? (float) $t->price_regular : null,
@@ -216,10 +230,12 @@ class CatalogPresenter
             'transport_type' => $a->hasTransport() ? ($a->transport['type'] ?? 'bus') : null,
             'beach_m' => $a->distance_beach_m,
             'stars' => $a->stars,
-            'place' => $a->place,
+            'place' => $a->placeGroup ? $a->placeGroup->placePath() : $a->place,
             'region' => $a->region,
             'country' => $a->country,
             'destination' => static::group($a->destination),
+            'group' => static::group($a->group),
+            'locality' => static::place($a->placeGroup),
             'short_description' => $a->trAll('short_description'),
             'board_types' => array_values($a->board_types ?? []),
             'price_from' => static::money($a->price_from),

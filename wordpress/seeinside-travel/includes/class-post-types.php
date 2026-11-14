@@ -29,7 +29,7 @@ class STA_Post_Types
                 'hierarchical' => $t['hierarchical'],
                 'public' => true,
                 'show_in_rest' => true,
-                'show_admin_column' => in_array($tax, ['sta_destination', 'sta_tour_type', 'sta_event_category', 'sta_hotel_type'], true),
+                'show_admin_column' => in_array($tax, ['sta_destination', 'sta_place', 'sta_tour_type', 'sta_event_category', 'sta_hotel_type'], true),
                 'rewrite' => ['slug' => sanitize_title(((array) sta_setting('tax_slugs', []))[$tax] ?? $t['slug']), 'with_front' => false, 'hierarchical' => $t['hierarchical']],
                 // terms come from SeeInside
                 'capabilities' => ['manage_terms' => 'manage_options', 'edit_terms' => 'manage_options', 'delete_terms' => 'manage_options', 'assign_terms' => 'edit_posts'],

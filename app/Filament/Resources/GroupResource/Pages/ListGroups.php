@@ -17,7 +17,7 @@ class ListGroups extends ListRecords
     {
         return [
             Actions\CreateAction::make()->icon('heroicon-o-plus')
-                ->url(fn () => GroupResource::getUrl('create', ['type' => $this->activeTab === 'destination' ? 'destination' : 'group'])),
+                ->url(fn () => GroupResource::getUrl('create', ['type' => in_array($this->activeTab, ['destination', 'place'], true) ? $this->activeTab : 'group'])),
         ];
     }
 
@@ -28,6 +28,8 @@ class ListGroups extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('type', GroupType::Group->value)),
             'destination' => Tab::make(__('Destinations'))->icon('heroicon-o-map-pin')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('type', GroupType::Destination->value)),
+            'place' => Tab::make(__('Places'))->icon('heroicon-o-home-modern')
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('type', GroupType::Place->value)),
         ];
     }
 }

@@ -439,7 +439,7 @@ class STA_Listings
             $in['link_url'] = $atts['link'];
         }
         $terms = $base['terms'] ?? [];
-        foreach (['destination' => 'sta_destination', 'group' => 'sta_group', 'tour_type' => 'sta_tour_type', 'category' => 'sta_event_category', 'hotel_type' => 'sta_hotel_type', 'country' => 'sta_country', 'offer_type' => 'sta_offer_type'] as $k => $tax) {
+        foreach (['destination' => 'sta_destination', 'place' => 'sta_place', 'group' => 'sta_group', 'tour_type' => 'sta_tour_type', 'category' => 'sta_event_category', 'hotel_type' => 'sta_hotel_type', 'country' => 'sta_country', 'offer_type' => 'sta_offer_type'] as $k => $tax) {
             if (! empty($atts[$k])) {
                 $terms[$tax] = explode(',', $atts[$k]);
             }

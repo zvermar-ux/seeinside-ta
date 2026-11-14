@@ -203,7 +203,7 @@ class STA_Templates
                 if ($docType === 'archive') {
                     // destination / group pages use the tour list
                     if ($postType === 'sta_tour') {
-                        update_post_meta($id, '_elementor_conditions', [$condition, 'include/archive/sta_destination', 'include/archive/sta_group', 'include/archive/sta_tour_type']);
+                        update_post_meta($id, '_elementor_conditions', [$condition, 'include/archive/sta_destination', 'include/archive/sta_place', 'include/archive/sta_group', 'include/archive/sta_tour_type']);
                     }
                 }
                 delete_post_meta($id, '_elementor_css');

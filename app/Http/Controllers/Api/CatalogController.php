@@ -71,6 +71,15 @@ class CatalogController extends Controller
             'slider' => $this->sliderItems($agency->id),
             'flights' => ['search_url' => $agency->flight_search_url, 'widget_code' => $agency->flight_widget_code],
             'destinations' => $groups->where('type', GroupType::Destination)->map(fn ($g) => P::group($g) + ['parent_id' => $g->parent_id, 'image' => P::url($g->image)])->values(),
+            'places' => $groups->where('type', GroupType::Place)->map(function ($g) use ($groups) {
+                $parent = $g->parent_id ? $groups->firstWhere('id', $g->parent_id) : null;
+
+                return P::group($g) + [
+                    'parent_id' => $parent && $parent->type === GroupType::Place ? $parent->id : null,
+                    'destination_id' => $g->destinationOfPlace()?->id,
+                    'image' => P::url($g->image),
+                ];
+            })->values(),
             'groups' => $groups->where('type', GroupType::Group)->map(fn ($g) => P::group($g) + ['parent_id' => $g->parent_id, 'image' => P::url($g->image)])->values(),
             'departure_places' => DeparturePlace::withoutGlobalScopes()->where('agency_id', $agency->id)->where('is_active', true)->orderBy('sort_order')->get()
                 ->map(fn ($p) => ['id' => $p->id, 'name' => $p->trAll('name'), 'meeting_point' => $p->meeting_point])->values(),
@@ -126,14 +135,27 @@ class CatalogController extends Controller
         return response()->json(['data' => \App\Services\Ai\ChatConfig::forWebsite($this->agencyId($request))]);
     }
 
+    /** A place and all places under it (Lefkada → Nikiana, Porto Katsiki…) */
+    protected function placeWithChildren(int $id): array
+    {
+        $ids = [$id];
+        for ($level = [$id], $i = 0; $level && $i < 5; $i++) {
+            $level = Group::withoutGlobalScopes()->whereIn('parent_id', $level)->where('type', GroupType::Place->value)->pluck('id')->all();
+            $ids = array_merge($ids, $level);
+        }
+
+        return $ids;
+    }
+
     /* ---------------- tours ---------------- */
 
     public function tours(Request $request): JsonResponse
     {
-        $q = $this->published(Tour::class, $request)->with(['destination', 'group', 'departures']);
+        $q = $this->published(Tour::class, $request)->with(['destination', 'group', 'placeGroup', 'departures']);
         $this->search($q, $request->query('q'), ['title', 'location', 'country']);
         $q->when($request->query('type'), fn ($q, $v) => $q->where('tour_type', $v))
             ->when($request->query('destination'), fn ($q, $v) => $q->where('destination_id', $v))
+            ->when($request->query('place'), fn ($q, $v) => $q->whereIn('place_id', $this->placeWithChildren((int) $v)))
             ->when($request->query('group'), fn ($q, $v) => $q->where('group_id', $v))
             ->when($request->boolean('featured'), fn ($q) => $q->where('is_featured', true))
             ->when($request->boolean('flight'), fn ($q) => $q->where('is_flight', true))
@@ -155,7 +177,7 @@ class CatalogController extends Controller
     public function tour(Request $request, string $slug): JsonResponse
     {
         $t = $this->published(Tour::class, $request)->where('slug', $slug)
-            ->with(['destination', 'group', 'airline', 'days', 'departures', 'extras', 'departurePlaceLinks.departurePlace', 'media'])
+            ->with(['destination', 'group', 'placeGroup', 'airline', 'days', 'departures', 'extras', 'departurePlaceLinks.departurePlace', 'media'])
             ->firstOrFail();
 
         return response()->json(['data' => P::tour($t)]);
@@ -188,10 +210,11 @@ class CatalogController extends Controller
 
     public function accommodations(Request $request): JsonResponse
     {
-        $q = $this->published(Accommodation::class, $request)->with(['destination', 'amenities']);
+        $q = $this->published(Accommodation::class, $request)->with(['destination', 'group', 'placeGroup', 'amenities']);
         $this->search($q, $request->query('q'), ['name', 'place', 'region', 'country']);
         $q->when($request->query('type'), fn ($q, $v) => $q->where('type', $v))
             ->when($request->query('destination'), fn ($q, $v) => $q->where('destination_id', $v))
+            ->when($request->query('place'), fn ($q, $v) => $q->whereIn('place_id', $this->placeWithChildren((int) $v)))
             ->when($request->query('group'), fn ($q, $v) => $q->where('group_id', $v))
             ->when($request->query('stars'), fn ($q, $v) => $q->where('stars', '>=', $v))
             ->when($request->query('board'), fn ($q, $v) => $q->whereHas('rooms', fn ($r) => $r->where('board', $v)))
@@ -212,7 +235,7 @@ class CatalogController extends Controller
     public function accommodation(Request $request, string $slug): JsonResponse
     {
         $a = $this->published(Accommodation::class, $request)->where('slug', $slug)
-            ->with(['destination', 'amenities', 'rooms.rates', 'rooms.media', 'media'])->firstOrFail();
+            ->with(['destination', 'group', 'placeGroup', 'amenities', 'rooms.rates', 'rooms.media', 'media'])->firstOrFail();
 
         return response()->json(['data' => P::accommodation($a)]);
     }
@@ -347,10 +370,10 @@ class CatalogController extends Controller
 
     public function lastMinute(Request $request): JsonResponse
     {
-        $tours = $this->published(Tour::class, $request)->with(['destination', 'group', 'departures'])
+        $tours = $this->published(Tour::class, $request)->with(['destination', 'group', 'placeGroup', 'departures'])
             ->where(fn ($w) => $w->lastMinute()->orWhereHas('departures', fn ($d) => $d->where('is_last_minute', true)->whereDate('start_date', '>=', today())))
             ->get()->map(fn ($t) => P::tourSummary($t));
-        $acc = $this->published(Accommodation::class, $request)->with(['destination', 'amenities'])->lastMinute()->get()->map(fn ($a) => P::accommodationSummary($a));
+        $acc = $this->published(Accommodation::class, $request)->with(['destination', 'group', 'placeGroup', 'amenities'])->lastMinute()->get()->map(fn ($a) => P::accommodationSummary($a));
         $events = $this->published(Event::class, $request)->lastMinute()->get()->map(fn ($e) => P::eventSummary($e));
         $visas = $this->published(VisaType::class, $request)->lastMinute()->get()->map(fn ($v) => P::visaSummary($v));
 
