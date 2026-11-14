@@ -44,6 +44,10 @@ class STA_Frontend
                 'nights' => __('nights', 'seeinside-travel'),
                 'book' => __('Book', 'seeinside-travel'),
                 'free' => __('Free', 'seeinside-travel'),
+                'sbDays' => implode(',', [__('Mon', 'seeinside-travel'), __('Tue', 'seeinside-travel'), __('Wed', 'seeinside-travel'), __('Thu', 'seeinside-travel'), __('Fri', 'seeinside-travel'), __('Sat', 'seeinside-travel'), __('Sun', 'seeinside-travel')]),
+                'sbDest' => __('Destinations', 'seeinside-travel'), 'sbPlace' => __('Places', 'seeinside-travel'), 'sbGroup' => __('Categories', 'seeinside-travel'), 'sbItem' => __('Offers', 'seeinside-travel'),
+                'sbNone' => __('Nothing found – press Search to search by text.', 'seeinside-travel'), 'sbDates' => __('dd.mm.yyyy - dd.mm.yyyy', 'seeinside-travel'),
+                'adult1' => __('adult', 'seeinside-travel'), 'adultN' => __('adults', 'seeinside-travel'), 'child1' => __('child', 'seeinside-travel'), 'childN' => __('children', 'seeinside-travel'),
                 'freePlaces' => __('free for your dates', 'seeinside-travel'),
                 'freeNote' => __('Showing only places that are free for your dates, with the total price.', 'seeinside-travel'),
                 'available' => __('available', 'seeinside-travel'),
@@ -221,14 +225,38 @@ class STA_Frontend
     }
 
     /** Filters from the search form (?sta_q, sta_dest, sta_type, sta_max, sta_lm, sta_month, sta_sort) */
-    protected static function apply_filters_from_request(array &$args): void
+    public static function apply_filters_from_request(array &$args): void
     {
         $g = fn ($k) => isset($_GET[$k]) ? sanitize_text_field(wp_unslash($_GET[$k])) : '';
         if ($g('sta_q')) {
             $args['s'] = $g('sta_q');
         }
         if ($g('sta_dest')) {
-            $args['tax_query'][] = ['taxonomy' => 'sta_destination', 'field' => 'slug', 'terms' => $g('sta_dest'), 'include_children' => true];
+            $args['tax_query'][] = ['taxonomy' => 'sta_destination', 'field' => 'slug', 'terms' => sanitize_title($g('sta_dest')), 'include_children' => true];
+        }
+        if ($g('sta_place')) {
+            $args['tax_query'][] = ['taxonomy' => 'sta_place', 'field' => 'slug', 'terms' => sanitize_title($g('sta_place')), 'include_children' => true];
+        }
+        // categories from the search box (several groups / tour types)
+        $list = fn ($k) => array_values(array_filter(array_map(fn ($v) => sanitize_title(wp_unslash((string) $v)), (array) ($_GET[$k] ?? []))));
+        if ($list('sta_group')) {
+            $args['tax_query'][] = ['taxonomy' => 'sta_group', 'field' => 'slug', 'terms' => $list('sta_group'), 'include_children' => true];
+        }
+        if ($list('sta_types')) {
+            $args['tax_query'][] = ['taxonomy' => 'sta_tour_type', 'field' => 'slug', 'terms' => $list('sta_types')];
+        }
+        if ($g('sta_min')) {
+            $args['meta_query'][] = ['key' => '_sta_price', 'value' => (float) $g('sta_min'), 'compare' => '>=', 'type' => 'NUMERIC'];
+        }
+        // departure between two dates (any departure; offers synced before 1.9 by their next departure)
+        $from = preg_match('/^\d{4}-\d{2}-\d{2}$/', $g('sta_from')) ? $g('sta_from') : '';
+        $to = preg_match('/^\d{4}-\d{2}-\d{2}$/', $g('sta_to')) ? $g('sta_to') : '';
+        if ($from || $to) {
+            $range = [$from ?: '1970-01-01', $to ?: '2999-12-31'];
+            $args['meta_query'][] = ['relation' => 'OR',
+                ['key' => '_sta_day', 'value' => $range, 'compare' => 'BETWEEN', 'type' => 'DATE'],
+                ['key' => '_sta_date', 'value' => $range, 'compare' => 'BETWEEN', 'type' => 'DATE'],
+            ];
         }
         if ($g('sta_kind')) {
             $args['tax_query'][] = ['taxonomy' => 'sta_tour_type', 'field' => 'slug', 'terms' => $g('sta_kind')];

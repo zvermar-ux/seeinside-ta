@@ -701,4 +701,154 @@
       if (note) { note.textContent = n ? T.freeNote : T.noOffers; note.classList.toggle('is-empty', !n); }
     });
   });
+
+  /* ---------- search box with tabs (hotels · tours · flights) ---------- */
+  $$('[data-sta-sbox]').forEach(function (box) {
+    var MONTHS = Array.isArray(T.months) ? T.months : 'Јануари,Февруари,Март,Април,Мај,Јуни,Јули,Август,Септември,Октомври,Ноември,Декември'.split(','), DAYS = (T.sbDays || 'Пон,Вто,Сре,Чет,Пет,Саб,Нед').split(',');
+    function closeAll(except) { $$('.sta-sb-pop', box).forEach(function (p) { if (p !== except) { p.hidden = true; var f = p.closest('.sta-sb-f'); if (f) f.classList.remove('is-open'); } }); }
+    function open(pop) { var was = !pop.hidden; closeAll(); if (!was) { pop.hidden = false; pop.closest('.sta-sb-f').classList.add('is-open'); } }
+    document.addEventListener('click', function (e) { if (e.target.isConnected && !box.contains(e.target)) closeAll(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
+
+    // tabs
+    $$('[data-tab]', box).forEach(function (b) {
+      b.addEventListener('click', function () {
+        $$('[data-tab]', box).forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+        $$('[data-panel]', box).forEach(function (p) { p.hidden = p.dataset.panel !== b.dataset.tab; });
+        closeAll();
+      });
+    });
+
+    $$('[data-sb-form]', box).forEach(function (form) {
+      $$('[data-sb-open]', form).forEach(function (b) { b.addEventListener('click', function () { open($('[data-sb-pop]', b.closest('.sta-sb-f'))); }); });
+      $$('[data-sb-done]', form).forEach(function (b) { b.addEventListener('click', function () { closeAll(); }); });
+
+      /* destination: suggestions while typing */
+      var dest = $('[data-sb-dest]', form);
+      if (dest) {
+        var q = $('[data-sb-q]', dest), sugg = $('[data-sb-sugg]', dest), items = [];
+        try { items = JSON.parse($('[data-sb-items]', dest).textContent) || []; } catch (e) {}
+        var hidden = $$('[data-sb-h]', dest);
+        function norm(v) { return String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+        function clearPick() { hidden.forEach(function (h) { h.value = ''; }); q.name = q.dataset.name || q.name; }
+        q.dataset.name = q.name;
+        function render() {
+          var v = norm(q.value.trim()), html = '', groups = { dest: [], place: [], group: [], item: [] };
+          items.forEach(function (it) { if (!v || norm(it.l).indexOf(v) > -1 || norm(it.s).indexOf(v) > -1) groups[it.k].push(it); });
+          var titles = { dest: T.sbDest, place: T.sbPlace, group: T.sbGroup, item: T.sbItem }, lim = { dest: 8, place: 8, group: 6, item: v ? 8 : 0 }, n = 0;
+          ['dest', 'place', 'group', 'item'].forEach(function (k) {
+            var l = groups[k].slice(0, lim[k]); if (!l.length) return;
+            html += '<div class="sta-sb-sg-t">' + esc(titles[k]) + '</div>';
+            l.forEach(function (it) {
+              n++;
+              html += '<button type="button" class="sta-sb-sg" data-k="' + k + '" data-i="' + items.indexOf(it) + '">' + (k === 'item' ? '<span class="sta-sb-sg-ic is-item"></span>' : '<span class="sta-sb-sg-ic"></span>') + '<span><b>' + esc(it.l) + '</b>' + (it.s ? '<small>' + esc(it.s) + '</small>' : '') + '</span></button>';
+            });
+          });
+          sugg.innerHTML = n ? html : '<div class="sta-sb-sg-none">' + esc(T.sbNone) + '</div>';
+        }
+        q.addEventListener('focus', function () { closeAll(sugg); render(); sugg.hidden = false; dest.classList.add('is-open'); });
+        q.addEventListener('input', function () { clearPick(); render(); sugg.hidden = false; });
+        sugg.addEventListener('click', function (e) {
+          var b = e.target.closest('.sta-sb-sg'); if (!b) return;
+          var it = items[+b.dataset.i];
+          if (it.u) { location.href = it.u; return; }
+          clearPick();
+          var h = hidden.filter(function (x) { return x.dataset.sbH === it.f || x.dataset.sbH === it.f + '[]'; })[0];
+          if (h) { h.value = it.v; q.value = it.l; q.removeAttribute('name'); }
+          sugg.hidden = true; dest.classList.remove('is-open');
+          var nx = $('[data-sb-dates] [data-sb-open]', form); if (nx) nx.click();
+        });
+        q.addEventListener('keydown', function (e) {
+          if (e.key !== 'ArrowDown' && e.key !== 'Enter') return;
+          var first = $('.sta-sb-sg', sugg);
+          if (e.key === 'Enter' && !sugg.hidden && first && q.value.trim()) { e.preventDefault(); first.click(); }
+          if (e.key === 'ArrowDown' && first) { e.preventDefault(); first.focus(); }
+        });
+      }
+
+      /* dates: range calendar */
+      var dbox = $('[data-sb-dates]', form);
+      if (dbox) {
+        var fromI = $('[data-sb-from]', dbox), toI = $('[data-sb-to]', dbox), val = $('[data-sb-dates-val]', dbox), monthsEl = $('[data-sb-months]', dbox);
+        var today = new Date(); today.setHours(0, 0, 0, 0);
+        var view = new Date(today.getFullYear(), today.getMonth(), 1), a = null, b2 = null;
+        function iso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+        function show(d) { return ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + d.getFullYear(); }
+        function month(m) {
+          var y = m.getFullYear(), mo = m.getMonth(), first = (new Date(y, mo, 1).getDay() + 6) % 7, len = new Date(y, mo + 1, 0).getDate();
+          var h = '<div class="sta-sb-month"><div class="sta-sb-mt">' + MONTHS[mo] + ' ' + y + '</div><div class="sta-sb-grid">';
+          DAYS.forEach(function (d) { h += '<span class="sta-sb-wd">' + esc(d) + '</span>'; });
+          for (var i = 0; i < first; i++) h += '<span></span>';
+          for (var d = 1; d <= len; d++) {
+            var dt = new Date(y, mo, d), t = dt.getTime(), c = '';
+            if (dt < today) c = ' is-past';
+            if (a && t === a.getTime()) c += ' is-a';
+            if (b2 && t === b2.getTime()) c += ' is-b';
+            if (a && b2 && t > a.getTime() && t < b2.getTime()) c += ' is-in';
+            h += '<button type="button" class="sta-sb-d' + c + '" data-d="' + iso(dt) + '"' + (dt < today ? ' disabled' : '') + '>' + d + '</button>';
+          }
+          return h + '</div></div>';
+        }
+        function draw() {
+          var two = window.matchMedia('(min-width: 720px)').matches;
+          monthsEl.innerHTML = month(view) + (two ? month(new Date(view.getFullYear(), view.getMonth() + 1, 1)) : '');
+          val.textContent = a ? show(a) + ' - ' + (b2 ? show(b2) : '…') : T.sbDates;
+          dbox.classList.toggle('has-value', !!a);
+          fromI.value = a ? iso(a) : ''; toI.value = b2 ? iso(b2) : '';
+        }
+        monthsEl.addEventListener('click', function (e) {
+          var d = e.target.closest('[data-d]'); if (!d) return;
+          var p = d.dataset.d.split('-'), dt = new Date(+p[0], +p[1] - 1, +p[2]);
+          if (!a || b2 || dt <= a) { a = dt; b2 = null; } else { b2 = dt; }
+          draw();
+          if (a && b2) setTimeout(function () { closeAll(); var g = $('[data-sb-guests] [data-sb-open]', form); if (g) g.click(); }, 150);
+        });
+        $$('[data-sb-m]', dbox).forEach(function (bt) { bt.addEventListener('click', function () { var nv = new Date(view.getFullYear(), view.getMonth() + (+bt.dataset.sbM), 1); if (nv >= new Date(today.getFullYear(), today.getMonth(), 1)) { view = nv; draw(); } }); });
+        $('[data-sb-clear]', dbox).addEventListener('click', function () { a = b2 = null; draw(); });
+        draw();
+      }
+
+      /* guests */
+      var gbox = $('[data-sb-guests]', form);
+      function guests() {
+        if (!gbox) return;
+        var ad = +$('[name="f_ad"]', gbox).value, ch = +$('[name="f_ch"]', gbox).value;
+        $('[data-sb-guests-val]', gbox).textContent = ad + ' ' + (ad === 1 ? T.adult1 : T.adultN) + ' · ' + ch + ' ' + (ch === 1 ? T.child1 : T.childN);
+      }
+      $$('[data-sb-step]', form).forEach(function (bt) {
+        bt.addEventListener('click', function () {
+          var inp = $('input', bt.parentNode), v = Math.max(+inp.min, Math.min(+inp.max, +inp.value + (+bt.dataset.sbStep)));
+          inp.value = v; guests();
+        });
+      });
+      guests();
+
+      /* price: two handles */
+      var pr = $('[data-sb-price]', form);
+      function price() {
+        if (!pr) return;
+        var lo = $('[data-sb-lo]', pr), hi = $('[data-sb-hi]', pr), L = +pr.dataset.lo, H = +pr.dataset.hi, sym = pr.dataset.sym;
+        if (+lo.value > +hi.value) { var t = lo.value; lo.value = hi.value; hi.value = t; }
+        $('[data-sb-price-out]', pr).textContent = sym + lo.value + ' – ' + sym + hi.value;
+        var f = $('[data-sb-fill]', pr); f.style.left = ((lo.value - L) / (H - L) * 100) + '%'; f.style.right = (100 - (hi.value - L) / (H - L) * 100) + '%';
+        var mn = $('[data-sb-pmin]', pr), mx = $('[data-sb-pmax]', pr);
+        mn.value = lo.value; mn.disabled = +lo.value <= L; mx.value = hi.value; mx.disabled = +hi.value >= H;
+      }
+      if (pr) { $$('input[type=range]', pr).forEach(function (r) { r.addEventListener('input', price); }); price(); }
+      var reset = $('[data-sb-reset]', form);
+      if (reset) reset.addEventListener('click', function () {
+        $$('.sta-sb-adv-pop input[type=checkbox]', form).forEach(function (c) { c.checked = false; });
+        if (pr) { $('[data-sb-lo]', pr).value = pr.dataset.lo; $('[data-sb-hi]', pr).value = pr.dataset.hi; price(); }
+      });
+
+      /* clean address: no empty fields */
+      form.addEventListener('submit', function () {
+        $$('input, select', form).forEach(function (el) {
+          if (el.type === 'checkbox') return;
+          if (String(el.value).trim() === '' || (el.name === 'f_ad' && el.value === '2' && !(fromI && fromI.value)) || (el.name === 'f_ch' && el.value === '0')) el.disabled = true;
+        });
+        setTimeout(function () { $$('input', form).forEach(function (el) { if (!el.matches('[data-sb-pmin],[data-sb-pmax]')) el.disabled = false; }); price(); }, 500);
+      });
+    });
+  });
 })();

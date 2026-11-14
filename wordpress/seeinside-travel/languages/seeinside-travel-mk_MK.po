@@ -2764,6 +2764,102 @@ msgstr "Места"
 msgid "All places"
 msgstr "Сите места"
 
+msgid "Where are you going?"
+msgstr "Каде ќе патувате?"
+
+msgid "dd.mm.yyyy - dd.mm.yyyy"
+msgstr "дд.мм.гггг - дд.мм.гггг"
+
+msgid "Clear"
+msgstr "Исчисти"
+
+msgid "Done"
+msgstr "Готово"
+
+msgid "Minimum price"
+msgstr "Минимална цена"
+
+msgid "Maximum price"
+msgstr "Максимална цена"
+
+msgid "Advanced"
+msgstr "Напредно"
+
+msgid "More"
+msgstr "Повеќе"
+
+msgid "Check-in – Check-out"
+msgstr "Пријавување – одјавување"
+
+msgid "Guests"
+msgstr "Патници"
+
+msgid "up to 12 years"
+msgstr "до 12 години"
+
+msgid "Hotel theme"
+msgstr "Тема на хотелот"
+
+msgid "From – To"
+msgstr "Од – До"
+
+msgid "Tour categories"
+msgstr "Категории на патувања"
+
+msgid "Travel: search box (tabs)"
+msgstr "Travel: пребарување (табови)"
+
+msgid "Open tab"
+msgstr "Отворен таб"
+
+msgid "First"
+msgstr "Прв"
+
+msgid "Mon"
+msgstr "Пон"
+
+msgid "Tue"
+msgstr "Вто"
+
+msgid "Wed"
+msgstr "Сре"
+
+msgid "Thu"
+msgstr "Чет"
+
+msgid "Fri"
+msgstr "Пет"
+
+msgid "Sat"
+msgstr "Саб"
+
+msgid "Sun"
+msgstr "Нед"
+
+msgid "Offers"
+msgstr "Понуди"
+
+msgid "Nothing found – press Search to search by text."
+msgstr "Нема резултати – притиснете Пребарај за пребарување по текст."
+
+msgid "adults"
+msgstr "возрасни"
+
+msgid "children"
+msgstr "деца"
+
+msgid "Big search box with tabs (hotels, tours, flights) for the homepage. tabs=\"hotels,tours,flights\" active=\"tours\" title=\"…\" subtitle=\"…\""
+msgstr "Големо пребарување со табови (хотели, патувања, авио) за насловната. tabs=\"hotels,tours,flights\" active=\"tours\" title=\"…\" subtitle=\"…\""
+
+msgid "Find offers"
+msgstr "Пребарај"
+
+msgid "Check-in – out"
+msgstr "Check in – out"
+
+msgid "Tours tab name"
+msgstr "Име на табот за патувања"
+
 msgid "%d place to stay"
 msgid_plural "%d places to stay"
 msgstr[0] "%d сместување"

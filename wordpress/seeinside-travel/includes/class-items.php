@@ -114,6 +114,10 @@ class STA_Items
         } else {
             self::order($args, (string) ($q['orderby'] ?? 'date'), (string) ($q['order'] ?? ''));
         }
+        // archive pages (/aranzmani/…) also follow the search box: ?sta_dest, sta_place, sta_from…
+        if (! is_admin() && (is_post_type_archive(array_values(STA_Schema::TYPES)) || is_tax(array_keys(STA_Schema::taxonomies())))) {
+            STA_Frontend::apply_filters_from_request($args);
+        }
         $wq = new WP_Query(apply_filters('sta_items_query', $args, $source, $q));
 
         return [

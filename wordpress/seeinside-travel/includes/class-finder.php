@@ -44,7 +44,7 @@ class STA_Finder
             [$price] = sta_price_info($d, 'accommodation');
             $rows[$id] = [
                 'id' => $id, 'slug' => $d['slug'] ?? '', 'title' => get_the_title($id),
-                'types' => $terms('sta_hotel_type'), 'dests' => self::with_parents($id), 'places' => self::with_parents($id, 'sta_place'),
+                'groups' => self::with_parents($id, 'sta_group'), 'types' => $terms('sta_hotel_type'), 'dests' => self::with_parents($id), 'places' => self::with_parents($id, 'sta_place'),
                 'amen' => $terms('sta_amenity'),
                 'beach' => isset($d['distances']['beach_m']) && $d['distances']['beach_m'] !== null ? (int) $d['distances']['beach_m'] : (isset($d['beach_m']) ? (int) $d['beach_m'] : null),
                 'transport' => ! empty($d['transport']) || ! empty($d['has_transport']),
@@ -95,7 +95,8 @@ class STA_Finder
         return [
             'type' => array_map($slug, $type), 'dest' => $slug($dest), 'place' => $slug(self::g('f_place', $atts['place'] ?? (is_tax('sta_place') && ($qp = get_queried_object()) instanceof WP_Term ? $qp->slug : ''))), 'beach' => (int) self::g('f_beach', 0), 'transport' => self::g('f_transport') === '1',
             'stars' => array_map('intval', (array) self::g('f_stars', [])), 'board' => array_map('strtoupper', (array) self::g('f_board', [])),
-            'amen' => array_map($slug, (array) self::g('f_amen', [])), 'price' => (float) self::g('f_price', 0), 'promo' => self::g('f_promo') === '1',
+            'amen' => array_map($slug, (array) self::g('f_amen', [])), 'price' => (float) self::g('f_price', 0), 'pmin' => (float) self::g('f_pmin', 0),
+            'group' => array_map($slug, (array) self::g('f_group', [])), 'promo' => self::g('f_promo') === '1',
             'from' => self::g('f_from'), 'to' => self::g('f_to'), 'ad' => max(1, (int) self::g('f_ad', 2)), 'ch' => max(0, (int) self::g('f_ch', 0)),
             'sort' => self::g('f_sort', 'recommended'), 'q' => self::g('f_q'),
         ];
@@ -126,6 +127,12 @@ class STA_Finder
             return false;
         }
         if ($skip !== 'amen' && $f['amen'] && array_diff($f['amen'], $r['amen'])) {
+            return false;
+        }
+        if ($skip !== 'group' && $f['group'] && ! array_intersect($f['group'], $r['groups'])) {
+            return false;
+        }
+        if ($skip !== 'price' && $f['pmin'] > 0 && $r['price'] !== null && $r['price'] < $f['pmin']) {
             return false;
         }
         if ($skip !== 'price' && $f['price'] > 0 && $r['price'] !== null && $r['price'] > $f['price']) {
@@ -271,6 +278,14 @@ class STA_Finder
         $types = get_terms(['taxonomy' => 'sta_hotel_type', 'hide_empty' => true]);
         if (! is_wp_error($types) && $types) {
             $h .= self::checks(__('Type of accommodation', 'seeinside-travel'), 'f_type', array_map(fn ($t) => [$t->slug, $t->name, $count('type', fn ($r) => in_array($t->slug, $r['types'], true))], $types), $f['type']);
+        }
+        // groups (spa hotels, apartments, early booking…)
+        $grs = get_terms(['taxonomy' => 'sta_group', 'hide_empty' => true, 'object_ids' => array_keys($rows) ?: [0]]);
+        if (! is_wp_error($grs) && $grs) {
+            $h .= self::checks(__('Group', 'seeinside-travel'), 'f_group', array_map(fn ($t) => [rawurldecode($t->slug), $t->name, $count('group', fn ($r) => in_array($t->slug, $r['groups'], true))], $grs), array_map('rawurldecode', $f['group']));
+        }
+        if ($f['pmin'] > 0) {
+            $h .= '<input type="hidden" name="f_pmin" value="'.esc_attr((string) $f['pmin']).'">';
         }
         // beach
         $h .= '<div class="sta-ff"><h4>'.esc_html__('Distance from the beach', 'seeinside-travel').'</h4>';

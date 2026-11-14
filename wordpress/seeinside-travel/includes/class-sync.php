@@ -308,6 +308,12 @@ class STA_Sync
         update_post_meta($postId, '_sta_price', $map['fields']['price_from'] ?? $map['fields']['price'] ?? '');
         update_post_meta($postId, '_sta_last_minute', ! empty($d['promotions']['last_minute']) ? 1 : 0);
         update_post_meta($postId, '_sta_date', $map['sort_date'] ?? '');
+        // every departure / event day – the search box looks for offers between two dates
+        delete_post_meta($postId, '_sta_day');
+        $days = array_filter(array_merge(array_column((array) ($d['departures'] ?? []), 'start_date'), [$d['starts_at'] ?? null ? substr((string) $d['starts_at'], 0, 10) : null]));
+        foreach (array_unique($days) as $day) {
+            add_post_meta($postId, '_sta_day', $day);
+        }
 
         // images
         $featured = ! empty($d['image']) ? self::attach($d['image'], $postId) : null;

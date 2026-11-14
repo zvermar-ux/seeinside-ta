@@ -218,6 +218,7 @@ class STA_Admin
             ['[sta_reviews layout="testimonials" subtitle="Рецензии" title="Што велат нашите патници" limit="9" min_rating="4"]', __('Testimonials carousel: the middle card is raised; per_view="3", autoplay="6" (0 = off), role="Patnik" (text under the name), featured="yes"', 'seeinside-travel')],
             ['[sta_review_form]', __('Only the form for a new review', 'seeinside-travel')],
             ['[sta_flight_search]', __('Flight search: the official "GOL IBE Search Form" plugin when installed, otherwise the GOL IBE code / link from SeeInside', 'seeinside-travel')],
+            ['[sta_search_box]', __('Big search box with tabs (hotels, tours, flights) for the homepage. tabs="hotels,tours,flights" active="tours" title="…" subtitle="…"', 'seeinside-travel')],
             ['[sta_hotel_finder]', __('Hotels, apartments and villas with filters on the left (type, destination, beach, transport, free dates, stars, board, amenities, price)', 'seeinside-travel')],
             ['[sta_contacts]', __('All phones (office, mobile with Viber / WhatsApp, emergency), e-mail, address, social networks. show="main" or show="emergency" for one group', 'seeinside-travel')],
             ['[sta_phone type="mobile"]', __('One phone with Viber / WhatsApp buttons – for the header or footer', 'seeinside-travel')],

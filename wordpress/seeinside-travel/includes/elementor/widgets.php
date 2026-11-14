@@ -424,7 +424,30 @@ class STA_Widget_Destinations extends STA_Simple_Widget
     protected function html(array $s): string { return STA_Frontend::sc_destinations(['taxonomy' => $s['taxonomy'] ?? 'sta_destination', 'limit' => $s['limit'] ?? 8, 'columns' => $s['columns'] ?? 4]); }
 }
 
+class STA_Widget_Search_Box extends STA_Simple_Widget
+{
+    public function get_name(): string { return 'sta-search-box'; }
+    public function get_title(): string { return __('Travel: search box (tabs)', 'seeinside-travel'); }
+    public function get_icon(): string { return 'eicon-search'; }
+    protected function extra_controls(): void
+    {
+        $this->add_control('tabs', ['label' => __('Tabs', 'seeinside-travel'), 'type' => Controls_Manager::SELECT2, 'multiple' => true, 'default' => ['hotels', 'tours', 'flights'], 'options' => [
+            'hotels' => __('Hotels & apartments', 'seeinside-travel'), 'tours' => __('Tours', 'seeinside-travel'), 'flights' => __('Flights', 'seeinside-travel'),
+        ]]);
+        $this->add_control('active', ['label' => __('Open tab', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => '', 'options' => [
+            '' => __('First', 'seeinside-travel'), 'hotels' => __('Hotels & apartments', 'seeinside-travel'), 'tours' => __('Tours', 'seeinside-travel'), 'flights' => __('Flights', 'seeinside-travel'),
+        ]]);
+        $this->add_control('title', ['label' => __('Title', 'seeinside-travel'), 'type' => Controls_Manager::TEXT]);
+        $this->add_control('subtitle', ['label' => __('Subtitle', 'seeinside-travel'), 'type' => Controls_Manager::TEXT]);
+        $this->add_control('tours_label', ['label' => __('Tours tab name', 'seeinside-travel'), 'type' => Controls_Manager::TEXT, 'placeholder' => __('Tours', 'seeinside-travel')]);
+    }
+    protected function html(array $s): string
+    {
+        return STA_Search_Box::shortcode(['tabs' => implode(',', (array) ($s['tabs'] ?: ['hotels', 'tours', 'flights'])), 'active' => $s['active'] ?? '', 'title' => $s['title'] ?? '', 'subtitle' => $s['subtitle'] ?? '', 'tours_label' => $s['tours_label'] ?? '']);
+    }
+}
+
 function sta_elementor_widget_classes(): array
 {
-    return [STA_Widget_Section::class, STA_Widget_List::class, STA_Widget_Slider::class, STA_Widget_Listing::class, STA_Widget_Reviews::class, STA_Widget_Search::class, STA_Widget_Flights::class, STA_Widget_Charters::class, STA_Widget_Status::class, STA_Widget_Destinations::class];
+    return [STA_Widget_Search_Box::class, STA_Widget_Section::class, STA_Widget_List::class, STA_Widget_Slider::class, STA_Widget_Listing::class, STA_Widget_Reviews::class, STA_Widget_Search::class, STA_Widget_Flights::class, STA_Widget_Charters::class, STA_Widget_Status::class, STA_Widget_Destinations::class];
 }
