@@ -116,11 +116,12 @@ class STA_Search_Box
             $tabs[] = 'apartments';
         }
         $tabs = array_values(array_intersect($order, $tabs));
-        // hotels: from the booking system, otherwise the own accommodation
-        if (! $api && in_array('hotels', $tabs, true) && ! wp_count_posts('sta_hotel')->publish) {
+        // hotels: only from the booking system (Hotelbeds…)
+        if (! $api) {
             $tabs = array_values(array_diff($tabs, ['hotels']));
         }
-        if (in_array('apartments', $tabs, true) && ! self::local_ids()) {
+        // apartments: all own accommodation from the app (apartments, studios, villas and own hotels)
+        if (in_array('apartments', $tabs, true) && ! self::local_ids(false)) {
             $tabs = array_values(array_diff($tabs, ['apartments']));
         }
         if (! wp_count_posts('sta_tour')->publish) {
@@ -156,8 +157,8 @@ class STA_Search_Box
         foreach ($tabs as $t) {
             $h .= '<div class="sta-sbox-panel" data-panel="'.$t.'"'.($t === $active ? '' : ' hidden').'>';
             $h .= match ($t) {
-                'hotels' => $api ? self::hotels_api() : self::hotels(false),
-                'apartments' => self::hotels(true),
+                'hotels' => self::hotels_api(),
+                'apartments' => self::hotels(),
                 'tours' => self::tours(),
                 default => self::flights(),
             };
@@ -247,15 +248,21 @@ class STA_Search_Box
     }
 
     /** Own accommodation (apartments, villas…; with hotels when there is no hotel booking system) – the page with filters */
-    protected static function hotels(bool $apartments = false): string
+    /** Own accommodation from the app: apartments, studios, villas, own hotels… with the type to choose */
+    protected static function hotels(): string
     {
-        $hotelIds = $apartments ? [] : array_values(array_diff(self::local_ids(false), self::local_ids()));
-        $only = $apartments ? self::local_ids() : ($hotelIds ?: null);
+        $only = null;
         $items = self::suggestions('sta_hotel', ['dest' => 'f_dest', 'place' => 'f_place', 'group' => 'f_group'], $only);
-        $h = '<form class="sta-sbox-form" method="get" action="'.esc_url($apartments ? self::target('apartmani', 'sta_hotel') : self::target('hoteli', 'sta_hotel')).'" data-sb-form>';
+        $h = '<form class="sta-sbox-form" method="get" action="'.esc_url(self::target('apartmani', 'sta_hotel')).'" data-sb-form>';
         $h .= self::dest_field($items, ['f_dest', 'f_place', 'f_group[]'], 'f_q');
-        if ($hotelIds) {
-            $h .= '<input type="hidden" name="f_type[]" value="hotel">';
+        $types = self::opts(self::terms('sta_hotel_type', 'sta_hotel'));
+        if (count($types) > 1) {
+            $o = '<option value="">'.esc_html__('All types', 'seeinside-travel').'</option>';
+            foreach ($types as $slug => $name) {
+                $o .= '<option value="'.esc_attr($slug).'">'.esc_html($name).'</option>';
+            }
+            $h .= '<div class="sta-sb-f sta-sb-type">'.sta_icon('home')
+                .'<label class="sta-sb-lab"><span>'.esc_html__('Type', 'seeinside-travel').'</span><select name="f_type[]" data-sb-type aria-label="'.esc_attr__('Type of accommodation', 'seeinside-travel').'">'.$o.'</select></label></div>';
         }
         $h .= self::dates_field(__('Check-in – out', 'seeinside-travel'), 'f_from', 'f_to');
         $h .= '<div class="sta-sb-f sta-sb-guests" data-sb-guests>'.sta_icon('users')
@@ -282,10 +289,9 @@ class STA_Search_Box
         krsort($stars);
         self::$only = $only;
         $adv = self::price(self::prices('sta_hotel'), 'f_pmin', 'f_price')
-            .self::checks(__('Type of accommodation', 'seeinside-travel'), 'f_type', self::opts(self::terms('sta_hotel_type', 'sta_hotel')))
-            .($apartments ? '' : self::checks(__('Stars / category', 'seeinside-travel'), 'f_stars', $stars))
+            .self::checks(__('Stars / category', 'seeinside-travel'), 'f_stars', $stars)
             .self::checks(__('Board', 'seeinside-travel'), 'f_board', $boards)
-            .self::checks($apartments ? __('Group', 'seeinside-travel') : __('Hotel theme', 'seeinside-travel'), 'f_group', self::opts(self::terms('sta_group', 'sta_hotel')));
+            .self::checks(__('Group', 'seeinside-travel'), 'f_group', self::opts(self::terms('sta_group', 'sta_hotel')));
         self::$only = null;
         $h .= self::adv_field($adv);
 

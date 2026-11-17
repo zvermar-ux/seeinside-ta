@@ -196,7 +196,10 @@ class STA_Finder
             if (! $it) {
                 continue;
             }
+            $kinds = get_the_terms($r['id'], 'sta_hotel_type');
             $extra = array_filter([
+                // the type: apartment, hotel, studio, villa…
+                $kinds && ! is_wp_error($kinds) ? implode(' · ', wp_list_pluck($kinds, 'name')) : null,
                 $r['beach'] !== null ? sprintf(__('%s to the beach', 'seeinside-travel'), $r['beach'] >= 1000 ? round($r['beach'] / 1000, 1).' km' : $r['beach'].' m') : null,
                 $r['transport'] ? __('Organized transport', 'seeinside-travel') : null,
             ]);

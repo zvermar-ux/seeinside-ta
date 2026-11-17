@@ -95,6 +95,56 @@ class HotelService
     }
 
     /**
+     * List of the imported hotels for the website (no prices – the price needs dates): name, stars, place, photo, facilities.
+     * $f = destination "conn:code", stars [4,5], q (name), page, per_page.
+     */
+    public static function catalog(int $agencyId, array $f): array
+    {
+        $conns = self::connections($agencyId)->pluck('id');
+        $q = SupplierHotel::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->whereIn('supplier_connection_id', $conns);
+        if (! empty($f['destination']) && str_contains($f['destination'], ':')) {
+            [$conn, $code] = explode(':', $f['destination'], 2);
+            $q->where('supplier_connection_id', (int) $conn)->where('destination_code', $code);
+        } else {
+            // only destinations switched on in the app
+            $active = SupplierDestination::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->whereIn('supplier_connection_id', $conns)
+                ->get(['supplier_connection_id', 'code']);
+            $q->where(function ($w) use ($active) {
+                $w->whereRaw('1 = 0');
+                foreach ($active->groupBy('supplier_connection_id') as $conn => $list) {
+                    $w->orWhere(fn ($x) => $x->where('supplier_connection_id', $conn)->whereIn('destination_code', $list->pluck('code')));
+                }
+            });
+        }
+        if ($stars = array_filter(array_map('intval', (array) ($f['stars'] ?? [])))) {
+            $q->whereIn('stars', $stars);
+        }
+        if (filled($f['q'] ?? null)) {
+            $q->where('name', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], trim($f['q'])).'%');
+        }
+        $per = max(6, min(48, (int) ($f['per_page'] ?? 24)));
+        $page = $q->orderByDesc('is_featured')->orderByDesc('stars')->orderByDesc('ranking')->orderBy('name')->paginate($per, ['*'], 'page', max(1, (int) ($f['page'] ?? 1)));
+
+        return [
+            'hotels' => collect($page->items())->map(fn (SupplierHotel $h) => [
+                'id' => $h->publicId(),
+                'name' => $h->name,
+                'stars' => $h->stars,
+                'place' => trim(($h->zone_name ? $h->zone_name.', ' : '').$h->destination_name, ', '),
+                'destination' => $h->supplier_connection_id.':'.$h->destination_code,
+                'country' => $h->country_code,
+                'image' => ! empty($h->images[0]['path']) ? HotelbedsDriver::imageUrl($h->images[0]['path'], 'xl') : null,
+                'images' => array_map(fn ($i) => HotelbedsDriver::imageUrl($i['path'], 'bigger'), array_slice($h->images ?? [], 0, 5)),
+                'facilities' => array_map(fn ($x) => $x['name'], HotelText::facilities($h->facilities ?? [], 6)),
+                'featured' => (bool) $h->is_featured,
+            ])->all(),
+            'total' => $page->total(),
+            'page' => $page->currentPage(),
+            'pages' => $page->lastPage(),
+        ];
+    }
+
+    /**
      * Search: $q = from, to, rooms[[adults, children_ages]], destination "conn:code" or hotel "conn-code".
      * Returns ['search_id', 'hotels' => [summary…], 'nights', 'currency'] – the rates stay in the cache for the hotel page.
      */

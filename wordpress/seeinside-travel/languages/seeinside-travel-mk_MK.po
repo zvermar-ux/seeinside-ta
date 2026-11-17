@@ -3132,3 +3132,21 @@ msgstr "Хотели (страница со пребарување)"
 
 msgid "Apartments (page with filters)"
 msgstr "Апартмани (страница со филтри)"
+
+msgid "All types"
+msgstr "Сите типови"
+
+msgid "choose dates to see prices"
+msgstr "изберете датуми за да ги видите цените"
+
+msgid "Prices for your dates"
+msgstr "Цени за вашите датуми"
+
+msgid "Check prices"
+msgstr "Провери цени"
+
+msgid "Choose the dates to see free rooms and prices."
+msgstr "Изберете датуми за да ги видите слободните соби и цените."
+
+msgid "Loading…"
+msgstr "Се вчитува…"

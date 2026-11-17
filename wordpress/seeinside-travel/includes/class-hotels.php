@@ -48,7 +48,16 @@ class STA_Hotels
         $privacy = get_privacy_policy_url();
         wp_localize_script('sta-hotels', 'STA_HOTELS', [
             'consent' => sprintf(__('I agree that my data is used to process this request (%s).', 'seeinside-travel'), $privacy ? '<a href="'.esc_url($privacy).'" target="_blank">'.esc_html__('privacy policy', 'seeinside-travel').'</a>' : esc_html__('privacy policy', 'seeinside-travel')),
+            'destinations' => self::destinations(),
             'i18n' => [
+                'allDest' => __('All destinations', 'seeinside-travel'),
+                'destination' => __('Destination', 'seeinside-travel'),
+                'catalogNote' => __('choose dates to see prices', 'seeinside-travel'),
+                'pricesFor' => __('Prices for your dates', 'seeinside-travel'),
+                'checkPrices' => __('Check prices', 'seeinside-travel'),
+                'details' => __('Details', 'seeinside-travel'),
+                'pickDates' => __('Choose the dates to see free rooms and prices.', 'seeinside-travel'),
+                'loading' => __('Loading…', 'seeinside-travel'),
                 'choose' => __('Choose a destination and dates to see the hotels with prices.', 'seeinside-travel'),
                 'searching' => __('Searching the best prices…', 'seeinside-travel'),
                 'none' => __('No free hotels for this search. Try other dates or a nearby destination.', 'seeinside-travel'),
@@ -147,7 +156,7 @@ class STA_Hotels
     public static function routes(): void
     {
         $ns = 'seeinside-travel/v1';
-        foreach (['destinations', 'suggest', 'search'] as $what) {
+        foreach (['destinations', 'suggest', 'search', 'catalog'] as $what) {
             register_rest_route($ns, '/hotels/'.$what, ['methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => fn (WP_REST_Request $r) => self::relay(STA_Api::get('hotels/'.$what, self::query($r), 60))]);
         }
         register_rest_route($ns, '/hotels/hotel', ['methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => function (WP_REST_Request $r) {
@@ -178,7 +187,7 @@ class STA_Hotels
     {
         $q = [];
         foreach ($r->get_query_params() as $k => $v) {
-            if (in_array($k, ['q', 'from', 'to', 'destination', 'hotel', 'room_count', 'adults', 'ages', 'search_id', 'id'], true)) {
+            if (in_array($k, ['q', 'from', 'to', 'destination', 'hotel', 'room_count', 'adults', 'ages', 'search_id', 'id', 'stars', 'page', 'per_page'], true)) {
                 $q[$k] = sanitize_text_field((string) $v);
             }
         }

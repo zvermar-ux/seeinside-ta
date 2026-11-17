@@ -27,6 +27,21 @@ class HotelController extends Controller
         return response()->json(['data' => HotelService::suggest($this->agencyId($request), (string) $request->query('q', ''))]);
     }
 
+    /** Imported hotels without prices (hotels page before a search) */
+    public function catalog(Request $request): JsonResponse
+    {
+        $f = $request->validate([
+            'destination' => 'nullable|string|max:40',
+            'stars' => 'nullable',
+            'q' => 'nullable|string|max:80',
+            'page' => 'nullable|integer|min:1|max:500',
+            'per_page' => 'nullable|integer|min:6|max:48',
+        ]);
+        $f['stars'] = is_array($f['stars'] ?? null) ? $f['stars'] : array_filter(explode(',', (string) ($f['stars'] ?? '')));
+
+        return response()->json(['data' => HotelService::catalog($this->agencyId($request), $f)]);
+    }
+
     protected function query(Request $request): array
     {
         $d = $request->validate([

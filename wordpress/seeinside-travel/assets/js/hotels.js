@@ -41,8 +41,9 @@
     /* ---------- results ---------- */
     function search() {
       var q = query();
-      if (!q.from || !q.to || (!q.destination && !q.hotel)) { body.innerHTML = '<div class="sta-ht-empty">' + esc(L.choose) + '</div>'; return; }
       if (q.open) { hotel(q.open, q.searchId); return; }
+      // no dates yet: the list of all hotels (without prices)
+      if (!q.from || !q.to || (!q.destination && !q.hotel)) { catalog(q); return; }
       loading(L.searching);
       api('hotels/search?' + qs(q)).then(function (r) {
         if (!r.ok) { body.innerHTML = '<div class="sta-ht-empty is-error">' + K.errors(r.body) + '</div>'; return; }
@@ -141,13 +142,96 @@
       if (e.target.closest('[data-ht-back]')) { e.preventDefault(); history.back(); }
     });
 
+    /* ---------- all hotels without dates (no prices) ---------- */
+    var cat = null, catTimer = null;
+    function catalog(q) {
+      cat = { dest: q.destination || '', stars: state.filter.stars.slice(), name: '', page: 1, pages: 1, total: 0, items: [] };
+      var dests = H.destinations || [], byCountry = {};
+      dests.forEach(function (d) { (byCountry[d.country || ''] = byCountry[d.country || ''] || []).push(d); });
+      var opts = '<option value="">' + esc(L.allDest) + '</option>' + Object.keys(byCountry).map(function (c) {
+        var o = byCountry[c].map(function (d) { return '<option value="' + esc(d.id) + '"' + (d.id === cat.dest ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join('');
+        return c ? '<optgroup label="' + esc(c) + '">' + o + '</optgroup>' : o;
+      }).join('');
+      var side = '<aside class="sta-ht-side"><button type="button" class="sta-ht-close-side" data-ht-side-close aria-label="' + esc(L.close) + '">×</button>'
+        + (dests.length ? '<div class="sta-ff"><h4>' + esc(L.destination) + '</h4><select data-hc-dest>' + opts + '</select></div>' : '')
+        + '<div class="sta-ff"><h4>' + esc(L.name) + '</h4><input type="search" data-hc-name></div>'
+        + '<div class="sta-ff"><h4>' + esc(L.stars) + '</h4>' + [5, 4, 3, 2].map(function (n) {
+          return '<label class="sta-ff-opt"><input type="checkbox" data-hc-star value="' + n + '"' + (cat.stars.indexOf(n) > -1 ? ' checked' : '') + '> <span>' + new Array(n + 1).join('★') + '</span></label>';
+        }).join('') + '</div></aside>';
+      body.innerHTML = '<div class="sta-ht-head"><div><b data-hc-count></b><span class="sta-muted"> · ' + esc(L.catalogNote) + '</span></div>'
+        + '<div class="sta-ht-tools"><button type="button" class="sta-ht-filters-btn" data-ht-side-open>' + esc(L.filters) + '</button></div></div>'
+        + '<div class="sta-ht-wrap">' + side + '<div class="sta-ht-main"><div class="sta-ht-list" data-hc-list></div><div class="sta-ht-more" data-hc-more></div></div></div>';
+      var sd = $('.sta-ht-side', body);
+      sd.addEventListener('change', function (e) { if (!e.target.matches('[data-hc-name]')) catFilter(); });
+      $('[data-hc-name]', body).addEventListener('input', function () { clearTimeout(catTimer); catTimer = setTimeout(catFilter, 350); });
+      $('[data-ht-side-open]', body).addEventListener('click', function () { body.classList.add('is-side'); });
+      $('[data-ht-side-close]', body).addEventListener('click', function () { body.classList.remove('is-side'); });
+      catLoad();
+    }
+    function catFilter() {
+      var d = $('[data-hc-dest]', body);
+      cat.dest = d ? d.value : ''; cat.name = $('[data-hc-name]', body).value.trim();
+      cat.stars = $$('[data-hc-star]:checked', body).map(function (c) { return +c.value; });
+      cat.page = 1; cat.items = []; catLoad();
+    }
+    function catLoad() {
+      var box = $('[data-hc-list]', body), more = $('[data-hc-more]', body);
+      if (cat.page === 1) box.innerHTML = '<div class="sta-ht-loading"><span class="sta-spin"></span>' + esc(L.loading) + '</div>';
+      else more.innerHTML = '<span class="sta-spin"></span>';
+      var p = new URLSearchParams({ page: cat.page, per_page: perPage });
+      if (cat.dest) p.set('destination', cat.dest);
+      if (cat.name) p.set('q', cat.name);
+      if (cat.stars.length) p.set('stars', cat.stars.join(','));
+      var mine = cat;
+      api('hotels/catalog?' + p).then(function (r) {
+        if (mine !== cat || !$('[data-hc-list]', body)) return;
+        if (!r.ok) { box.innerHTML = '<div class="sta-ht-empty is-error">' + K.errors(r.body) + '</div>'; more.innerHTML = ''; return; }
+        var d = r.body.data; cat.items = cat.items.concat(d.hotels || []); cat.pages = d.pages; cat.total = d.total;
+        $('[data-hc-count]', body).textContent = plural(d.total, L.hotel1, L.hotels);
+        box.innerHTML = cat.items.length ? cat.items.map(catCard).join('') : '<div class="sta-ht-empty">' + esc(L.noneFilter) + '</div>';
+        more.innerHTML = cat.page < cat.pages ? '<button type="button" class="sta-btn sta-btn-ghost" data-hc-more-btn>' + esc(L.more) + ' (' + (cat.total - cat.items.length) + ')</button>' : '';
+      });
+    }
+    function catCard(h) {
+      return '<article class="sta-ht-card' + (h.featured ? ' is-featured' : '') + '">'
+        + '<a class="sta-ht-img" href="#" data-ht-open="' + esc(h.id) + '">' + (h.image ? '<img src="' + esc(h.image) + '" alt="" loading="lazy">' : '<span class="sta-ht-noimg"></span>') + '</a>'
+        + '<div class="sta-ht-info"><h3><a href="#" data-ht-open="' + esc(h.id) + '">' + esc(h.name) + '</a> ' + stars(h.stars) + '</h3>'
+        + (h.place ? '<p class="sta-ht-place">' + esc(h.place) + '</p>' : '')
+        + (h.facilities && h.facilities.length ? '<ul class="sta-ht-fac">' + h.facilities.slice(0, 4).map(function (x) { return '<li>' + esc(tr(x)) + '</li>'; }).join('') + '</ul>' : '')
+        + '</div><div class="sta-ht-price"><small>' + esc(L.pricesFor) + '</small>'
+        + '<button type="button" class="sta-btn" data-hc-dates="' + esc(h.id) + '">' + esc(L.checkPrices) + '</button>'
+        + '<button type="button" class="sta-btn sta-btn-ghost sta-btn-sm" data-ht-open="' + esc(h.id) + '">' + esc(L.details) + '</button></div></article>';
+    }
+    // "Check prices": the hotel goes into the search above and the calendar opens
+    function pickDates(id, name) {
+      var form = $('[data-sb-hotels]', root);
+      if (!form) { open(id); return; }
+      var dq = $('[data-sb-q]', form), hh = $('[data-sb-h="hotel"]', form), hd = $('[data-sb-h="destination"]', form);
+      if (dq) dq.value = name || '';
+      if (hh) hh.value = id;
+      if (hd) hd.value = '';
+      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      var from = $('[data-sb-from]', form);
+      if (from && from.value) { (form.requestSubmit ? form.requestSubmit() : form.submit()); return; }
+      setTimeout(function () { var b = $('.sta-sb-dates [data-sb-open]', form); if (b) b.click(); }, 350);
+    }
+    body.addEventListener('click', function (e) {
+      var m = e.target.closest('[data-hc-more-btn]');
+      if (m) { cat.page++; catLoad(); return; }
+      var d = e.target.closest('[data-hc-dates]');
+      if (d) {
+        var id = d.dataset.hcDates, h = (cat && cat.items || []).filter(function (x) { return x.id === id; })[0] || state.hotel || {};
+        pickDates(id, h.name);
+      }
+    });
+
     /* ---------- one hotel ---------- */
     function open(id) {
       var u = new URL(location.href); u.searchParams.set('h', id); if (state.res) u.searchParams.set('sid', state.res.search_id);
       history.pushState({ h: id }, '', u); hotel(id, state.res ? state.res.search_id : '');
       root.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    window.addEventListener('popstate', function () { var q = query(); if (q.open) hotel(q.open, q.searchId); else if (state.list.length) { layout(); list(); } else search(); });
+    window.addEventListener('popstate', function () { var q = query(); if (q.open) hotel(q.open, q.searchId); else if (state.list.length && state.q && state.q.from) { layout(); list(); } else search(); });
 
     function hotel(id, sid) {
       var q = query();
@@ -184,9 +268,10 @@
         + gal
         + '<div class="sta-ht-cols"><div>' + (desc ? '<div class="sta-ht-desc' + (desc.length > 700 ? ' is-cut' : '') + '"><p>' + esc(desc).replace(/\n+/g, '</p><p>') + '</p></div>' + (desc.length > 700 ? '<button type="button" class="sta-ht-link" data-ht-more-desc>' + esc(L.readMore) + '</button>' : '') : '')
         + (fac ? '<h3>' + esc(L.facilities) + '</h3><ul class="sta-ht-facs">' + fac + '</ul>' : '') + '</div>'
-        + '<aside class="sta-ht-sum"><b>' + esc(dmy(q.from)) + ' – ' + esc(dmy(q.to)) + '</b><br>' + esc(who(q)) + '</aside></div>'
+        + (q.from ? '<aside class="sta-ht-sum"><b>' + esc(dmy(q.from)) + ' – ' + esc(dmy(q.to)) + '</b><br>' + esc(who(q)) + '</aside></div>'
+          : '<aside class="sta-ht-sum"><p>' + esc(L.pickDates) + '</p><button type="button" class="sta-btn" data-hc-dates="' + esc(h.id || q.open) + '">' + esc(L.checkPrices) + '</button></aside></div>')
         + '<h3 class="sta-ht-rt" id="sta-ht-rooms">' + esc(L.roomsTitle) + '</h3>'
-        + (rooms || '<div class="sta-ht-empty">' + esc(L.none) + '</div>') + '</div>';
+        + (q.from ? (rooms || '<div class="sta-ht-empty">' + esc(L.none) + '</div>') : '<div class="sta-ht-empty">' + esc(L.pickDates) + ' <button type="button" class="sta-btn sta-btn-sm" data-hc-dates="' + esc(h.id || q.open) + '">' + esc(L.checkPrices) + '</button></div>') + '</div>';
       bindLightbox($('[data-sta-lightbox]', body));
       var md = $('[data-ht-more-desc]', body); if (md) md.addEventListener('click', function () { $('.sta-ht-desc', body).classList.remove('is-cut'); md.remove(); });
       $$('[data-ht-book]', body).forEach(function (b) { b.addEventListener('click', function () { var p = b.dataset.htBook.split(':'); book(h.rooms[+p[0]], h.rooms[+p[0]].rates[+p[1]]); }); });

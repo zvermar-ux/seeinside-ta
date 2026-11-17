@@ -684,6 +684,15 @@ button.sta-sb-link { padding: 0 !important; border: 0 !important; background: no
   .sta-sb-checks { grid-template-columns: 1fr 1fr; }
 }
 input.sta-sb-q { color: var(--sta-primary) !important; font-size: 1.02rem !important; font-weight: 500 !important; }
+.sta-sb-type { flex: .9; }
+.sta-sb-type .sta-sb-lab { width: 100%; }
+.sta-sb-type select { display: block; width: 100%; margin: 0 !important; padding: 0 1.1rem 0 0 !important; border: 0 !important; outline: 0; box-shadow: none !important; min-height: 0 !important; height: auto !important; cursor: pointer; appearance: none; -webkit-appearance: none;
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E") right center / 12px no-repeat !important;
+  color: var(--sta-primary) !important; font: inherit; font-size: 1.02rem !important; font-weight: 500 !important; text-overflow: ellipsis; }
+@container sbox (max-width: 1000px) { .sta-sb-type { flex: 1 1 45%; } }
+@container sbox (max-width: 620px) { .sta-sb-type { flex: 1 1 100%; } }
+/* hotels without dates: buttons under each other */
+.sta-ht-price .sta-btn + .sta-btn { margin-top: .4rem; }
 .sta-sbox button:focus:not(:focus-visible) { outline: none !important; }
 
 /* ---------- destination / place / group / type pages ---------- */
