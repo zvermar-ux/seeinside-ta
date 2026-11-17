@@ -35,7 +35,9 @@ class McsClient
         }
         $started = microtime(true);
         try {
+            // the old server does not send its full certificate chain: optionally encrypted without checking it
             $res = Http::asForm()->acceptJson()->timeout($timeout)->connectTimeout(10)
+                ->withOptions(['verify' => ($this->c->settings['verify_ssl'] ?? true) !== false])
                 ->post($this->base().'/'.$operation, ['username' => $user, 'password' => $pass] + $params);
         } catch (\Throwable $e) {
             throw new RuntimeException(__('The old system does not answer: :e', ['e' => $e->getMessage()]));

@@ -1960,5 +1960,7 @@
     "Waiting to be sent…": "Чека да се прати…",
     "the accommodation of the package (tour → Old system)": "сместувањето во аранжманот (аранжман → Стара апликација)",
     "the room (Rooms → code in the booking system)": "собата (Соби → соба во старата апликација)",
-    "Aries – old system (MCS eTours)": "Aries – стара апликација (MCS eTours)"
+    "Aries – old system (MCS eTours)": "Aries – стара апликација (MCS eTours)",
+    "Check the SSL certificate": "Провери го SSL сертификатот",
+    "Turn off when the old server has an SSL certificate problem: the connection stays encrypted (https), only the certificate is not checked.": "Исклучи кога стариот сервер има проблем со SSL сертификатот: врската останува шифрирана (https), само сертификатот не се проверува."
 }

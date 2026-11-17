@@ -87,6 +87,8 @@ class SupplierConnectionResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('credentials.password')->label(__('Password'))->password()->revealable()
                             ->placeholder(fn (?SupplierConnection $record) => filled($record?->credentials['password'] ?? null) ? '••••••••  '.__('(saved – leave empty to keep)') : null),
+                        Forms\Components\Toggle::make('settings.verify_ssl')->label(__('Check the SSL certificate'))->default(true)->inline(false)
+                            ->helperText(__('Turn off when the old server has an SSL certificate problem: the connection stays encrypted (https), only the certificate is not checked.')),
                         Forms\Components\Toggle::make('settings.push_bookings')->label(__('Send new bookings to the old system'))->default(true)->inline(false),
                         Forms\Components\Toggle::make('settings.sync_prices')->label(__('Take dates and prices from the old system'))->default(true)->inline(false),
                         Forms\Components\TextInput::make('settings.days_ahead')->label(__('Days ahead for dates and prices'))->numeric()->default(240)->minValue(7)->maxValue(400),
