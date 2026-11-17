@@ -131,7 +131,8 @@ class McsService
             return $near->count() === 1 ? $near->first() : null;
         };
 
-        $accs = Accommodation::withoutGlobalScopes()->where('agency_id', $c->agency_id)
+        // apartments, villas, studios… (not hotels: their prices are not taken from the old system)
+        $accs = Accommodation::withoutGlobalScopes()->where('agency_id', $c->agency_id)->where('type', '!=', 'hotel')
             ->where(fn ($q) => $q->whereNull('supplier_connection_id')->orWhere('supplier_connection_id', $c->id))
             ->where(fn ($q) => $q->whereNull('provider_code')->orWhere('provider_code', ''))->with('rooms')->get();
         foreach ($accs as $a) {
