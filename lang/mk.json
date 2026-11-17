@@ -1962,5 +1962,12 @@
     "the room (Rooms → code in the booking system)": "собата (Соби → соба во старата апликација)",
     "Aries – old system (MCS eTours)": "Aries – стара апликација (MCS eTours)",
     "Check the SSL certificate": "Провери го SSL сертификатот",
-    "Turn off when the old server has an SSL certificate problem: the connection stays encrypted (https), only the certificate is not checked.": "Исклучи кога стариот сервер има проблем со SSL сертификатот: врската останува шифрирана (https), само сертификатот не се проверува."
+    "Turn off when the old server has an SSL certificate problem: the connection stays encrypted (https), only the certificate is not checked.": "Исклучи кога стариот сервер има проблем со SSL сертификатот: врската останува шифрирана (https), само сертификатот не се проверува.",
+    ":h hotels, :p packages (villas and tours). Newly linked: :a apartments, :r rooms, :t tours. Check them in Apartments (column Aries, filter \"Linked to Aries\").": ":h хотели, :p аранжмани (вили и тури). Ново поврзани: :a апартмани, :r соби, :t аранжмани. Провери ги во Апартмани (колона Aries, филтер „Поврзано со Aries“).",
+    "Tour dates: :d (no longer offered: :s). Apartments: :n new terms, :t room prices (stop sale: :x).": "Термини на аранжмани: :d (повеќе ги нема: :s). Апартмани: :n нови термини, :t цени на соби (стоп продажба: :x).",
+    "Search by name or by the Id of the old system (e.g. 151). Villas in fixed terms are \"packages\" there. Rooms: in the Rooms tab choose the Room-Id of the old system for each room.": "Барај по име или по Id од старата апликација (на пр. 151). Вилите со фиксни термини таму се „аранжмани“. Соби: во табот Соби за секоја соба избери го Room-Id од старата апликација.",
+    "Every night: the fixed terms of the old system and the price of each room for each term (Terms tab). Texts, photos and rooms stay as they are here.": "Секоја ноќ: фиксните термини од старата апликација и цената на секоја соба за секој термин (таб Термини). Текстовите, сликите и собите остануваат како што се тука.",
+    "the room (Rooms → room in the old Aries system)": "собата (Соби → соба во старата Aries апликација)",
+    "Linked to Aries": "Поврзано со Aries",
+    "Package": "Аранжман"
 }

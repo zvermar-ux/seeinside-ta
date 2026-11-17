@@ -108,47 +108,118 @@ class McsService
         return preg_replace('/[^a-z0-9]/', '', $s);
     }
 
-    /** Links our apartments and tours to the old ones with the same name (only those not linked yet) */
+    /** Close spelling for comparing names: Катизма / Kathisma → katisma, Армониа / Armonia → armonia */
+    public static function sound(?string $s, bool $withPlace = false): string
+    {
+        // "Вила Армониа-Катизма,Лефкада" → without the place after the comma (unless asked)
+        $k = self::key($withPlace ? (string) $s : preg_replace('/,.*$/u', '', (string) $s));
+        $k = strtr($k, ['th' => 't', 'ph' => 'f', 'kh' => 'h', 'ch' => 'h', 'zh' => 'z', 'dz' => 'z', 'gj' => 'g', 'kj' => 'k', 'ou' => 'u', 'y' => 'i', 'w' => 'v', 'x' => 'ks', 'q' => 'k']);
+        $k = str_replace('villa', 'vila', $k);
+
+        return preg_replace('/(.)\1+/', '$1', $k);   // double letters
+    }
+
+    /** The product with the closest name (clearly better than the next one), or null */
+    public static function closest(Collection $products, string $name): ?SupplierProduct
+    {
+        $keys = array_unique([self::sound($name), self::sound($name, true)]);
+        if (strlen($keys[0]) < 4) {
+            return null;
+        }
+        $scored = $products->map(function ($p) use ($keys) {
+            $best = 0;
+            foreach ($keys as $k) {
+                foreach (array_unique([self::sound($p->name), self::sound($p->name, true)]) as $pk) {
+                    similar_text($k, $pk, $pct);
+                    if (strlen($pk) >= 6 && strlen($k) >= 6 && (str_contains($pk, $k) || str_contains($k, $pk))) {
+                        $pct = max($pct, 92);
+                    }
+                    $best = max($best, $k === $pk ? 100 : $pct);
+                }
+            }
+
+            return ['p' => $p, 'pct' => $best];
+        })->sortByDesc('pct')->values();
+        $best = $scored[0] ?? null;
+        if (! $best || $best['pct'] < 82) {
+            return null;
+        }
+        $next = $scored[1]['pct'] ?? 0;
+        // the same object can come once per room: only different objects compete
+        if ($next > $best['pct'] - 4 && ($scored[1]['p']->code ?? null) !== $best['p']->code) {
+            return null;
+        }
+
+        return $best['p'];
+    }
+
+    /** "h:151" / "p:151" (apartment linked to a hotel or a package of the old system); a plain code = hotel */
+    public static function ref(?string $code): array
+    {
+        if (preg_match('/^(h|p):(.+)$/', (string) $code, $m)) {
+            return [$m[1] === 'p' ? 'package' : 'hotel', $m[2]];
+        }
+
+        return ['hotel', (string) $code];
+    }
+
+    public static function refKey(SupplierProduct $p): string
+    {
+        return ($p->kind === 'package' ? 'p:' : 'h:').$p->code;
+    }
+
+    /** Products for the apartment select: "p:151" => "Аранжман · Vila Armonia Kathisma · Agios Nikitas (#151)" */
+    public static function accommodationOptions(?int $connectionId): array
+    {
+        if (! $connectionId) {
+            return [];
+        }
+
+        return SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $connectionId)->orderBy('name')->get()
+            ->mapWithKeys(fn ($p) => [self::refKey($p) => ($p->kind === 'package' ? __('Package') : __('Hotel')).' · '.$p->label()])->all();
+    }
+
+    public static function accommodationProduct(Accommodation $a): ?SupplierProduct
+    {
+        if (! $a->supplier_connection_id || blank($a->provider_code)) {
+            return null;
+        }
+        [$kind, $code] = self::ref($a->provider_code);
+
+        return SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $a->supplier_connection_id)->where('kind', $kind)->where('code', $code)->first();
+    }
+
+    /** Links our apartments and tours to the old ones with the same (or very close) name – only those not linked yet */
     public static function autoLink(SupplierConnection $c): array
     {
-        $out = ['linked_accommodations' => 0, 'linked_tours' => 0];
+        $out = ['linked_accommodations' => 0, 'linked_tours' => 0, 'linked_rooms' => 0];
         $products = SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('is_active', true)->get();
-        $find = function (string $kind, string $name) use ($products): ?SupplierProduct {
-            $k = self::key($name);
-            if (strlen($k) < 4) {
-                return null;
-            }
-            $same = $products->where('kind', $kind)->filter(fn ($p) => self::key($p->name) === $k);
-            if ($same->count() === 1) {
-                return $same->first();
-            }
-            $near = $products->where('kind', $kind)->filter(function ($p) use ($k) {
-                $pk = self::key($p->name);
 
-                return strlen($pk) >= 6 && (str_contains($pk, $k) || str_contains($k, $pk));
-            });
-
-            return $near->count() === 1 ? $near->first() : null;
-        };
-
-        // apartments, villas, studios… (not hotels: their prices are not taken from the old system)
+        // apartments, villas, studios… (not hotels: their prices are not taken from the old system).
+        // In the old system villas are often "packages" (fixed terms), so both kinds are compared.
         $accs = Accommodation::withoutGlobalScopes()->where('agency_id', $c->agency_id)->where('type', '!=', 'hotel')
-            ->where(fn ($q) => $q->whereNull('supplier_connection_id')->orWhere('supplier_connection_id', $c->id))
-            ->where(fn ($q) => $q->whereNull('provider_code')->orWhere('provider_code', ''))->with('rooms')->get();
+            ->where(fn ($q) => $q->whereNull('supplier_connection_id')->orWhere('supplier_connection_id', $c->id))->with('rooms')->get();
         foreach ($accs as $a) {
-            $p = $find('hotel', (string) $a->name);
+            if (filled($a->provider_code) && $a->supplier_connection_id === $c->id) {
+                $p = self::accommodationProduct($a);
+                $out['linked_rooms'] += $p ? self::linkRooms($a, $p) : 0;   // already linked: only rooms still missing
+
+                continue;
+            }
+            $p = self::closest($products, (string) $a->name);
             if (! $p) {
                 continue;
             }
-            $a->forceFill(['supplier_connection_id' => $c->id, 'provider_code' => $p->code, 'use_supplier_availability' => false])->save();
-            self::linkRooms($a, $p);
+            $a->forceFill(['supplier_connection_id' => $c->id, 'provider_code' => self::refKey($p), 'use_supplier_availability' => false])->save();
+            $out['linked_rooms'] += self::linkRooms($a, $p);
             $out['linked_accommodations']++;
         }
 
         $tours = Tour::withoutGlobalScopes()->where('agency_id', $c->agency_id)
             ->where(fn ($q) => $q->whereNull('provider_code')->orWhere('provider_code', ''))->get();
+        $packages = $products->where('kind', 'package');
         foreach ($tours as $t) {
-            $p = $find('package', (string) $t->tr('title', 'mk'));
+            $p = self::closest($packages, (string) $t->tr('title', 'mk'));
             if (! $p) {
                 continue;
             }
@@ -160,23 +231,48 @@ class McsService
         return $out;
     }
 
-    /** Rooms: the only room, or the same room name */
-    public static function linkRooms(Accommodation $a, SupplierProduct $p): void
+    /** Persons of an old room name: "1/2+1 studio" → 3, "1/2+2" → 4, "1/2-3 room" → 3, "1/3" → 3 */
+    public static function persons(?string $room): ?int
+    {
+        if (preg_match('#1\s*/\s*(\d+)\s*(?:([+\-])\s*(\d+))?#', (string) $room, $m)) {
+            $base = (int) $m[1];
+            $add = isset($m[3]) ? (int) $m[3] : 0;
+
+            return ($m[2] ?? '') === '-' ? max($base, $add) : $base + $add;
+        }
+
+        return null;
+    }
+
+    /** Rooms: the only room, the same name, or the same number of persons (when that is unique). @return int newly linked */
+    public static function linkRooms(Accommodation $a, SupplierProduct $p): int
     {
         $rooms = collect((array) $p->rooms);
+        $a->loadMissing('rooms');
+        $used = $a->rooms->pluck('provider_code')->filter()->map(fn ($x) => (string) $x)->all();
         $ours = $a->rooms->filter(fn ($r) => blank($r->provider_code));
+        $n = 0;
         if ($rooms->count() === 1 && $a->rooms->count() === 1 && $ours->count() === 1) {
             $ours->first()->forceFill(['provider_code' => $rooms[0]['code']])->save();
 
-            return;
+            return 1;
         }
         foreach ($ours as $r) {
+            $free = $rooms->reject(fn ($x) => in_array((string) $x['code'], $used, true));
             $k = self::key((string) $r->tr('name', 'mk'));
-            $hit = $rooms->filter(fn ($x) => $k !== '' && (self::key($x['room']) === $k || self::key($x['room'].$x['content']) === $k));
+            $hit = $free->filter(fn ($x) => $k !== '' && (self::key($x['room']) === $k || self::key($x['room'].$x['content']) === $k));
+            if ($hit->count() !== 1) {
+                $cap = (int) $r->max_adults + (int) $r->max_children;
+                $hit = $free->filter(fn ($x) => $cap > 0 && self::persons($x['room'].' '.$x['content']) === $cap);
+            }
             if ($hit->count() === 1) {
-                $r->forceFill(['provider_code' => $hit->first()['code']])->save();
+                $r->forceFill(['provider_code' => (string) $hit->first()['code']])->save();
+                $used[] = (string) $hit->first()['code'];
+                $n++;
             }
         }
+
+        return $n;
     }
 
     protected static function product(SupplierConnection $c, string $kind, ?string $code): ?SupplierProduct
@@ -276,13 +372,22 @@ class McsService
             if (! $b->date_from || ! $b->date_to) {
                 throw new RuntimeException(__('The booking has no dates.'));
             }
-            $p = self::product($c, 'hotel', $item->provider_code);
-            $nights = max(1, (int) $b->date_from->diffInDays($b->date_to));
-            $rows = $api->hotelSearch(['checkin' => $b->date_from->toDateString(), 'nights' => min(30, $nights), 'hotel' => $item->provider_code, 'adults' => $adults, 'children_ages' => $ages] + (self::where($p) ?: ['country' => $item->country]));
-            $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? '') === (string) $item->provider_code));
+            [$kind, $code] = self::ref($item->provider_code);
+            $p = self::product($c, $kind, $code);
             $roomCode = $b->room?->provider_code;
-            $row = self::pick($rows, 'roomid', $roomCode, __('the room (Rooms → code in the booking system)'));
-            $params = ['booktype' => 'hotel', 'id' => $item->provider_code, 'roomid' => $row['roomid']];
+            if ($kind === 'package') {
+                // villa sold in fixed terms (a "package" in the old system): the term starts on the check-in day
+                $rows = $api->packageSearch(['checkin' => $b->date_from->toDateString(), 'package' => $code, 'adults' => $adults, 'children_ages' => $ages] + (self::where($p) ?: ['country' => $item->country]));
+                $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? '') === (string) $code));
+                $row = self::pick($rows, 'accommodationid', $roomCode, __('the room (Rooms → room in the old Aries system)'));
+                $params = ['booktype' => 'package', 'id' => $code, 'accommodationid' => $row['accommodationid']];
+            } else {
+                $nights = max(1, (int) $b->date_from->diffInDays($b->date_to));
+                $rows = $api->hotelSearch(['checkin' => $b->date_from->toDateString(), 'nights' => min(30, $nights), 'hotel' => $code, 'adults' => $adults, 'children_ages' => $ages] + (self::where($p) ?: ['country' => $item->country]));
+                $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? '') === (string) $code));
+                $row = self::pick($rows, 'roomid', $roomCode, __('the room (Rooms → room in the old Aries system)'));
+                $params = ['booktype' => 'hotel', 'id' => $code, 'roomid' => $row['roomid']];
+            }
         } elseif ($item instanceof Tour) {
             $dep = $b->departure()->withoutGlobalScopes()->first();
             $checkin = $dep?->start_date ?? $b->date_from;
@@ -379,10 +484,10 @@ class McsService
 
     /* ---------------- dates and prices from the old system ---------------- */
 
-    /** @return array{departures:int, sold_out:int, term_prices:int, stop_sale:int, calls:int, errors:array} */
+    /** @return array{departures:int, sold_out:int, terms:int, term_prices:int, stop_sale:int, calls:int, errors:array} */
     public static function syncPrices(SupplierConnection $c, ?int $daysAhead = null): array
     {
-        $out = ['departures' => 0, 'sold_out' => 0, 'term_prices' => 0, 'stop_sale' => 0, 'calls' => 0, 'errors' => []];
+        $out = ['departures' => 0, 'sold_out' => 0, 'terms' => 0, 'term_prices' => 0, 'stop_sale' => 0, 'calls' => 0, 'errors' => []];
         if (($c->settings['sync_prices'] ?? true) === false) {
             return $out;
         }
@@ -390,68 +495,129 @@ class McsService
         $api = self::client($c);
         $k = 1 + self::markup($c) / 100;
 
-        // tours: one search per country and day finds every package leaving that day
         $tours = Tour::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('sync_supplier_prices', true)
             ->whereNotNull('provider_code')->where('provider_code', '!=', '')->get();
-        if ($tours->isNotEmpty()) {
-            $products = SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('kind', 'package')
-                ->whereIn('code', $tours->pluck('provider_code'))->get()->keyBy('code');
-            $countries = $products->pluck('country')->filter()->unique()->values();
-            $found = [];   // package => [checkin => [rows]]
+        $accs = Accommodation::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('sync_supplier_prices', true)
+            ->whereNotNull('provider_code')->where('provider_code', '!=', '')->with('rooms')->get();
+        $termAccs = $accs->filter(fn ($a) => self::ref($a->provider_code)[0] === 'package');   // villas in fixed terms
+        $nightAccs = $accs->reject(fn ($a) => self::ref($a->provider_code)[0] === 'package');
+
+        // packages (tours and fixed-term villas): one search per country and day finds every package starting that day
+        $codes = $tours->pluck('provider_code')->merge($termAccs->map(fn ($a) => self::ref($a->provider_code)[1]))->map(fn ($x) => (string) $x)->unique();
+        $found = [];   // package => [checkin => [rows]]
+        if ($codes->isNotEmpty()) {
+            $countries = SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('kind', 'package')
+                ->whereIn('code', $codes)->pluck('country')->filter()->unique()->values();
             for ($d = 1; $d <= $days; $d++) {
                 $date = now()->addDays($d)->toDateString();
                 foreach ($countries as $country) {
                     try {
                         $out['calls']++;
                         foreach ($api->packageSearch(['checkin' => $date, 'country' => $country, 'adults' => 2]) as $r) {
-                            $found[(string) ($r['id'] ?? '')][$r['checkin'] ?? $date][] = $r;
+                            $found[(string) ($r['id'] ?? '')][(string) ($r['checkin'] ?? $date)][] = $r;
                         }
                     } catch (Throwable $e) {
                         $out['errors'][$e->getMessage()] = true;
                     }
                 }
             }
-            foreach ($tours as $t) {
-                $byDate = $found[(string) $t->provider_code] ?? [];
-                $seen = [];
-                foreach ($byDate as $checkin => $rows) {
-                    if ($t->provider_room_code) {
-                        $rows = array_filter($rows, fn ($r) => (string) ($r['accommodationid'] ?? '') === (string) $t->provider_room_code);
-                    }
-                    if (! $rows) {
-                        continue;
-                    }
-                    $min = collect($rows)->sortBy(fn ($r) => (float) $r['price'])->first();
-                    $dep = TourDeparture::query()->firstOrNew(['tour_id' => $t->id, 'start_date' => $checkin]);
-                    $dep->end_date = $min['checkout'] ?? $dep->end_date;
-                    $dep->price_adult = round((float) $min['price'] / 2 * $k, 2);   // price for 2 adults → per person
-                    if (in_array($dep->status instanceof DepartureStatus ? $dep->status->value : $dep->status, [null, '', 'sold_out'], true)) {
-                        $dep->status = DepartureStatus::Available;
-                    }
-                    $dep->save();
-                    $seen[] = $checkin;
-                    $out['departures']++;
+        }
+        $window = [now()->addDay()->toDateString(), now()->addDays($days)->toDateString()];
+
+        // tours: departures and the price per person (price for 2 adults / 2)
+        foreach ($tours as $t) {
+            $seen = [];
+            foreach ($found[(string) $t->provider_code] ?? [] as $checkin => $rows) {
+                if ($t->provider_room_code) {
+                    $rows = array_filter($rows, fn ($r) => (string) ($r['accommodationid'] ?? '') === (string) $t->provider_room_code);
                 }
-                // future departures inside the window that the old system does not have any more
-                $out['sold_out'] += TourDeparture::query()->where('tour_id', $t->id)
-                    ->whereBetween('start_date', [now()->addDay()->toDateString(), now()->addDays($days)->toDateString()])
-                    ->whereNotIn('start_date', $seen ?: ['1900-01-01'])->where('status', '!=', DepartureStatus::Cancelled->value)
-                    ->update(['status' => DepartureStatus::SoldOut->value]);
+                if (! $rows) {
+                    continue;
+                }
+                $min = collect($rows)->sortBy(fn ($r) => (float) $r['price'])->first();
+                $dep = TourDeparture::query()->firstOrNew(['tour_id' => $t->id, 'start_date' => $checkin]);
+                $dep->end_date = $min['checkout'] ?? $dep->end_date;
+                $dep->price_adult = round((float) $min['price'] / 2 * $k, 2);
+                if (in_array($dep->status instanceof DepartureStatus ? $dep->status->value : $dep->status, [null, '', 'sold_out'], true)) {
+                    $dep->status = DepartureStatus::Available;
+                }
+                $dep->save();
+                $seen[] = $checkin;
+                $out['departures']++;
             }
+            // future departures inside the window that the old system does not offer any more
+            $out['sold_out'] += TourDeparture::query()->where('tour_id', $t->id)->whereBetween('start_date', $window)
+                ->whereNotIn('start_date', $seen ?: ['1900-01-01'])->where('status', '!=', DepartureStatus::Cancelled->value)
+                ->update(['status' => DepartureStatus::SoldOut->value]);
         }
 
-        // apartments: every own term is asked with its dates; rooms not offered there → stop sale
-        $accs = Accommodation::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('sync_supplier_prices', true)
-            ->whereNotNull('provider_code')->where('provider_code', '!=', '')->with('rooms')->get();
-        foreach ($accs as $a) {
-            $p = self::product($c, 'hotel', $a->provider_code);
+        // villas in fixed terms: the terms of the old system (check-in → check-out) and the price of every room for each term
+        foreach ($termAccs as $a) {
+            $code = self::ref($a->provider_code)[1];
+            $rooms = $a->rooms->filter(fn ($r) => filled($r->provider_code));
+            $byDate = $found[$code] ?? [];
+            if (! $byDate || $rooms->isEmpty()) {
+                continue;
+            }
+            TermPrice::$quiet = true;
+            $seenTerms = [];
+            foreach ($byDate as $checkin => $rows) {
+                foreach (collect($rows)->groupBy(fn ($r) => (string) ($r['checkout'] ?? '')) as $checkout => $termRows) {
+                    if ($checkout === '' || $checkout <= $checkin) {
+                        continue;
+                    }
+                    $term = StayTerm::query()->firstOrCreate(
+                        ['accommodation_id' => $a->id, 'date_from' => $checkin, 'date_to' => $checkout],
+                        ['is_active' => true],
+                    );
+                    if ($term->wasRecentlyCreated) {
+                        $out['terms']++;
+                    } elseif (! $term->is_active) {
+                        $term->forceFill(['is_active' => true])->save();
+                    }
+                    $seenTerms[] = $term->id;
+                    $byRoom = $termRows->groupBy(fn ($r) => (string) ($r['accommodationid'] ?? ''));
+                    foreach ($rooms as $room) {
+                        $hit = $byRoom->get((string) $room->provider_code)?->sortBy(fn ($r) => (float) $r['price'])->first();
+                        $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $room->id]);
+                        if ($hit) {
+                            $tp->price = round((float) $hit['price'] * $k, 2);
+                            $tp->stop_sale = false;
+                            $out['term_prices']++;
+                        } else {
+                            if (! $tp->exists) {
+                                continue;
+                            }
+                            $tp->stop_sale = true;   // this room is full in the old system for this term
+                            $out['stop_sale']++;
+                        }
+                        $tp->save();
+                    }
+                }
+            }
+            // our future terms inside the window that the old system does not offer any more: every room stop sale
+            $gone = StayTerm::query()->where('accommodation_id', $a->id)->whereBetween('date_from', $window)->whereNotIn('id', $seenTerms ?: [0])->pluck('id');
+            if ($gone->isNotEmpty()) {
+                $out['stop_sale'] += TermPrice::query()->whereIn('stay_term_id', $gone)->where('stop_sale', false)->update(['stop_sale' => true]);
+            }
+            TermPrice::$quiet = false;
+            if (! $a->book_by_terms) {
+                $a->forceFill(['book_by_terms' => true])->save();   // sold only in these terms, like in the old system
+            }
+            $a->touch();
+        }
+
+        // apartments linked to a "hotel" of the old system: every own term is asked with its dates
+        foreach ($nightAccs as $a) {
+            [, $code] = self::ref($a->provider_code);
+            $p = self::product($c, 'hotel', $code);
             $rooms = $a->rooms->filter(fn ($r) => filled($r->provider_code));
             if ($rooms->isEmpty()) {
                 continue;
             }
-            TermPrice::$quiet = true;   // the accommodation is touched once below
+            TermPrice::$quiet = true;
             $terms = StayTerm::query()->where('accommodation_id', $a->id)->where('is_active', true)
-                ->where('date_from', '>', now()->toDateString())->where('date_from', '<=', now()->addDays($days)->toDateString())->get();
+                ->where('date_from', '>', now()->toDateString())->where('date_from', '<=', $window[1])->get();
             foreach ($terms as $term) {
                 $nights = $term->nights();
                 if ($nights < 1 || $nights > 30) {
@@ -459,13 +625,13 @@ class McsService
                 }
                 try {
                     $out['calls']++;
-                    $rows = $api->hotelSearch(['checkin' => $term->date_from->toDateString(), 'nights' => $nights, 'hotel' => $a->provider_code, 'adults' => 2] + (self::where($p) ?: ['country' => $a->country]));
+                    $rows = $api->hotelSearch(['checkin' => $term->date_from->toDateString(), 'nights' => $nights, 'hotel' => $code, 'adults' => 2] + (self::where($p) ?: ['country' => $a->country]));
                 } catch (Throwable $e) {
                     $out['errors'][$e->getMessage()] = true;
 
                     continue;
                 }
-                $rows = collect($rows)->filter(fn ($r) => (string) ($r['id'] ?? '') === (string) $a->provider_code)->groupBy(fn ($r) => (string) ($r['roomid'] ?? ''));
+                $rows = collect($rows)->filter(fn ($r) => (string) ($r['id'] ?? '') === (string) $code)->groupBy(fn ($r) => (string) ($r['roomid'] ?? ''));
                 foreach ($rooms as $room) {
                     $hit = $rows->get((string) $room->provider_code)?->sortBy(fn ($r) => (float) $r['price'])->first();
                     $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $room->id]);
@@ -474,7 +640,7 @@ class McsService
                         $tp->stop_sale = false;
                         $out['term_prices']++;
                     } else {
-                        if (! $tp->exists && $tp->price === null) {
+                        if (! $tp->exists) {
                             continue;
                         }
                         $tp->stop_sale = true;

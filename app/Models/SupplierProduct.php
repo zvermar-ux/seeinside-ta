@@ -33,7 +33,7 @@ class SupplierProduct extends Model
     {
         $out = [];
         foreach ((array) $this->rooms as $r) {
-            $out[(string) $r['code']] = trim(implode(' · ', array_filter([$r['room'] ?? null, $r['content'] ?? null, $r['service'] ?? null])), ' ·').' (#'.$r['code'].')';
+            $out[(string) $r['code']] = trim(implode(' · ', array_filter([$r['room'] ?? null, $r['content'] ?? null, $r['service'] ?? null])), ' ·').' (Room-Id '.$r['code'].')';
         }
 
         return $out;

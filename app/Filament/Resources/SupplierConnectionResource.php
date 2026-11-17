@@ -171,7 +171,7 @@ class SupplierConnectionResource extends Resource
                             @set_time_limit(600);
                             $n = \App\Services\Mcs\McsService::importCatalog($r);
                             Notification::make()->title(__('Offer of the old system read'))->success()->persistent()
-                                ->body(__(':h hotels/apartments, :p packages. Newly linked: :a apartments, :t tours. Check the links in Apartments (Prices & booking → Source) and Tours (Dates & prices → Old Aries system).', ['h' => $n['hotels'], 'p' => $n['packages'], 'a' => $n['linked_accommodations'], 't' => $n['linked_tours']]))->send();
+                                ->body(__(':h hotels, :p packages (villas and tours). Newly linked: :a apartments, :r rooms, :t tours. Check them in Apartments (column Aries, filter "Linked to Aries").', ['h' => $n['hotels'], 'p' => $n['packages'], 'a' => $n['linked_accommodations'], 'r' => $n['linked_rooms'], 't' => $n['linked_tours']]))->send();
                         } catch (\Throwable $e) {
                             Notification::make()->title(__('Import failed'))->body($e->getMessage())->danger()->persistent()->send();
                         }
@@ -184,7 +184,7 @@ class SupplierConnectionResource extends Resource
                         @set_time_limit(900);
                         $n = \App\Services\Mcs\McsService::syncPrices($r, (int) $data['days']);
                         Notification::make()->title(__('Dates and prices synced'))->{$n['errors'] ? 'warning' : 'success'}()->persistent()
-                            ->body(__('Tour dates: :d (no longer offered: :s). Apartment term prices: :t (stop sale: :x).', ['d' => $n['departures'], 's' => $n['sold_out'], 't' => $n['term_prices'], 'x' => $n['stop_sale']]).($n['errors'] ? ' '.implode(' · ', array_slice($n['errors'], 0, 3)) : ''))->send();
+                            ->body(__('Tour dates: :d (no longer offered: :s). Apartments: :n new terms, :t room prices (stop sale: :x).', ['d' => $n['departures'], 's' => $n['sold_out'], 'n' => $n['terms'], 't' => $n['term_prices'], 'x' => $n['stop_sale']]).($n['errors'] ? ' '.implode(' · ', array_slice($n['errors'], 0, 3)) : ''))->send();
                     }),
                 Tables\Actions\Action::make('destinations')->label(__('Import destinations'))->icon('heroicon-o-map')->color('gray')
                     ->visible(fn (SupplierConnection $r) => HotelService::supports($r))

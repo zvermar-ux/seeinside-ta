@@ -61,8 +61,7 @@ class RoomsRelationManager extends RelationManager
             Forms\Components\Select::make('provider_code')->label(__('Room in the old Aries system'))->searchable()
                 ->visible(fn (RelationManager $livewire) => \App\Filament\Resources\AccommodationResource::isMcs($livewire->getOwnerRecord()->supplier_connection_id))
                 ->options(function (RelationManager $livewire) {
-                    $a = $livewire->getOwnerRecord();
-                    $p = \App\Models\SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $a->supplier_connection_id)->where('kind', 'hotel')->where('code', $a->provider_code)->first();
+                    $p = \App\Services\Mcs\McsService::accommodationProduct($livewire->getOwnerRecord());
 
                     return $p ? $p->roomOptions() : [];
                 })

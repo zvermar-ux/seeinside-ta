@@ -181,11 +181,10 @@ class AccommodationResource extends Resource
                         // the old Aries system: choose its apartment; our content stays, prices/terms come from there
                         Forms\Components\Select::make('provider_code')->label(__('Apartment in the old Aries system'))->searchable()
                             ->visible(fn (Get $get) => self::isMcs($get('supplier_connection_id')))
-                            ->options(fn (Get $get) => \App\Models\SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $get('supplier_connection_id'))
-                                ->where('kind', 'hotel')->orderBy('name')->get()->mapWithKeys(fn ($p) => [$p->code => $p->label()]))
-                            ->helperText(__('Rooms: in the Rooms tab choose the room of the old system for each room.')),
+                            ->options(fn (Get $get) => \App\Services\Mcs\McsService::accommodationOptions($get('supplier_connection_id') ? (int) $get('supplier_connection_id') : null))
+                            ->helperText(__('Search by name or by the Id of the old system (e.g. 151). Villas in fixed terms are "packages" there. Rooms: in the Rooms tab choose the Room-Id of the old system for each room.')),
                         Forms\Components\Toggle::make('sync_supplier_prices')->label(__('Take term prices from the old system'))->default(true)
-                            ->helperText(__('Prices of the terms (Terms tab) are updated every night; texts, photos and rooms stay as they are here.'))
+                            ->helperText(__('Every night: the fixed terms of the old system and the price of each room for each term (Terms tab). Texts, photos and rooms stay as they are here.'))
                             ->visible(fn (Get $get) => self::isMcs($get('supplier_connection_id'))),
                         Forms\Components\Toggle::make('use_supplier_availability')->label(__('Take availability (free / booked) from the booking system'))
                             ->helperText(__('Each room needs its room code from the booking system (Rooms tab).'))
@@ -219,6 +218,26 @@ class AccommodationResource extends Resource
                 Tables\Columns\TextColumn::make('price_from')->label(__('Price from'))->sortable()
                     ->formatStateUsing(fn ($state, Accommodation $r) => $state ? number_format((float) $state, 0, ',', '.').' '.$r->currency : '—'),
                 CatalogFields::lastMinuteColumn(),
+                // link to the old Aries system: Id there and how many rooms are linked
+                Tables\Columns\TextColumn::make('aries')->label('Aries')->badge()
+                    ->visible(fn () => SupplierConnection::query()->where('provider', \App\Enums\SupplierProvider::Mcs->value)->exists())
+                    ->state(function (Accommodation $r) {
+                        if (! self::isMcs($r->supplier_connection_id) || blank($r->provider_code)) {
+                            return __('Not linked');
+                        }
+                        [, $code] = \App\Services\Mcs\McsService::ref($r->provider_code);
+                        $linked = $r->rooms()->whereNotNull('provider_code')->where('provider_code', '!=', '')->count();
+
+                        return 'Id '.$code.' · '.__('rooms').' '.$linked.'/'.$r->rooms_count;
+                    })
+                    ->color(function ($state, Accommodation $r) {
+                        if (! self::isMcs($r->supplier_connection_id) || blank($r->provider_code)) {
+                            return 'gray';
+                        }
+                        preg_match('#(\d+)/(\d+)$#', (string) $state, $m);
+
+                        return ($m && $m[1] === $m[2] && (int) $m[2] > 0) ? 'success' : 'warning';
+                    }),
                 AgencyField::column()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\ToggleColumn::make('is_featured')->label(__('Featured')),
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active')),
@@ -226,6 +245,12 @@ class AccommodationResource extends Resource
             ->filters([
                 AgencyField::filter(),
                 Tables\Filters\SelectFilter::make('type')->label(__('Type'))->options(AccommodationType::class),
+                Tables\Filters\TernaryFilter::make('aries')->label(__('Linked to Aries'))
+                    ->visible(fn () => SupplierConnection::query()->where('provider', \App\Enums\SupplierProvider::Mcs->value)->exists())
+                    ->queries(
+                        true: fn ($q) => $q->whereIn('supplier_connection_id', SupplierConnection::query()->where('provider', 'mcs')->select('id'))->whereNotNull('provider_code')->where('provider_code', '!=', ''),
+                        false: fn ($q) => $q->where(fn ($w) => $w->whereNotIn('supplier_connection_id', SupplierConnection::query()->where('provider', 'mcs')->select('id'))->orWhereNull('supplier_connection_id')->orWhereNull('provider_code')->orWhere('provider_code', '')),
+                    ),
 Tables\Filters\SelectFilter::make('place_id')->label(__('Place'))->searchable()
                     ->options(fn () => collect(\App\Filament\Resources\GroupResource::placeOptions(null))->collapse()->all()),
                                 Tables\Filters\SelectFilter::make('destination_id')->label(__('Destination'))
@@ -273,6 +298,11 @@ Tables\Filters\SelectFilter::make('place_id')->label(__('Place'))->searchable()
     /** The chosen connection is the old Aries system (MCS eTours) */
     public static function isMcs($connectionId): bool
     {
-        return $connectionId && SupplierConnection::withoutGlobalScopes()->whereKey($connectionId)->value('provider') === \App\Enums\SupplierProvider::Mcs->value;
+        static $cache = [];
+        if (! $connectionId) {
+            return false;
+        }
+
+        return $cache[$connectionId] ??= SupplierConnection::withoutGlobalScopes()->whereKey($connectionId)->value('provider') === \App\Enums\SupplierProvider::Mcs->value;
     }
 }
