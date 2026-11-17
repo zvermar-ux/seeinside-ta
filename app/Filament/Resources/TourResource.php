@@ -19,6 +19,7 @@ use App\Models\Tour;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use App\Models\SupplierConnection;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -150,6 +151,27 @@ class TourResource extends Resource
                         Forms\Components\Placeholder::make('price_from_info')->label(__('Price from (website)'))
                             ->content(fn (?Tour $record) => $record?->price_from ? number_format((float) $record->price_from, 2, ',', '.').' '.$record->currency : '—'),
                     ]),
+                    // the old Aries system: departures and prices come from its package, bookings are sent there
+                    Forms\Components\Section::make(__('Old Aries system'))->icon('heroicon-o-arrows-right-left')->columns(3)->collapsible()
+                        ->collapsed(fn (?Tour $record) => blank($record?->provider_code))
+                        ->visible(fn () => SupplierConnection::query()->where('provider', \App\Enums\SupplierProvider::Mcs->value)->exists())
+                        ->description(__('Linked: departure dates and prices (for 2 adults, per person) are taken every night from the package in the old system, and every booking is sent there at once. Texts and photos stay ours.'))
+                        ->schema([
+                            Forms\Components\Select::make('supplier_connection_id')->label(__('Connection'))->live()
+                                ->options(fn () => SupplierConnection::query()->where('provider', \App\Enums\SupplierProvider::Mcs->value)->pluck('name', 'id'))
+                                ->placeholder(__('Not linked')),
+                            Forms\Components\Select::make('provider_code')->label(__('Package in the old system'))->searchable()->live()
+                                ->visible(fn (Get $get) => filled($get('supplier_connection_id')))
+                                ->options(fn (Get $get) => \App\Models\SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $get('supplier_connection_id'))
+                                    ->where('kind', 'package')->orderBy('name')->get()->mapWithKeys(fn ($p) => [$p->code => $p->label()])),
+                            Forms\Components\Select::make('provider_room_code')->label(__('Accommodation of the package'))
+                                ->visible(fn (Get $get) => filled($get('provider_code')))
+                                ->placeholder(__('The cheapest / the only one'))
+                                ->options(fn (Get $get) => \App\Models\SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $get('supplier_connection_id'))
+                                    ->where('kind', 'package')->where('code', $get('provider_code'))->first()?->roomOptions() ?? []),
+                            Forms\Components\Toggle::make('sync_supplier_prices')->label(__('Take departures and prices from the old system'))->default(true)
+                                ->visible(fn (Get $get) => filled($get('provider_code'))),
+                        ]),
                     Forms\Components\Section::make(__('Departure dates'))->description(__('Leave the price empty to use the base price.'))->schema([
                         Forms\Components\Repeater::make('departures')->hiddenLabel()->relationship()->defaultItems(0)
                             ->reorderable(false)->collapsible()->cloneable()

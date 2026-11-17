@@ -57,8 +57,18 @@ class RoomsRelationManager extends RelationManager
                 ->placeholder(__('e.g. A4, A5, Б201 – type and press Enter'))->reorderable()
                 ->helperText(__('Every physical room of this type. In a booking you choose which one the guest gets (it appears on the contract, voucher and invoice).')),
             Forms\Components\Toggle::make('is_active')->label(__('Active'))->default(true)->inline(false),
+            // the old Aries system: its room for this room (bookings are sent there, term prices come from there)
+            Forms\Components\Select::make('provider_code')->label(__('Room in the old Aries system'))->searchable()
+                ->visible(fn (RelationManager $livewire) => \App\Filament\Resources\AccommodationResource::isMcs($livewire->getOwnerRecord()->supplier_connection_id))
+                ->options(function (RelationManager $livewire) {
+                    $a = $livewire->getOwnerRecord();
+                    $p = \App\Models\SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $a->supplier_connection_id)->where('kind', 'hotel')->where('code', $a->provider_code)->first();
+
+                    return $p ? $p->roomOptions() : [];
+                })
+                ->helperText(__('Choose the apartment of the old system first (Prices & booking → Source).')),
             Forms\Components\TextInput::make('provider_code')->label(__('Room code in the booking system'))
-                ->visible(fn (RelationManager $livewire) => filled($livewire->getOwnerRecord()->supplier_connection_id))
+                ->visible(fn (RelationManager $livewire) => filled($livewire->getOwnerRecord()->supplier_connection_id) && ! \App\Filament\Resources\AccommodationResource::isMcs($livewire->getOwnerRecord()->supplier_connection_id))
                 ->helperText(__('Used to take free / booked dates from the API.')),
             Forms\Components\TextInput::make('price')->label(__('Base price per night'))->numeric(),
             Forms\Components\Select::make('price_type')->label(__('Price is'))->selectablePlaceholder(false)

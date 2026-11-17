@@ -14,6 +14,7 @@ enum SupplierProvider: string implements HasLabel, HasColor
     case Seayou = 'seayou';
     case Potw = 'potw';
     case Golibe = 'golibe';
+    case Mcs = 'mcs';
     case Other = 'other';
 
     public function getLabel(): string
@@ -26,6 +27,7 @@ enum SupplierProvider: string implements HasLabel, HasColor
             self::Seayou => 'Seayou',
             self::Potw => 'People of the World',
             self::Golibe => 'GOL IBE (flights)',
+            self::Mcs => 'Aries – old system (MCS eTours)',
             self::Other => 'Other',
         });
     }
@@ -40,6 +42,7 @@ enum SupplierProvider: string implements HasLabel, HasColor
             self::Seayou => 'info',
             self::Potw => 'info',
             self::Golibe => 'warning',
+            self::Mcs => 'success',
             self::Other => 'gray',
         };
     }
@@ -55,6 +58,7 @@ enum SupplierProvider: string implements HasLabel, HasColor
             self::Seayou => 'Seayou',
             self::Potw => 'People of the World',
             self::Golibe => 'GOL IBE (авио)',
+            self::Mcs => 'Aries – стара апликација (MCS eTours)',
             self::Other => 'Друго',
         };
         $en = match ($this) {
@@ -65,6 +69,7 @@ enum SupplierProvider: string implements HasLabel, HasColor
             self::Seayou => 'Seayou',
             self::Potw => 'People of the World',
             self::Golibe => 'GOL IBE (flights)',
+            self::Mcs => 'Aries – old system (MCS eTours)',
             self::Other => 'Other',
         };
 

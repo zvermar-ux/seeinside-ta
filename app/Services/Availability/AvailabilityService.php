@@ -127,6 +127,10 @@ class AvailabilityService
         if (! $connection || ! $accommodation->use_supplier_availability || blank($accommodation->provider_code)) {
             return [null, 'local', null, null];
         }
+        // the old Aries system only receives our bookings (its prices come with the price sync)
+        if ($connection->provider === \App\Enums\SupplierProvider::Mcs) {
+            return [null, 'local', null, null];
+        }
 
         $name = $connection->name;
         if (! $connection->is_active) {

@@ -46,3 +46,36 @@ Artisan::command('hotels:import {connection} {--countries=} {--destinations=} {-
         $this->info("$code: $n hotels");
     }
 })->purpose('Import destinations / hotel descriptions from a hotel booking system (Hotelbeds)');
+
+/* ---------------- old Aries system (MCS eTours) while both systems are used ---------------- */
+
+Artisan::command('aries:catalog', function () {
+    foreach (\App\Models\SupplierConnection::withoutGlobalScopes()->where('provider', 'mcs')->where('is_active', true)->get() as $c) {
+        try {
+            $r = \App\Services\Mcs\McsService::importCatalog($c);
+            $this->info($c->name.': '.json_encode($r));
+        } catch (\Throwable $e) {
+            report($e);
+            $this->error($c->name.': '.$e->getMessage());
+        }
+    }
+})->purpose('Hotels/apartments and packages of the old Aries system (for linking)');
+
+Artisan::command('aries:prices {--days=}', function () {
+    foreach (\App\Models\SupplierConnection::withoutGlobalScopes()->where('provider', 'mcs')->where('is_active', true)->get() as $c) {
+        $r = \App\Services\Mcs\McsService::syncPrices($c, $this->option('days') ? (int) $this->option('days') : null);
+        $this->info($c->name.': '.json_encode($r, JSON_UNESCAPED_UNICODE));
+    }
+})->purpose('Dates and prices of linked tours and apartments from the old Aries system');
+
+Artisan::command('aries:retry', function () {
+    $list = \App\Models\Booking::withoutGlobalScopes()->where('legacy_status', 'failed')->where('created_at', '>=', now()->subDays(3))->get();
+    foreach ($list as $b) {
+        $r = \App\Services\Mcs\McsService::push($b);
+        $this->line($b->reference.': '.$r['message']);
+    }
+})->purpose('Send again the bookings that did not reach the old Aries system');
+
+\Illuminate\Support\Facades\Schedule::command('aries:catalog')->dailyAt('02:40')->withoutOverlapping();
+\Illuminate\Support\Facades\Schedule::command('aries:prices')->dailyAt('03:20')->withoutOverlapping();
+\Illuminate\Support\Facades\Schedule::command('aries:retry')->everyThirtyMinutes()->withoutOverlapping();

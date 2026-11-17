@@ -38,6 +38,7 @@ class Booking extends Model
             'payment_due' => 'date',
             'cancel_requested_at' => 'datetime',
             'supplier_data' => 'array',
+            'legacy_sent_at' => 'datetime',
         ];
     }
 
@@ -50,6 +51,8 @@ class Booking extends Model
 
         // an amount entered when the booking is created becomes its first payment
         static::created(function (Booking $b) {
+            // while the old Aries system is still used: linked tours / apartments are booked there too, at once
+            \App\Services\Mcs\McsService::queue($b);
             if ((float) $b->paid_amount > 0) {
                 BookingPayment::create([
                     'agency_id' => $b->agency_id, 'booking_id' => $b->id, 'amount' => $b->paid_amount, 'paid_at' => now()->toDateString(),

@@ -111,6 +111,19 @@ class BookingResource extends Resource
                         Forms\Components\Placeholder::make('supplier_info')->label(__('Hotel from a booking system'))
                             ->visible(fn (?Booking $record) => $record?->isSupplierHotel())
                             ->content(fn (?Booking $record) => static::supplierInfo($record)),
+                        // copy in the old Aries system (while both systems are used)
+                        Forms\Components\Placeholder::make('legacy_info')->label(__('Old Aries system'))
+                            ->visible(fn (?Booking $record) => $record && ($record->legacy_status || \App\Services\Mcs\McsService::connectionFor($record)))
+                            ->content(function (?Booking $record) {
+                                $st = [
+                                    'sent' => '<b style="color:#16a34a">'.e(__('Booked in the old system')).'</b> · '.e(__('No.')).' <b>'.e($record->legacy_ref).'</b>',
+                                    'not_available' => '<b style="color:#dc2626">'.e(__('Not available in the old system')).'</b>',
+                                    'failed' => '<b style="color:#dc2626">'.e(__('Not sent to the old system')).'</b>',
+                                ][$record->legacy_status] ?? e(__('Waiting to be sent…'));
+
+                                return new \Illuminate\Support\HtmlString($st.($record->legacy_sent_at ? ' · '.$record->legacy_sent_at->format('d.m.Y H:i') : '')
+                                    .($record->legacy_error && $record->legacy_status !== 'sent' ? '<br><span style="color:#dc2626">'.e($record->legacy_error).'</span>' : ''));
+                            }),
                         Forms\Components\Grid::make(2)->schema(static::offerFields()),
                     ]),
                     Forms\Components\Tabs\Tab::make(__('Holder & passengers'))->icon('heroicon-o-users')
@@ -439,6 +452,8 @@ class BookingResource extends Resource
                 Tables\Filters\SelectFilter::make('bookable_type')->label(__('Type'))
                     ->options(fn () => array_filter(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Apartment / villa'), 'charter' => __('Charter')] + static::customTypeOptions(),
                     fn ($label, $key) => $key === 'custom' || \App\Models\Agency::moduleOn(\App\Http\Middleware\AgencyModule::BY_TYPE[$key] ?? $key), ARRAY_FILTER_USE_BOTH)),
+                Tables\Filters\SelectFilter::make('legacy_status')->label(__('Old Aries system'))
+                    ->options(['sent' => __('Booked in the old system'), 'failed' => __('Not sent to the old system'), 'not_available' => __('Not available in the old system')]),
                 // hotels from booking systems (Hotelbeds…) are separate from the own apartments
                 Tables\Filters\TernaryFilter::make('supplier_hotel')->label(__('Hotels (API)'))
                     ->queries(true: fn ($q) => $q->whereNotNull('supplier_connection_id'), false: fn ($q) => $q->whereNull('supplier_connection_id')),

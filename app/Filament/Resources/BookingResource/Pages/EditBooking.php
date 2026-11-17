@@ -55,6 +55,16 @@ class EditBooking extends EditRecord
                             : Notification::make()->success()->title(__('Sent to :to', ['to' => $data['to']]))->send();
                     }),
             ])->label(__('Documents'))->icon('heroicon-o-printer')->button()->color('gray'),
+            // the old Aries system: send (again) a booking that did not get there
+            Actions\Action::make('legacyPush')->label(__('Send to Aries'))->icon('heroicon-o-arrow-up-tray')->color('warning')
+                ->visible(fn () => ! $record()->legacy_ref && \App\Services\Mcs\McsService::connectionFor($record()))
+                ->requiresConfirmation()
+                ->modalDescription(__('The booking is made in the old Aries system with the dates, room and passengers of this booking (the price is the one of the old system).'))
+                ->action(function () use ($record, $page) {
+                    $r = \App\Services\Mcs\McsService::push($record());
+                    \Filament\Notifications\Notification::make()->title($r['message'])->{$r['ok'] ? 'success' : 'danger'}()->persistent()->send();
+                    $page?->refreshFormData(['legacy_status', 'legacy_ref']);
+                }),
             // hotel from a booking system (Hotelbeds…): book / cancel there
             Actions\Action::make('supplierBook')->label(__('Book at the supplier'))->icon('heroicon-o-bolt')->color('success')
                 ->visible(fn () => $record()->isSupplierHotel() && $record()->supplier_status !== 'booked' && $record()->supplier_status !== 'cancelled')

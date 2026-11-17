@@ -175,10 +175,21 @@ class AccommodationResource extends Resource
                         Forms\Components\Select::make('supplier_connection_id')->label(__('Booking system (API)'))
                             ->options(fn (Get $get) => SupplierConnection::query()
                                 ->when(AgencyField::current($get), fn ($q, $a) => $q->where('agency_id', $a))->pluck('name', 'id'))
-                            ->placeholder(__('Own offer')),
-                        Forms\Components\TextInput::make('provider_code')->label(__('Hotel code in the booking system')),
+                            ->placeholder(__('Own offer'))->live(),
+                        Forms\Components\TextInput::make('provider_code')->label(__('Hotel code in the booking system'))
+                            ->visible(fn (Get $get) => ! self::isMcs($get('supplier_connection_id'))),
+                        // the old Aries system: choose its apartment; our content stays, prices/terms come from there
+                        Forms\Components\Select::make('provider_code')->label(__('Apartment in the old Aries system'))->searchable()
+                            ->visible(fn (Get $get) => self::isMcs($get('supplier_connection_id')))
+                            ->options(fn (Get $get) => \App\Models\SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $get('supplier_connection_id'))
+                                ->where('kind', 'hotel')->orderBy('name')->get()->mapWithKeys(fn ($p) => [$p->code => $p->label()]))
+                            ->helperText(__('Rooms: in the Rooms tab choose the room of the old system for each room.')),
+                        Forms\Components\Toggle::make('sync_supplier_prices')->label(__('Take term prices from the old system'))->default(true)
+                            ->helperText(__('Prices of the terms (Terms tab) are updated every night; texts, photos and rooms stay as they are here.'))
+                            ->visible(fn (Get $get) => self::isMcs($get('supplier_connection_id'))),
                         Forms\Components\Toggle::make('use_supplier_availability')->label(__('Take availability (free / booked) from the booking system'))
                             ->helperText(__('Each room needs its room code from the booking system (Rooms tab).'))
+                            ->visible(fn (Get $get) => ! self::isMcs($get('supplier_connection_id')))
                             ->default(true)->columnSpanFull(),
                     ]),
                 ]),
@@ -257,5 +268,11 @@ Tables\Filters\SelectFilter::make('place_id')->label(__('Place'))->searchable()
             'edit' => Pages\EditAccommodation::route('/{record}/edit'),
             'term-prices' => Pages\TermPrices::route('/{record}/term-prices'),
         ];
+    }
+
+    /** The chosen connection is the old Aries system (MCS eTours) */
+    public static function isMcs($connectionId): bool
+    {
+        return $connectionId && SupplierConnection::withoutGlobalScopes()->whereKey($connectionId)->value('provider') === \App\Enums\SupplierProvider::Mcs->value;
     }
 }

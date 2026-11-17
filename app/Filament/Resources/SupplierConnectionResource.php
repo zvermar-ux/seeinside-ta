@@ -59,7 +59,7 @@ class SupplierConnectionResource extends Resource
                     ->visible(fn (Forms\Get $get) => $get('provider') !== 'hotelbeds'),
                 Forms\Components\KeyValue::make('credentials')->label(__('Access keys'))->columnSpanFull()
                     ->keyLabel(__('Name'))->valueLabel(__('Value'))
-                    ->visible(fn (Forms\Get $get) => $get('provider') !== 'hotelbeds')
+                    ->visible(fn (Forms\Get $get) => ! in_array($get('provider'), ['hotelbeds', 'mcs'], true))
                     ->helperText(__('API key, secret, password… stored encrypted. An empty value keeps the saved one.')),
 
                 // Hotelbeds (APItude): keys from developer.hotelbeds.com → My API keys
@@ -79,6 +79,19 @@ class SupplierConnectionResource extends Resource
                         Forms\Components\TextInput::make('settings.tolerance')->label(__('Price tolerance % when booking'))->numeric()->default(2)->suffix('%'),
                         Forms\Components\Toggle::make('settings.auto_book')->label(__('Book automatically'))->inline(false)
                             ->helperText(__('Off: a website request waits in Bookings and you book it with "Book at the supplier". On: booked at once (the agency pays the supplier).')),
+                    ]),
+                // the old Aries system (MCS eTours B2B API) while both systems are used
+                Forms\Components\Section::make(__('Old Aries system'))->icon('heroicon-o-arrows-right-left')->columns(2)->compact()
+                    ->visible(fn (Forms\Get $get) => $get('provider') === 'mcs')
+                    ->description(__('API address e.g. https://aries.travel/api/apib2b. Linked tours and apartments get their dates and prices from there (the content stays ours), and every new booking of them is sent there at once.'))
+                    ->schema([
+                        Forms\Components\TextInput::make('credentials.password')->label(__('Password'))->password()->revealable()
+                            ->placeholder(fn (?SupplierConnection $record) => filled($record?->credentials['password'] ?? null) ? '••••••••  '.__('(saved – leave empty to keep)') : null),
+                        Forms\Components\Toggle::make('settings.push_bookings')->label(__('Send new bookings to the old system'))->default(true)->inline(false),
+                        Forms\Components\Toggle::make('settings.sync_prices')->label(__('Take dates and prices from the old system'))->default(true)->inline(false),
+                        Forms\Components\TextInput::make('settings.days_ahead')->label(__('Days ahead for dates and prices'))->numeric()->default(240)->minValue(7)->maxValue(400),
+                        Forms\Components\TextInput::make('settings.markup_percent')->label(__('Change of the prices taken %'))->numeric()->default(0)->suffix('%')
+                            ->helperText(__('0 = the same prices as in the old system.')),
                     ]),
                 Forms\Components\TextInput::make('settings.availability_url')->label(__('Availability address (JSON)'))->columnSpanFull()
                     ->placeholder('https://partner.mk/api/availability?hotel={hotel}&from={from}&to={to}')
@@ -141,6 +154,35 @@ class SupplierConnectionResource extends Resource
                             ->title(__(':n hotels with free rooms', ['n' => count($found)]).' · '.$from->format('d.m.Y').' + '.(int) $data['nights'].' '.__('nights'))
                             ->body($found ? new \Illuminate\Support\HtmlString(nl2br(e($lines))) : __('The booking system has no free rooms for this search. Try other dates, fewer nights or another destination.'))
                             ->{$found ? 'success' : 'warning'}()->persistent()->send();
+                    }),
+                Tables\Actions\Action::make('mcsTest')->label(__('Test'))->icon('heroicon-o-signal')->color('gray')
+                    ->visible(fn (SupplierConnection $r) => $r->provider === SupplierProvider::Mcs)
+                    ->action(function (SupplierConnection $r) {
+                        $res = \App\Services\Mcs\McsService::test($r);
+                        Notification::make()->title($res['ok'] ? __('Connection works') : __('Connection failed'))->body($res['message'])->{$res['ok'] ? 'success' : 'danger'}()->persistent()->send();
+                    }),
+                Tables\Actions\Action::make('mcsCatalog')->label(__('Import offer & link'))->icon('heroicon-o-link')->color('gray')
+                    ->visible(fn (SupplierConnection $r) => $r->provider === SupplierProvider::Mcs)
+                    ->requiresConfirmation()->modalDescription(__('Reads the hotels/apartments and packages of the old system and links our apartments and tours with the same name. Our texts, photos and rooms are not changed.'))
+                    ->action(function (SupplierConnection $r) {
+                        try {
+                            @set_time_limit(600);
+                            $n = \App\Services\Mcs\McsService::importCatalog($r);
+                            Notification::make()->title(__('Offer of the old system read'))->success()->persistent()
+                                ->body(__(':h hotels/apartments, :p packages. Newly linked: :a apartments, :t tours. Check the links in Apartments (Prices & booking → Source) and Tours (Dates & prices → Old Aries system).', ['h' => $n['hotels'], 'p' => $n['packages'], 'a' => $n['linked_accommodations'], 't' => $n['linked_tours']]))->send();
+                        } catch (\Throwable $e) {
+                            Notification::make()->title(__('Import failed'))->body($e->getMessage())->danger()->persistent()->send();
+                        }
+                    }),
+                Tables\Actions\Action::make('mcsPrices')->label(__('Sync prices now'))->icon('heroicon-o-arrow-path')->color('gray')
+                    ->visible(fn (SupplierConnection $r) => $r->provider === SupplierProvider::Mcs)
+                    ->form([Forms\Components\TextInput::make('days')->label(__('Days ahead'))->numeric()->default(45)->minValue(7)->maxValue(400)
+                        ->helperText(__('Every night the full period from the settings is synced automatically; here a shorter one is faster.'))])
+                    ->action(function (SupplierConnection $r, array $data) {
+                        @set_time_limit(900);
+                        $n = \App\Services\Mcs\McsService::syncPrices($r, (int) $data['days']);
+                        Notification::make()->title(__('Dates and prices synced'))->{$n['errors'] ? 'warning' : 'success'}()->persistent()
+                            ->body(__('Tour dates: :d (no longer offered: :s). Apartment term prices: :t (stop sale: :x).', ['d' => $n['departures'], 's' => $n['sold_out'], 't' => $n['term_prices'], 'x' => $n['stop_sale']]).($n['errors'] ? ' '.implode(' · ', array_slice($n['errors'], 0, 3)) : ''))->send();
                     }),
                 Tables\Actions\Action::make('destinations')->label(__('Import destinations'))->icon('heroicon-o-map')->color('gray')
                     ->visible(fn (SupplierConnection $r) => HotelService::supports($r))
