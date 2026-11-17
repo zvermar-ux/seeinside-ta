@@ -3216,3 +3216,15 @@ msgstr "Опис под насловот"
 
 msgid "Show the description"
 msgstr "Прикажи опис"
+
+msgid "Background photo"
+msgstr "Слика во позадина"
+
+msgid "Use this photo"
+msgstr "Користи ја оваа слика"
+
+msgid "Only when the page has no photo in the app"
+msgstr "Само кога страницата нема слика во апликацијата"
+
+msgid "Always (instead of the photo from the app)"
+msgstr "Секогаш (наместо сликата од апликацијата)"

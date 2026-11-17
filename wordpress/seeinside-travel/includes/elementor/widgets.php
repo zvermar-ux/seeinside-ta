@@ -462,8 +462,14 @@ class STA_Widget_Term_Header extends STA_Simple_Widget
     {
         $this->add_control('preview_tax', ['label' => __('Preview in the editor with', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'sta_destination', 'options' => sta_term_page_taxonomies()]);
         $this->add_control('height', ['label' => __('Height', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => 340]);
+        // background photo: the one of the destination/place/group from the app, or this one
+        $this->add_control('bg_image', ['label' => __('Background photo', 'seeinside-travel'), 'type' => Controls_Manager::MEDIA, 'separator' => 'before']);
+        $this->add_control('bg_mode', ['label' => __('Use this photo', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'fallback', 'options' => [
+            'fallback' => __('Only when the page has no photo in the app', 'seeinside-travel'),
+            'always' => __('Always (instead of the photo from the app)', 'seeinside-travel'),
+        ]]);
     }
-    protected function html(array $s): string { return STA_Term_Page::header(['preview_tax' => $s['preview_tax'] ?? '', 'height' => $s['height'] ?? 340, 'kind' => ($s['show_kind'] ?? 'yes') === 'yes' ? '1' : '', 'crumbs' => ($s['show_crumbs'] ?? 'yes') === 'yes' ? '1' : '', 'count' => ($s['show_count'] ?? 'yes') === 'yes' ? '1' : '', 'desc' => ($s['show_desc'] ?? 'yes') === 'yes' ? '1' : '']); }
+    protected function html(array $s): string { return STA_Term_Page::header(['preview_tax' => $s['preview_tax'] ?? '', 'height' => $s['height'] ?? 340, 'image' => $s['bg_image']['url'] ?? '', 'image_mode' => $s['bg_mode'] ?? 'fallback', 'kind' => ($s['show_kind'] ?? 'yes') === 'yes' ? '1' : '', 'crumbs' => ($s['show_crumbs'] ?? 'yes') === 'yes' ? '1' : '', 'count' => ($s['show_count'] ?? 'yes') === 'yes' ? '1' : '', 'desc' => ($s['show_desc'] ?? 'yes') === 'yes' ? '1' : '']); }
 
     protected function style_controls(): void
     {

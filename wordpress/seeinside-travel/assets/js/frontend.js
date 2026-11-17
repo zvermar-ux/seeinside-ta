@@ -689,6 +689,34 @@
     var tg = $('[data-sta-finder-toggle]', box);
     if (tg) tg.addEventListener('click', function () { box.classList.toggle('is-open'); });
     if (form.f_from) form.f_from.addEventListener('change', function () { if (form.f_to && (!form.f_to.value || form.f_to.value <= form.f_from.value)) { var d = new Date(form.f_from.value); d.setDate(d.getDate() + 7); form.f_to.value = d.toISOString().slice(0, 10); } if (form.f_to) form.f_to.min = form.f_from.value; });
+    // endless list: the next page is added when the end of the list comes into view
+    var more = $('[data-sta-more]', box);
+    if (more && 'IntersectionObserver' in window) {
+      var list = $('.sta-l-items', box), loading = false;
+      more.style.display = 'none';   // the pages stay for search engines
+      var spin = document.createElement('div');
+      spin.className = 'sta-more-loader';
+      spin.innerHTML = '<span class="sta-spin"></span>';
+      more.parentNode.insertBefore(spin, more);
+      var next = more.dataset.next;
+      if (!next) spin.remove();
+      var io = new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting || loading || !next) return;
+        loading = true;
+        fetch(next, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (html) {
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+          // the same list on the next page (the n-th finder of the page)
+          var all = $$('[data-sta-finder]'), idx = all.indexOf(box), other = doc.querySelectorAll('[data-sta-finder]')[idx];
+          if (!other) { next = null; spin.remove(); return; }
+          Array.prototype.forEach.call(other.querySelectorAll('.sta-l-items > *'), function (cell) { list.appendChild(document.importNode(cell, true)); });
+          var nm = other.querySelector('[data-sta-more]');
+          next = nm && nm.dataset.next ? nm.dataset.next : null;
+          if (!next) { spin.remove(); io.disconnect(); }
+          loading = false;
+        }).catch(function () { loading = false; more.style.display = ''; spin.remove(); io.disconnect(); });
+      }, { rootMargin: '600px 0px' });
+      io.observe(spin);
+    }
     if (!box.dataset.from) return;
     var q = new URLSearchParams({ from: box.dataset.from, to: box.dataset.to, adults: box.dataset.ad, children: box.dataset.ch }), note = $('[data-sta-finder-note]', box);
     api('available?' + q).then(function (res) {

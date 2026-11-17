@@ -472,6 +472,8 @@ body.sta-has-cta .sta-chat { bottom: 92px; }
 /* ---------- hotel finder: filters on the left ---------- */
 .sta-finder { margin: 0 0 2.5rem; }
 .sta-finder-wrap { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 28px; align-items: start; }
+.sta-more-loader { display: flex; justify-content: center; padding: 1.6rem 0; }
+.sta-more-loader .sta-spin { width: 28px; height: 28px; }
 .sta-finder-side { position: static !important; max-height: none !important; overflow: visible !important; background: #fff; border: 1px solid var(--sta-line); border-radius: var(--sta-radius); padding: 4px 18px 18px; scrollbar-width: thin; }
 .sta-ff { padding: 14px 0; border-bottom: 1px solid var(--sta-line); }
 .sta-ff h4 { margin: 0 0 .55rem; font-size: .95rem; font-weight: 700; display: flex; justify-content: space-between; gap: .5rem; }

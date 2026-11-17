@@ -46,13 +46,17 @@ class STA_Term_Page
 
     public static function header($atts = []): string
     {
-        $a = shortcode_atts(['taxonomy' => '', 'term' => '', 'preview_tax' => '', 'height' => 340, 'kind' => '1', 'crumbs' => '1', 'count' => '1', 'desc' => '1'], $atts, 'sta_term_header');
+        $a = shortcode_atts(['taxonomy' => '', 'term' => '', 'preview_tax' => '', 'height' => 340, 'kind' => '1', 'crumbs' => '1', 'count' => '1', 'desc' => '1', 'image' => '', 'image_mode' => 'fallback'], $atts, 'sta_term_header');
         $t = self::term($a);
         if (! $t) {
             return '';
         }
         wp_enqueue_style('sta');
         $img = get_term_meta($t->term_id, 'sta_image', true);
+        // a photo chosen in Elementor: instead of the one from the app, or when there is none
+        if ($a['image'] && ($a['image_mode'] === 'always' || ! $img)) {
+            $img = $a['image'];
+        }
         $tax = get_taxonomy($t->taxonomy);
         $crumbs = [];
         foreach (array_reverse(get_ancestors($t->term_id, $t->taxonomy)) as $id) {

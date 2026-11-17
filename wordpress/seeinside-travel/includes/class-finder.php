@@ -212,7 +212,8 @@ class STA_Finder
             $html .= '<div class="sta-empty">'.esc_html__('Nothing matches these filters – remove one of them.', 'seeinside-travel').' <a href="'.esc_url(strtok($base, '?')).'">'.esc_html__('Clear all filters', 'seeinside-travel').'</a></div>';
         }
         if ($pages > 1) {
-            $html .= '<nav class="sta-pagination">';
+            // pages for search engines and without JavaScript; in the browser the next page loads by itself at the end of the list
+            $html .= '<nav class="sta-pagination" data-sta-more'.($page < $pages ? ' data-next="'.esc_url(add_query_arg('f_page', $page + 1, $base)).'"' : '').'>';
             for ($i = 1; $i <= $pages; $i++) {
                 $html .= $i === $page ? '<span class="current">'.$i.'</span>' : '<a href="'.esc_url(add_query_arg('f_page', $i, $base)).'">'.$i.'</a>';
             }
