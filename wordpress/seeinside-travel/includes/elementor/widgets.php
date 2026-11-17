@@ -541,10 +541,84 @@ class STA_Widget_Term_Offers extends STA_Simple_Widget
         ]]);
         $this->add_control('children', ['label' => __('Sub-destinations / places as tiles', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes']);
         $this->add_control('columns', ['label' => __('Columns', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => 3]);
+        // section titles ("Apartments", "Organized tours"…)
+        $this->add_control('show_titles', ['label' => __('Show the section titles', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'separator' => 'before',
+            'description' => __('E.g. "Apartments" above the list. Empty fields below = the usual names.', 'seeinside-travel')]);
+        foreach (['title_accommodation' => __('Title for accommodation', 'seeinside-travel'), 'title_tour' => __('Title for tours', 'seeinside-travel'), 'title_event' => __('Title for events', 'seeinside-travel'), 'title_children' => __('Title for the places / sub-destinations', 'seeinside-travel')] as $k => $l) {
+            $this->add_control($k, ['label' => $l, 'type' => Controls_Manager::TEXT, 'condition' => ['show_titles' => 'yes']]);
+        }
+        $this->add_control('hide_filters', ['label' => __('Hide the filters on the left', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'separator' => 'before', 'return_value' => 'yes',
+            'selectors' => ['{{WRAPPER}} .sta-finder-side, {{WRAPPER}} .sta-finder-toggle' => 'display: none !important;', '{{WRAPPER}} .sta-finder-wrap' => 'grid-template-columns: 1fr !important;']]);
+        $this->add_control('hide_sort', ['label' => __('Hide the number and the sorting', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'return_value' => 'yes',
+            'selectors' => ['{{WRAPPER}} .sta-finder-head' => 'display: none !important;']]);
+        $this->add_control('hide_tags', ['label' => __('Hide the labels under the cards (type, beach)', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'return_value' => 'yes',
+            'selectors' => ['{{WRAPPER}} .sta-finder-tags' => 'display: none !important;']]);
     }
     protected function html(array $s): string
     {
-        return STA_Term_Page::offers(['preview_tax' => $s['preview_tax'] ?? '', 'types' => implode(',', (array) ($s['types'] ?: ['tour', 'accommodation', 'event'])), 'children' => ($s['children'] ?? '') === 'yes' ? '1' : '', 'columns' => $s['columns'] ?? 3]);
+        return STA_Term_Page::offers(['preview_tax' => $s['preview_tax'] ?? '', 'types' => implode(',', (array) ($s['types'] ?: ['tour', 'accommodation', 'event'])), 'children' => ($s['children'] ?? '') === 'yes' ? '1' : '', 'columns' => $s['columns'] ?? 3,
+            'titles' => ($s['show_titles'] ?? 'yes') === 'yes' ? '1' : '', 'title_accommodation' => $s['title_accommodation'] ?? '', 'title_tour' => $s['title_tour'] ?? '', 'title_event' => $s['title_event'] ?? '', 'title_children' => $s['title_children'] ?? '']);
+    }
+
+    protected function style_controls(): void
+    {
+        // section titles
+        $this->start_controls_section('of_titles', ['label' => __('Section titles', 'seeinside-travel'), 'tab' => Controls_Manager::TAB_STYLE, 'condition' => ['show_titles' => 'yes']]);
+        $this->add_control('of_title_color', ['label' => __('Colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => ['{{WRAPPER}} .sta-term-sec > .sta-h' => 'color: {{VALUE}};']]);
+        $this->add_group_control(Group_Control_Typography::get_type(), ['name' => 'of_title_typo', 'selector' => '{{WRAPPER}} .sta-term-sec > .sta-h']);
+        $this->add_responsive_control('of_title_align', ['label' => __('Text alignment', 'seeinside-travel'), 'type' => Controls_Manager::CHOOSE, 'options' => [
+            'left' => ['title' => __('Left', 'seeinside-travel'), 'icon' => 'eicon-text-align-left'], 'center' => ['title' => __('Centre', 'seeinside-travel'), 'icon' => 'eicon-text-align-center'], 'right' => ['title' => __('Right', 'seeinside-travel'), 'icon' => 'eicon-text-align-right']],
+            'selectors' => ['{{WRAPPER}} .sta-term-sec > .sta-h' => 'text-align: {{VALUE}};']]);
+        $this->add_responsive_control('of_title_space', ['label' => __('Space below', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'range' => ['px' => ['min' => 0, 'max' => 80]], 'selectors' => ['{{WRAPPER}} .sta-term-sec > .sta-h' => 'margin-bottom: {{SIZE}}px;']]);
+        $this->end_controls_section();
+
+        // cards
+        $c = '{{WRAPPER}} .sta-c';
+        $this->start_controls_section('of_cards', ['label' => __('Cards', 'seeinside-travel'), 'tab' => Controls_Manager::TAB_STYLE]);
+        $this->add_responsive_control('of_gap', ['label' => __('Space between cards', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'range' => ['px' => ['min' => 0, 'max' => 60]], 'selectors' => ['{{WRAPPER}} .sta-l' => '--l-gap: {{SIZE}}px;']]);
+        $this->add_control('of_card_bg', ['label' => __('Card background', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => [$c => '--c-bg: {{VALUE}};']]);
+        $this->add_control('of_card_text', ['label' => __('Text colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => [$c => '--c-text: {{VALUE}};']]);
+        $this->add_control('of_card_muted', ['label' => __('Colour of the place and small text', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => [$c => '--c-muted: {{VALUE}};']]);
+        $this->add_control('of_card_accent', ['label' => __('Accent (icons, button)', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => [$c => '--c-accent: {{VALUE}};']]);
+        $this->add_responsive_control('of_card_radius', ['label' => __('Corner radius', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'range' => ['px' => ['min' => 0, 'max' => 40]], 'selectors' => [$c => '--c-radius: {{SIZE}}px;']]);
+        $this->add_control('of_card_ratio', ['label' => __('Photo shape', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => '', 'options' => [
+            '' => __('Default (4:3)', 'seeinside-travel'), '1/1' => __('Square', 'seeinside-travel'), '3/2' => '3:2', '16/9' => __('Wide (16:9)', 'seeinside-travel'), '3/4' => __('Tall (3:4)', 'seeinside-travel')],
+            'selectors' => [$c => '--c-ratio: {{VALUE}};']]);
+        $this->add_control('of_card_shadow', ['label' => __('Shadow', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => '', 'options' => [
+            '' => __('Default', 'seeinside-travel'), 'none' => __('None', 'seeinside-travel'), 'soft' => __('Soft', 'seeinside-travel'), 'strong' => __('Strong', 'seeinside-travel')],
+            'selectors_dictionary' => ['none' => 'box-shadow: none !important;', 'soft' => 'box-shadow: 0 6px 24px -10px rgba(15,23,42,.22) !important;', 'strong' => 'box-shadow: 0 18px 40px -16px rgba(15,23,42,.45) !important;'],
+            'selectors' => [$c => '{{VALUE}}']]);
+        $this->add_control('of_card_border', ['label' => __('Border colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => [$c => 'border: 1px solid {{VALUE}};']]);
+        $this->add_control('of_card_title_h', ['label' => __('Title', 'seeinside-travel'), 'type' => Controls_Manager::HEADING, 'separator' => 'before']);
+        $this->add_group_control(Group_Control_Typography::get_type(), ['name' => 'of_card_title', 'selector' => '{{WRAPPER}} .sta-c-title']);
+        $this->add_control('of_price_h', ['label' => __('Price', 'seeinside-travel'), 'type' => Controls_Manager::HEADING, 'separator' => 'before']);
+        $this->add_control('of_price_color', ['label' => __('Colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => ['{{WRAPPER}} .sta-c-price b' => 'color: {{VALUE}};']]);
+        $this->add_group_control(Group_Control_Typography::get_type(), ['name' => 'of_price_typo', 'selector' => '{{WRAPPER}} .sta-c-price b']);
+        $this->add_control('of_btn_h', ['label' => __('Button', 'seeinside-travel'), 'type' => Controls_Manager::HEADING, 'separator' => 'before']);
+        $this->add_control('of_btn_color', ['label' => __('Text colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => ['{{WRAPPER}} .sta-c-btn' => 'color: {{VALUE}} !important;']]);
+        $this->add_control('of_btn_bg', ['label' => __('Background', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => ['{{WRAPPER}} .sta-c-btn' => 'background: {{VALUE}} !important;']]);
+        $this->add_control('of_btn_border', ['label' => __('Border colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => ['{{WRAPPER}} .sta-c-btn' => 'border-color: {{VALUE}} !important;']]);
+        $this->add_control('of_btn_radius', ['label' => __('Corner radius', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'range' => ['px' => ['min' => 0, 'max' => 40]], 'selectors' => ['{{WRAPPER}} .sta-c-btn' => 'border-radius: {{SIZE}}px !important;']]);
+        $this->end_controls_section();
+
+        // filters column
+        $f = '{{WRAPPER}} .sta-finder-side';
+        $this->start_controls_section('of_filters', ['label' => __('Filters', 'seeinside-travel'), 'tab' => Controls_Manager::TAB_STYLE, 'condition' => ['hide_filters!' => 'yes']]);
+        $this->add_responsive_control('of_f_width', ['label' => __('Width', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'range' => ['px' => ['min' => 200, 'max' => 420]], 'selectors' => ['{{WRAPPER}} .sta-finder-wrap' => 'grid-template-columns: {{SIZE}}px minmax(0, 1fr);']]);
+        $this->add_control('of_f_bg', ['label' => __('Background', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => [$f => 'background: {{VALUE}};']]);
+        $this->add_control('of_f_border', ['label' => __('Border colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => [$f => 'border-color: {{VALUE}};', $f.' .sta-ff' => 'border-color: {{VALUE}};']]);
+        $this->add_control('of_f_radius', ['label' => __('Corner radius', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'range' => ['px' => ['min' => 0, 'max' => 40]], 'selectors' => [$f => 'border-radius: {{SIZE}}px;']]);
+        $this->add_control('of_f_head', ['label' => __('Heading colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => [$f.' h4' => 'color: {{VALUE}};']]);
+        $this->add_group_control(Group_Control_Typography::get_type(), ['name' => 'of_f_head_typo', 'label' => __('Heading font', 'seeinside-travel'), 'selector' => $f.' h4']);
+        $this->add_control('of_f_text', ['label' => __('Text colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => [$f.' label, '.$f.' span' => 'color: {{VALUE}};']]);
+        $this->end_controls_section();
+
+        // labels under the cards
+        $this->start_controls_section('of_tags', ['label' => __('Labels under the cards', 'seeinside-travel'), 'tab' => Controls_Manager::TAB_STYLE, 'condition' => ['hide_tags!' => 'yes']]);
+        $this->add_control('of_tag_bg', ['label' => __('Background', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => ['{{WRAPPER}} .sta-finder-tags span' => 'background: {{VALUE}};']]);
+        $this->add_control('of_tag_color', ['label' => __('Text colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => ['{{WRAPPER}} .sta-finder-tags span' => 'color: {{VALUE}};']]);
+        $this->add_control('of_tag_border', ['label' => __('Border colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => ['{{WRAPPER}} .sta-finder-tags span' => 'border-color: {{VALUE}};']]);
+        $this->end_controls_section();
     }
 }
 

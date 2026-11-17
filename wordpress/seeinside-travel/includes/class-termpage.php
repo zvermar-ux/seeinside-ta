@@ -118,7 +118,10 @@ class STA_Term_Page
 
     public static function offers($atts = []): string
     {
-        $a = shortcode_atts(['taxonomy' => '', 'term' => '', 'preview_tax' => '', 'types' => 'tour,accommodation,event', 'children' => '1', 'columns' => 3, 'limit' => 12], $atts, 'sta_term_offers');
+        $a = shortcode_atts(['taxonomy' => '', 'term' => '', 'preview_tax' => '', 'types' => 'tour,accommodation,event', 'children' => '1', 'columns' => 3, 'limit' => 12,
+            'titles' => '1', 'title_accommodation' => '', 'title_tour' => '', 'title_event' => '', 'title_children' => ''], $atts, 'sta_term_offers');
+        // section title (or none)
+        $head = fn (string $text) => $a['titles'] ? '<h2 class="sta-h">'.esc_html($text).'</h2>' : '';
         $t = self::term($a);
         if (! $t) {
             return '';
@@ -126,7 +129,7 @@ class STA_Term_Page
         wp_enqueue_style('sta');
         $h = '';
         if ($a['children'] && ($kids = self::children($t))) {
-            $h .= '<section class="sta sta-term-sec"><h2 class="sta-h">'.esc_html($t->taxonomy === 'sta_destination' ? __('Places and regions', 'seeinside-travel') : __('Also here', 'seeinside-travel')).'</h2><div class="sta-grid sta-dest-grid" style="--sta-cols:4">';
+            $h .= '<section class="sta sta-term-sec">'.$head($a['title_children'] ?: ($t->taxonomy === 'sta_destination' ? __('Places and regions', 'seeinside-travel') : __('Also here', 'seeinside-travel'))).'<div class="sta-grid sta-dest-grid" style="--sta-cols:4">';
             foreach ($kids as $k) {
                 $img = get_term_meta($k->term_id, 'sta_image', true);
                 $n = self::count($k);
@@ -136,7 +139,7 @@ class STA_Term_Page
         }
         $attr = ['sta_destination' => 'destination', 'sta_place' => 'place', 'sta_group' => 'group', 'sta_tour_type' => 'tour_type', 'sta_event_category' => 'category', 'sta_country' => 'country'][$t->taxonomy] ?? null;
         $types = array_map('trim', explode(',', $a['types']));
-        $titles = ['tour' => __('Organized tours', 'seeinside-travel'), 'accommodation' => __('Apartments', 'seeinside-travel'), 'event' => __('Events', 'seeinside-travel')];
+        $titles = ['tour' => $a['title_tour'] ?: __('Organized tours', 'seeinside-travel'), 'accommodation' => $a['title_accommodation'] ?: __('Apartments', 'seeinside-travel'), 'event' => $a['title_event'] ?: __('Events', 'seeinside-travel')];
         $slug = rawurldecode($t->slug);
         foreach ($types as $type) {
             $pt = STA_Schema::TYPES[$type] ?? null;
@@ -152,13 +155,13 @@ class STA_Term_Page
                 $preset = match ($t->taxonomy) {
                     'sta_destination' => ['destination' => $slug], 'sta_place' => ['place' => $slug], 'sta_hotel_type' => ['type' => $slug], 'sta_group' => ['group' => $slug], default => [],
                 };
-                $h .= '<section class="sta sta-term-sec"><h2 class="sta-h">'.esc_html($titles[$type]).'</h2>'.STA_Finder::shortcode($preset + ['columns' => $a['columns']]).'</section>';
+                $h .= '<section class="sta sta-term-sec">'.$head($titles[$type]).STA_Finder::shortcode($preset + ['columns' => $a['columns']]).'</section>';
                 continue;
             }
             if (! $attr) {
                 continue;
             }
-            $h .= '<section class="sta sta-term-sec"><h2 class="sta-h">'.esc_html($titles[$type]).'</h2>'
+            $h .= '<section class="sta sta-term-sec">'.$head($titles[$type])
                 .STA_Frontend::sc_list(['type' => $type, $attr => $slug, 'limit' => (int) $a['limit'], 'columns' => (int) $a['columns'], 'pagination' => '1', 'orderby' => $type === 'tour' ? 'departure' : 'date'])
                 .'</section>';
         }

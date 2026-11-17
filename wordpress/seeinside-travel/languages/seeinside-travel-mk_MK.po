@@ -3228,3 +3228,81 @@ msgstr "Само кога страницата нема слика во апли
 
 msgid "Always (instead of the photo from the app)"
 msgstr "Секогаш (наместо сликата од апликацијата)"
+
+msgid "Show the section titles"
+msgstr "Прикажи ги насловите на деловите"
+
+msgid "E.g. \"Apartments\" above the list. Empty fields below = the usual names."
+msgstr "На пр. „Апартмани“ над листата. Празни полиња подолу = вообичаените имиња."
+
+msgid "Title for accommodation"
+msgstr "Наслов за сместување"
+
+msgid "Title for tours"
+msgstr "Наслов за аранжмани"
+
+msgid "Title for events"
+msgstr "Наслов за настани"
+
+msgid "Title for the places / sub-destinations"
+msgstr "Наслов за местата / поддестинациите"
+
+msgid "Hide the filters on the left"
+msgstr "Скриј ги филтрите од лево"
+
+msgid "Hide the number and the sorting"
+msgstr "Скриј го бројот и подредувањето"
+
+msgid "Hide the labels under the cards (type, beach)"
+msgstr "Скриј ги ознаките под картичките (тип, плажа)"
+
+msgid "Section titles"
+msgstr "Наслови на деловите"
+
+msgid "Cards"
+msgstr "Картички"
+
+msgid "Card background"
+msgstr "Позадина на картичката"
+
+msgid "Text colour"
+msgstr "Боја на текстот"
+
+msgid "Colour of the place and small text"
+msgstr "Боја на местото и ситниот текст"
+
+msgid "Accent (icons, button)"
+msgstr "Акцент (икони, копче)"
+
+msgid "Default (4:3)"
+msgstr "Стандардно (4:3)"
+
+msgid "Square"
+msgstr "Квадрат"
+
+msgid "Wide (16:9)"
+msgstr "Широко (16:9)"
+
+msgid "Tall (3:4)"
+msgstr "Високо (3:4)"
+
+msgid "Default"
+msgstr "Стандардно"
+
+msgid "Border colour"
+msgstr "Боја на работ"
+
+msgid "Background"
+msgstr "Позадина"
+
+msgid "Width"
+msgstr "Ширина"
+
+msgid "Heading colour"
+msgstr "Боја на насловите"
+
+msgid "Heading font"
+msgstr "Фонт на насловите"
+
+msgid "Labels under the cards"
+msgstr "Ознаки под картичките"
