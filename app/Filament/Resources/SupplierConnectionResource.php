@@ -176,6 +176,28 @@ class SupplierConnectionResource extends Resource
                             Notification::make()->title(__('Import failed'))->body($e->getMessage())->danger()->persistent()->send();
                         }
                     }),
+                Tables\Actions\Action::make('mcsProbe')->label(__('Trial search'))->icon('heroicon-o-magnifying-glass')->color('gray')
+                    ->visible(fn (SupplierConnection $r) => $r->provider === SupplierProvider::Mcs)
+                    ->modalSubmitActionLabel(__('Search'))
+                    ->form([
+                        Forms\Components\Select::make('kind')->label(__('Type'))->options(['package' => __('Package (villa in fixed terms, tour)'), 'hotel' => __('Hotel')])->default('package')->required(),
+                        Forms\Components\TextInput::make('code')->label(__('Id in the old system'))->required()->placeholder('151'),
+                        Forms\Components\DatePicker::make('date')->label(__('Check-in'))->required()->native(false)->displayFormat('d.m.Y')
+                            ->helperText(__('For a villa in fixed terms: the first day of a term.')),
+                        Forms\Components\TextInput::make('nights')->label(__('Nights (hotel only)'))->numeric()->default(7),
+                    ])
+                    ->action(function (SupplierConnection $r, array $data) {
+                        try {
+                            $res = \App\Services\Mcs\McsService::probe($r, $data['kind'], trim($data['code']), \Illuminate\Support\Carbon::parse($data['date'])->toDateString(), (int) $data['nights']);
+                        } catch (\Throwable $e) {
+                            Notification::make()->title(__('Search failed'))->body($e->getMessage())->danger()->persistent()->send();
+
+                            return;
+                        }
+                        $json = json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                        Notification::make()->title(__(':n offers', ['n' => count($res['rows'])]))->{$res['rows'] ? 'success' : 'warning'}()->persistent()
+                            ->body(new \Illuminate\Support\HtmlString('<pre style="font-size:.7rem;max-height:22rem;overflow:auto;white-space:pre-wrap">'.e(mb_substr($json, 0, 6000)).'</pre>'))->send();
+                    }),
                 Tables\Actions\Action::make('mcsPrices')->label(__('Sync prices now'))->icon('heroicon-o-arrow-path')->color('gray')
                     ->visible(fn (SupplierConnection $r) => $r->provider === SupplierProvider::Mcs)
                     ->form([Forms\Components\TextInput::make('days')->label(__('Days ahead'))->numeric()->default(45)->minValue(7)->maxValue(400)
@@ -184,7 +206,10 @@ class SupplierConnectionResource extends Resource
                         @set_time_limit(900);
                         $n = \App\Services\Mcs\McsService::syncPrices($r, (int) $data['days']);
                         Notification::make()->title(__('Dates and prices synced'))->{$n['errors'] ? 'warning' : 'success'}()->persistent()
-                            ->body(__('Tour dates: :d (no longer offered: :s). Apartments: :n new terms, :t room prices (stop sale: :x).', ['d' => $n['departures'], 's' => $n['sold_out'], 'n' => $n['terms'], 't' => $n['term_prices'], 'x' => $n['stop_sale']]).($n['errors'] ? ' '.implode(' · ', array_slice($n['errors'], 0, 3)) : ''))->send();
+                            ->body(new \Illuminate\Support\HtmlString(e(__('Tour dates: :d (no longer offered: :s). Apartments: :n new terms, :t room prices (stop sale: :x).', ['d' => $n['departures'], 's' => $n['sold_out'], 'n' => $n['terms'], 't' => $n['term_prices'], 'x' => $n['stop_sale']]))
+                                .'<br>'.e(__('Searches: :c, offers found: :r.', ['c' => $n['calls'], 'r' => $n['results']]))
+                                .($n['errors'] ? '<br><b>'.e(__('Errors')).':</b> '.e(implode(' · ', array_slice($n['errors'], 0, 3))) : '')
+                                .($n['notes'] ? '<br>'.collect($n['notes'])->take(15)->map(fn ($x) => '• '.e($x))->implode('<br>') : '')))->send();
                     }),
                 Tables\Actions\Action::make('destinations')->label(__('Import destinations'))->icon('heroicon-o-map')->color('gray')
                     ->visible(fn (SupplierConnection $r) => HotelService::supports($r))

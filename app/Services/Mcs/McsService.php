@@ -487,7 +487,7 @@ class McsService
     /** @return array{departures:int, sold_out:int, terms:int, term_prices:int, stop_sale:int, calls:int, errors:array} */
     public static function syncPrices(SupplierConnection $c, ?int $daysAhead = null): array
     {
-        $out = ['departures' => 0, 'sold_out' => 0, 'terms' => 0, 'term_prices' => 0, 'stop_sale' => 0, 'calls' => 0, 'errors' => []];
+        $out = ['departures' => 0, 'sold_out' => 0, 'terms' => 0, 'term_prices' => 0, 'stop_sale' => 0, 'calls' => 0, 'errors' => [], 'notes' => [], 'results' => 0];
         if (($c->settings['sync_prices'] ?? true) === false) {
             return $out;
         }
@@ -514,6 +514,7 @@ class McsService
                     try {
                         $out['calls']++;
                         foreach ($api->packageSearch(['checkin' => $date, 'country' => $country, 'adults' => 2]) as $r) {
+                            $out['results']++;
                             $found[(string) ($r['id'] ?? '')][(string) ($r['checkin'] ?? $date)][] = $r;
                         }
                     } catch (Throwable $e) {
@@ -556,7 +557,23 @@ class McsService
             $code = self::ref($a->provider_code)[1];
             $rooms = $a->rooms->filter(fn ($r) => filled($r->provider_code));
             $byDate = $found[$code] ?? [];
-            if (! $byDate || $rooms->isEmpty()) {
+            if ($rooms->isEmpty()) {
+                // rooms not linked yet: link them now by the rooms the old system offers (when it is clear)
+                $p = self::product($c, 'package', $code);
+                if ($p) {
+                    self::linkRooms($a, $p);
+                    $a->load('rooms');
+                    $rooms = $a->rooms->filter(fn ($r) => filled($r->provider_code));
+                }
+            }
+            if ($rooms->isEmpty()) {
+                $out['notes'][] = $a->name.': '.__('rooms not linked (Rooms → Room in the old Aries system)');
+
+                continue;
+            }
+            if (! $byDate) {
+                $out['notes'][] = $a->name.': '.__('no terms found in the old system for Id :c in the next :d days', ['c' => $code, 'd' => $days]);
+
                 continue;
             }
             TermPrice::$quiet = true;
@@ -656,7 +673,21 @@ class McsService
         }
         $c->forceFill(['last_sync_at' => now()])->saveQuietly();
         $out['errors'] = array_keys($out['errors']);
+        Log::info('MCS price sync', $out);
 
         return $out;
+    }
+
+    /** Raw answer of a search, to see what the old system gives for one Id and date */
+    public static function probe(SupplierConnection $c, string $kind, string $code, string $date, int $nights = 7): array
+    {
+        $p = self::product($c, $kind, $code);
+        $where = self::where($p) ?: ['country' => $p?->country];
+        $api = self::client($c);
+        $rows = $kind === 'package'
+            ? $api->packageSearch(['checkin' => $date, 'package' => $code, 'adults' => 2] + $where)
+            : $api->hotelSearch(['checkin' => $date, 'nights' => $nights, 'hotel' => $code, 'adults' => 2] + $where);
+
+        return ['product' => $p?->only(['kind', 'code', 'name', 'country', 'region', 'city', 'rooms']), 'where' => $where, 'rows' => $rows];
     }
 }

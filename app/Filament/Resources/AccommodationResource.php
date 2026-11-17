@@ -303,6 +303,7 @@ Tables\Filters\SelectFilter::make('place_id')->label(__('Place'))->searchable()
             return false;
         }
 
-        return $cache[$connectionId] ??= SupplierConnection::withoutGlobalScopes()->whereKey($connectionId)->value('provider') === \App\Enums\SupplierProvider::Mcs->value;
+        // raw value: value() on the model would give the enum, not the string
+        return $cache[$connectionId] ??= SupplierConnection::withoutGlobalScopes()->whereKey($connectionId)->toBase()->value('provider') === \App\Enums\SupplierProvider::Mcs->value;
     }
 }

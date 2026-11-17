@@ -1969,5 +1969,13 @@
     "Every night: the fixed terms of the old system and the price of each room for each term (Terms tab). Texts, photos and rooms stay as they are here.": "Секоја ноќ: фиксните термини од старата апликација и цената на секоја соба за секој термин (таб Термини). Текстовите, сликите и собите остануваат како што се тука.",
     "the room (Rooms → room in the old Aries system)": "собата (Соби → соба во старата Aries апликација)",
     "Linked to Aries": "Поврзано со Aries",
-    "Package": "Аранжман"
+    "Package": "Аранжман",
+    "rooms not linked (Rooms → Room in the old Aries system)": "собите не се поврзани (Соби → Соба во старата Aries апликација)",
+    "no terms found in the old system for Id :c in the next :d days": "нема термини во старата апликација за Id :c во следните :d дена",
+    "Searches: :c, offers found: :r.": "Пребарувања: :c, најдени понуди: :r.",
+    "Package (villa in fixed terms, tour)": "Аранжман (вила со фиксни термини, тура)",
+    "Id in the old system": "Id во старата апликација",
+    "For a villa in fixed terms: the first day of a term.": "За вила со фиксни термини: првиот ден од некој термин.",
+    "Nights (hotel only)": "Ноќевања (само за хотел)",
+    ":n offers": ":n понуди"
 }
