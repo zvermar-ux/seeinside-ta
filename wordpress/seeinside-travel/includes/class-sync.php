@@ -679,6 +679,8 @@ class STA_Sync
             'departure_places' => $body['departure_places'] ?? [],
             'amenities' => $body['amenities'] ?? [],
             'enums' => $body['enums'] ?? [],
+            // hotels from booking systems (Hotelbeds…): on/off and the destinations for the search
+            'hotels' => $body['hotels'] ?? [],
         ], false);
         if (isset($body['slider'])) {
             update_option('sta_slider', $body['slider'], false);

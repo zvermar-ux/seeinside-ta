@@ -21,4 +21,15 @@ class SupplierDestination extends Model
     {
         return $this->belongsTo(SupplierConnection::class, 'supplier_connection_id');
     }
+
+    /** The website learns at once that hotels are on/off or the destinations changed */
+    protected static function booted(): void
+    {
+        $changed = function ($m) {
+            \Illuminate\Support\Facades\Cache::forget('hotels:dest:'.$m->agency_id);
+            \App\Services\Website\WebsiteNotifier::metaChanged($m->agency_id);
+        };
+        static::saved(fn ($m) => ($m->wasRecentlyCreated || $m->wasChanged(['is_active', 'name', 'hotels_count'])) && $changed($m));
+        static::deleted($changed);
+    }
 }

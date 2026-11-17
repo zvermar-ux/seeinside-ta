@@ -123,7 +123,7 @@ class SupplierHotelResource extends Resource
                         try {
                             foreach ($data['destinations'] as $code) {
                                 $done[] = $code.': '.$svc->importHotels($c, $code, (int) $data['min_stars']);
-                                SupplierDestination::query()->where('supplier_connection_id', $c->id)->where('code', $code)->update(['is_active' => true]);
+                                SupplierDestination::query()->where('supplier_connection_id', $c->id)->where('code', $code)->get()->each->update(['is_active' => true]);
                             }
                             Notification::make()->title(__('Hotels imported'))->body(implode(' · ', $done))->success()->send();
                         } catch (\Throwable $e) {

@@ -41,7 +41,7 @@ Artisan::command('hotels:import {connection} {--countries=} {--destinations=} {-
     }
     foreach (array_unique(array_filter(array_map('trim', $codes))) as $code) {
         $n = $svc->importHotels($c, $code, (int) $this->option('min-stars'), fn ($done, $total) => $this->output->write("\r$code: $done / $total   "));
-        \App\Models\SupplierDestination::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('code', $code)->update(['is_active' => true]);
+        \App\Models\SupplierDestination::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('code', $code)->get()->each->update(['is_active' => true]);
         $this->newLine();
         $this->info("$code: $n hotels");
     }
