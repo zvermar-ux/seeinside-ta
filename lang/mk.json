@@ -1995,5 +1995,14 @@
     "searches :a of :b": "пребарувања :a од :b",
     "Stopped: the old system did not answer 15 searches in a row.": "Запрено: старата апликација не одговори на 15 пребарувања по ред.",
     "1 is safest: too many requests can get our server blocked by the old one.": "1 е најбезбедно: премногу барања можат да предизвикаат стариот сервер да го блокира нашиот.",
-    "Pause between searches (ms)": "Пауза меѓу пребарувањата (ms)"
+    "Pause between searches (ms)": "Пауза меѓу пребарувањата (ms)",
+    "With errors – see Report": "Со грешки – види Извештај",
+    ":d tour dates, :t room prices": ":d термини на аранжмани, :t цени на соби",
+    "notes: :n": "забелешки: :n",
+    "Last sync with the old system": "Последна синхронизација со старата апликација",
+    ":d days ahead": ":d дена напред",
+    "Searches": "Пребарувања",
+    "offers found: :o": "најдени понуди: :o",
+    ":d dates (no longer offered: :s)": ":d термини (повеќе ги нема: :s)",
+    ":n new terms, :t room prices, stop sale: :x": ":n нови термини, :t цени на соби, стоп продажба: :x"
 }

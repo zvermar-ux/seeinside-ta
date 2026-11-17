@@ -133,9 +133,10 @@ class SupplierConnectionResource extends Resource
                             return null;
                         }
 
-                        return __('Tours: :d dates · Apartments: :n new terms, :t room prices · offers found: :o', ['d' => $x['departures'] ?? 0, 'n' => $x['terms'] ?? 0, 't' => $x['term_prices'] ?? 0, 'o' => $x['results'] ?? 0])
-                            .(! empty($x['errors']) ? ' · ⚠ '.\Illuminate\Support\Str::limit(implode(' · ', $x['errors']), 160) : '')
-                            .(! empty($x['notes']) ? ' · '.\Illuminate\Support\Str::limit(implode(' · ', $x['notes']), 300) : '');
+                        // short line; the whole report opens with the "Report" button
+                        return ! empty($x['errors'])
+                            ? '⚠ '.__('With errors – see Report')
+                            : '✓ '.__(':d tour dates, :t room prices', ['d' => $x['departures'] ?? 0, 't' => $x['term_prices'] ?? 0]).(! empty($x['notes']) ? ' · '.__('notes: :n', ['n' => count($x['notes'])]) : '');
                     }),
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active')),
             ])
@@ -223,6 +224,24 @@ class SupplierConnectionResource extends Resource
                         $json = json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                         Notification::make()->title(__(':n offers', ['n' => count($res['rows'])]).' · '.$res['seconds'].' s')->{$res['rows'] ? 'success' : 'warning'}()->persistent()
                             ->body(new \Illuminate\Support\HtmlString('<pre style="font-size:.7rem;max-height:22rem;overflow:auto;white-space:pre-wrap">'.e(mb_substr($json, 0, 6000)).'</pre>'))->send();
+                    }),
+                Tables\Actions\Action::make('mcsReport')->label(__('Report'))->icon('heroicon-o-document-magnifying-glass')->color('gray')
+                    ->visible(fn (SupplierConnection $r) => $r->provider === SupplierProvider::Mcs && ! empty($r->settings['last_sync_result']))
+                    ->modalHeading(__('Last sync with the old system'))->modalSubmitAction(false)->modalCancelActionLabel(__('Close'))->modalWidth('2xl')
+                    ->modalContent(function (SupplierConnection $r) {
+                        $x = (array) ($r->settings['last_sync_result'] ?? []);
+                        $row = fn ($k, $v) => '<tr><td style="padding:.3rem .8rem .3rem 0;color:#6b7280;white-space:nowrap;vertical-align:top">'.e($k).'</td><td style="padding:.3rem 0">'.$v.'</td></tr>';
+                        $list = fn ($items, $color = null) => $items ? '<ul style="margin:0;padding-left:1.1rem'.($color ? ';color:'.$color : '').'">'.collect($items)->map(fn ($i) => '<li>'.e($i).'</li>')->implode('').'</ul>' : '—';
+                        $html = '<table style="width:100%;font-size:.9rem;border-collapse:collapse">'
+                            .$row(__('Time'), e(! empty($x['at']) ? \Illuminate\Support\Carbon::parse($x['at'])->timezone(config('app.timezone'))->format('d.m.Y H:i') : '—').(! empty($x['days']) ? ' · '.e(__(':d days ahead', ['d' => $x['days']])) : ''))
+                            .$row(__('Searches'), e(($x['calls'] ?? 0).' · '.__('offers found: :o', ['o' => $x['results'] ?? 0])))
+                            .$row(__('Tours'), e(__(':d dates (no longer offered: :s)', ['d' => $x['departures'] ?? 0, 's' => $x['sold_out'] ?? 0])))
+                            .$row(__('Apartments'), e(__(':n new terms, :t room prices, stop sale: :x', ['n' => $x['terms'] ?? 0, 't' => $x['term_prices'] ?? 0, 'x' => $x['stop_sale'] ?? 0])))
+                            .$row(__('Errors'), $list($x['errors'] ?? [], '#dc2626'))
+                            .$row(__('Notes'), $list($x['notes'] ?? []))
+                            .'</table>';
+
+                        return new \Illuminate\Support\HtmlString($html);
                     }),
                 Tables\Actions\Action::make('mcsPrices')->label(__('Sync prices now'))->icon('heroicon-o-arrow-path')->color('gray')
                     ->visible(fn (SupplierConnection $r) => $r->provider === SupplierProvider::Mcs)
