@@ -356,7 +356,8 @@ class STA_Admin
                 // no break
             case 'pages':
                 $r = STA_Templates::create_pages();
-                self::back('display', sprintf(__('Pages ready: %s', 'seeinside-travel'), $r['made'] ? implode(', ', $r['made']) : __('already existed', 'seeinside-travel')));
+                $msg = sprintf(__('Pages ready: %s', 'seeinside-travel'), $r['made'] ? implode(', ', $r['made']) : __('already existed', 'seeinside-travel'));
+                self::back('display', trim($msg.' '.implode(' ', $r['notes'] ?? [])), empty($r['notes']));
         }
         self::back('sync', '—');
     }

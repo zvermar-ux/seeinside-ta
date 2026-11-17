@@ -279,15 +279,20 @@ class STA_Templates
         // the hotels page made by an older version (search + plain list) → filters on the left
         $old = "[sta_search types=\"accommodation\"]\n[sta_list type=\"hotel\" limit=\"12\" columns=\"3\" search=\"1\" pagination=\"1\"]";
         $made = [];
+        $notes = [];
         $known = get_option('sta_pages', []);
+        $live = fn ($id) => $id && in_array(get_post_status($id), ['publish', 'draft', 'private', 'future', 'pending'], true);
+        // the hotels setting may be older than the app: ask the app once more
+        if (! STA_Hotels::enabled() && STA_Api::configured()) {
+            STA_Sync::sync_meta();
+        }
         foreach ($pages as $slug => [$title, $content]) {
-            if (! empty($known[$slug]) && get_post_status($known[$slug])) {
+            if ($slug === 'hoteli') {
+                self::hotels_page($known, $title, $content, $old, $made, $notes);
+                continue;
+            }
+            if (! empty($known[$slug]) && $live($known[$slug])) {
                 $now = trim(str_replace("\r", '', (string) get_post_field('post_content', $known[$slug])));
-                // the hotels page of older versions (own accommodation) becomes the hotel search when the booking system is on
-                if ($slug === 'hoteli' && STA_Hotels::enabled() && in_array($now, [$old, '[sta_hotel_finder]', '[sta_hotel_finder type="hotel"]'], true)) {
-                    wp_update_post(['ID' => $known[$slug], 'post_content' => $content, 'post_title' => $title]);
-                    $made[] = $title.' (API)';
-                }
                 // apartments: every type of own accommodation (apartments, studios, own hotels…)
                 if ($slug === 'apartmani' && $now === '[sta_hotel_finder exclude_type="hotel"]') {
                     wp_update_post(['ID' => $known[$slug], 'post_content' => $content, 'post_title' => $title]);
@@ -298,11 +303,8 @@ class STA_Templates
             if ($slug === 'apartmani' && ! self::own_apartments()) {
                 continue;   // no own accommodation yet
             }
-            if ($slug === 'hoteli' && ! STA_Hotels::enabled()) {
-                continue;   // no booking system yet
-            }
             $existing = get_page_by_path($slug);
-            if ($existing) {
+            if ($existing && $live($existing->ID)) {
                 $known[$slug] = $existing->ID;
                 continue;
             }
@@ -314,7 +316,59 @@ class STA_Templates
         }
         update_option('sta_pages', $known, false);
 
-        return ['made' => $made];
+        return ['made' => $made, 'notes' => $notes];
+    }
+
+    /**
+     * Hotels page = the hotels from the booking system ([sta_hotels]). An old hotels page of the plugin is converted;
+     * a page with other content (own design) is left alone and a new "Hotels" page is made.
+     */
+    protected static function hotels_page(array &$known, string $title, string $content, string $old, array &$made, array &$notes): void
+    {
+        if (! STA_Hotels::enabled()) {
+            $notes[] = __('Hotels page: hotels from a booking system are not on yet. In the app, Booking systems (API) → Hotelbeds must be active with destinations switched on; then click "Sync all" and create the pages again.', 'seeinside-travel');
+
+            return;
+        }
+        $live = fn ($id) => $id && in_array(get_post_status($id), ['publish', 'draft', 'private', 'future', 'pending'], true);
+        // already there
+        if (! empty($known['hoteli']) && $live($known['hoteli']) && has_shortcode((string) get_post_field('post_content', $known['hoteli']), 'sta_hotels')) {
+            if (get_post_status($known['hoteli']) !== 'publish') {
+                wp_update_post(['ID' => $known['hoteli'], 'post_status' => 'publish']);
+                $made[] = $title;
+            }
+
+            return;
+        }
+        foreach (get_posts(['post_type' => 'page', 'post_status' => 'publish', 'numberposts' => 20, 's' => '[sta_hotels']) as $p) {
+            if (has_shortcode($p->post_content, 'sta_hotels')) {
+                $known['hoteli'] = $p->ID;
+
+                return;
+            }
+        }
+        // an old hotels page of the plugin (own accommodation) → the hotel search
+        if (! empty($known['hoteli']) && $live($known['hoteli'])) {
+            $now = trim(str_replace("\r", '', (string) get_post_field('post_content', $known['hoteli'])));
+            if ($now === '' || $now === $old || preg_match('/^\[sta_hotel_finder[^\]]*\]$/', $now)) {
+                wp_update_post(['ID' => $known['hoteli'], 'post_content' => $content, 'post_title' => $title, 'post_status' => 'publish']);
+                delete_post_meta($known['hoteli'], '_elementor_edit_mode');   // show the shortcode, not an old Elementor layout
+                $made[] = $title;
+
+                return;
+            }
+        }
+        // a new page: /hoteli/ when free, otherwise /hoteli-online/
+        $slug = 'hoteli';
+        $taken = get_page_by_path($slug);
+        if ($taken && $live($taken->ID)) {
+            $slug = 'hoteli-online';
+        }
+        $id = wp_insert_post(['post_type' => 'page', 'post_status' => 'publish', 'post_title' => $title, 'post_name' => $slug, 'post_content' => $content]);
+        if ($id && ! is_wp_error($id)) {
+            $known['hoteli'] = $id;
+            $made[] = $title.' (/'.get_post_field('post_name', $id).'/)';
+        }
     }
 
     /** Own accommodation entered in the app (apartments, studios, villas, own hotels…) exists */

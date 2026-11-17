@@ -3150,3 +3150,6 @@ msgstr "Изберете датуми за да ги видите слободн
 
 msgid "Loading…"
 msgstr "Се вчитува…"
+
+msgid "Hotels page: hotels from a booking system are not on yet. In the app, Booking systems (API) → Hotelbeds must be active with destinations switched on; then click \"Sync all\" and create the pages again."
+msgstr "Страница Хотели: хотелите од резервациски систем сè уште не се вклучени на сајтот. Во апликацијата, Резервациски системи (API) → Hotelbeds мора да е активен со вклучени дестинации; потоа кликни „Синхронизирај сè“ и пак „Креирај страници“."
