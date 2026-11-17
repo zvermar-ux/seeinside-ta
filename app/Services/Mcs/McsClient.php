@@ -73,7 +73,11 @@ class McsClient
         $creds = $this->creds();
         $url = $this->base().'/'.$operation;
         $out = [];
-        foreach (array_chunk($paramSets, max(1, $concurrency), true) as $chunk) {
+        $pause = max(0, (int) ($this->c->settings['pause_ms'] ?? 500));   // be gentle with the old server
+        foreach (array_chunk($paramSets, max(1, $concurrency), true) as $n => $chunk) {
+            if ($n > 0 && $pause) {
+                usleep($pause * 1000);
+            }
             $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($chunk, $creds, $url, $timeout) {
                 foreach ($chunk as $key => $params) {
                     $this->prepare($pool->as((string) $key), $timeout)->post($url, $creds + $params);

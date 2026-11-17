@@ -1993,5 +1993,7 @@
     "Months with terms (searched)": "Месеци со термини (се пребаруваат)",
     "Only these months are searched for package terms (fewer searches). Departures in other months are not changed.": "Термините се бараат само во овие месеци (помалку пребарувања). Термините во другите месеци не се менуваат.",
     "searches :a of :b": "пребарувања :a од :b",
-    "Stopped: the old system did not answer 15 searches in a row.": "Запрено: старата апликација не одговори на 15 пребарувања по ред."
+    "Stopped: the old system did not answer 15 searches in a row.": "Запрено: старата апликација не одговори на 15 пребарувања по ред.",
+    "1 is safest: too many requests can get our server blocked by the old one.": "1 е најбезбедно: премногу барања можат да предизвикаат стариот сервер да го блокира нашиот.",
+    "Pause between searches (ms)": "Пауза меѓу пребарувањата (ms)"
 }

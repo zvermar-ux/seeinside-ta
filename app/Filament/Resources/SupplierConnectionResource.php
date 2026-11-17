@@ -92,8 +92,9 @@ class SupplierConnectionResource extends Resource
                         Forms\Components\Toggle::make('settings.push_bookings')->label(__('Send new bookings to the old system'))->default(true)->inline(false),
                         Forms\Components\Toggle::make('settings.sync_prices')->label(__('Take dates and prices from the old system'))->default(true)->inline(false),
                         Forms\Components\TextInput::make('settings.days_ahead')->label(__('Days ahead for dates and prices'))->numeric()->default(365)->minValue(7)->maxValue(400),
-                        Forms\Components\TextInput::make('settings.concurrency')->label(__('Searches at the same time'))->numeric()->default(2)->minValue(1)->maxValue(8)
-                            ->helperText(__('The old server is slow: 1–2. More only if it answers quickly.')),
+                        Forms\Components\TextInput::make('settings.concurrency')->label(__('Searches at the same time'))->numeric()->default(1)->minValue(1)->maxValue(8)
+                            ->helperText(__('1 is safest: too many requests can get our server blocked by the old one.')),
+                        Forms\Components\TextInput::make('settings.pause_ms')->label(__('Pause between searches (ms)'))->numeric()->default(500)->minValue(0)->maxValue(5000),
                         Forms\Components\TextInput::make('settings.timeout')->label(__('Wait for an answer (seconds)'))->numeric()->default(90)->minValue(20)->maxValue(300),
                         Forms\Components\CheckboxList::make('settings.months')->label(__('Months with terms (searched)'))->columns(6)->columnSpanFull()
                             ->options(collect(range(1, 12))->mapWithKeys(fn ($m) => [$m => \Illuminate\Support\Carbon::create(2000, $m, 1)->translatedFormat('M')])->all())
@@ -251,7 +252,8 @@ class SupplierConnectionResource extends Resource
                     ->mutateRecordDataUsing(function (array $data, SupplierConnection $record): array {
                         if ($record->provider === SupplierProvider::Mcs) {
                             $data['settings']['months'] ??= range(1, 12);
-                            $data['settings']['concurrency'] ??= 2;
+                            $data['settings']['concurrency'] ??= 1;
+                            $data['settings']['pause_ms'] ??= 500;
                             $data['settings']['timeout'] ??= 90;
                             $data['settings']['days_ahead'] ??= 365;
                         }

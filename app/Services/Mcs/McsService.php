@@ -521,7 +521,7 @@ class McsService
                     $queries[] = ['checkin' => $day->toDateString(), 'package' => $code, 'adults' => 2] + (self::where($p) ?: ['country' => $p?->country]);
                 }
             }
-            $concurrency = max(1, min(8, (int) ($c->settings['concurrency'] ?? 2)));
+            $concurrency = max(1, min(8, (int) ($c->settings['concurrency'] ?? 1)));
             $timeout = max(20, min(300, (int) ($c->settings['timeout'] ?? 90)));
             $failedInRow = 0;
             $chunks = array_chunk($queries, $concurrency * 5, true);
