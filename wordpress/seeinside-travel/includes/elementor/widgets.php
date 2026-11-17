@@ -431,11 +431,11 @@ class STA_Widget_Search_Box extends STA_Simple_Widget
     public function get_icon(): string { return 'eicon-search'; }
     protected function extra_controls(): void
     {
-        $this->add_control('tabs', ['label' => __('Tabs', 'seeinside-travel'), 'type' => Controls_Manager::SELECT2, 'multiple' => true, 'default' => ['hotels', 'tours', 'flights'], 'options' => [
-            'hotels' => __('Hotels & apartments', 'seeinside-travel'), 'tours' => __('Tours', 'seeinside-travel'), 'flights' => __('Flights', 'seeinside-travel'),
+        $this->add_control('tabs', ['label' => __('Tabs', 'seeinside-travel'), 'type' => Controls_Manager::SELECT2, 'multiple' => true, 'default' => ['hotels', 'apartments', 'tours', 'flights'], 'options' => [
+            'hotels' => __('Hotels', 'seeinside-travel'), 'apartments' => __('Apartments & villas', 'seeinside-travel'), 'tours' => __('Tours', 'seeinside-travel'), 'flights' => __('Flights', 'seeinside-travel'),
         ]]);
         $this->add_control('active', ['label' => __('Open tab', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => '', 'options' => [
-            '' => __('First', 'seeinside-travel'), 'hotels' => __('Hotels & apartments', 'seeinside-travel'), 'tours' => __('Tours', 'seeinside-travel'), 'flights' => __('Flights', 'seeinside-travel'),
+            '' => __('First', 'seeinside-travel'), 'hotels' => __('Hotels', 'seeinside-travel'), 'apartments' => __('Apartments & villas', 'seeinside-travel'), 'tours' => __('Tours', 'seeinside-travel'), 'flights' => __('Flights', 'seeinside-travel'),
         ]]);
         $this->add_control('title', ['label' => __('Title', 'seeinside-travel'), 'type' => Controls_Manager::TEXT]);
         $this->add_control('subtitle', ['label' => __('Subtitle', 'seeinside-travel'), 'type' => Controls_Manager::TEXT]);
@@ -443,7 +443,7 @@ class STA_Widget_Search_Box extends STA_Simple_Widget
     }
     protected function html(array $s): string
     {
-        return STA_Search_Box::shortcode(['tabs' => implode(',', (array) ($s['tabs'] ?: ['hotels', 'tours', 'flights'])), 'active' => $s['active'] ?? '', 'title' => $s['title'] ?? '', 'subtitle' => $s['subtitle'] ?? '', 'tours_label' => $s['tours_label'] ?? '']);
+        return STA_Search_Box::shortcode(['tabs' => implode(',', (array) ($s['tabs'] ?: ['hotels', 'apartments', 'tours', 'flights'])), 'active' => $s['active'] ?? '', 'title' => $s['title'] ?? '', 'subtitle' => $s['subtitle'] ?? '', 'tours_label' => $s['tours_label'] ?? '']);
     }
 }
 

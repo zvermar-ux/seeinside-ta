@@ -265,7 +265,9 @@ class STA_Templates
     {
         $pages = [
             'aranzmani' => [__('Organized tours', 'seeinside-travel'), "[sta_search types=\"tour\"]\n[sta_list type=\"tour\" limit=\"12\" columns=\"3\" search=\"1\" pagination=\"1\" orderby=\"departure\"]"],
-            'hoteli' => [__('Hotels & apartments', 'seeinside-travel'), '[sta_hotel_finder]'],
+            // hotels from a booking system (live prices) – or the own accommodation when there is none
+            'hoteli' => STA_Hotels::enabled() ? [__('Hotels', 'seeinside-travel'), '[sta_hotels]'] : [__('Hotels & apartments', 'seeinside-travel'), '[sta_hotel_finder]'],
+            'apartmani' => [__('Apartments & villas', 'seeinside-travel'), '[sta_hotel_finder exclude_type="hotel"]'],
             'nastani' => [__('Events', 'seeinside-travel'), '[sta_list type="event" limit="12" columns="3" orderby="departure" pagination="1"]'],
             'vizi' => [__('Visas', 'seeinside-travel'), '[sta_list type="visa" limit="24" columns="4" orderby="title"]'],
             'last-minute' => ['Last minute', '[sta_last_minute limit="24" columns="3"]'],
@@ -280,11 +282,23 @@ class STA_Templates
         $known = get_option('sta_pages', []);
         foreach ($pages as $slug => [$title, $content]) {
             if (! empty($known[$slug]) && get_post_status($known[$slug])) {
-                if ($slug === 'hoteli' && trim(str_replace("\r", '', (string) get_post_field('post_content', $known[$slug]))) === $old) {
+                $now = trim(str_replace("\r", '', (string) get_post_field('post_content', $known[$slug])));
+                if ($slug === 'hoteli' && $now === $old) {
                     wp_update_post(['ID' => $known[$slug], 'post_content' => $content]);
                     $made[] = $title.' ('.__('filters', 'seeinside-travel').')';
                 }
+                // hotels now come from the booking system: the old hotels page becomes the live hotel search
+                if ($slug === 'hoteli' && STA_Hotels::enabled() && $now === '[sta_hotel_finder]') {
+                    wp_update_post(['ID' => $known[$slug], 'post_content' => $content, 'post_title' => $title]);
+                    $made[] = $title.' (Hotelbeds)';
+                }
+                if ($slug === 'apartmani' && ! self::own_apartments()) {
+                    continue;
+                }
                 continue;
+            }
+            if ($slug === 'apartmani' && ! self::own_apartments()) {
+                continue;   // no own apartments yet
             }
             $existing = get_page_by_path($slug);
             if ($existing) {
@@ -300,6 +314,13 @@ class STA_Templates
         update_option('sta_pages', $known, false);
 
         return ['made' => $made];
+    }
+
+    /** Own accommodation other than hotels (apartments, villas…) exists */
+    protected static function own_apartments(): bool
+    {
+        return (bool) get_posts(['post_type' => 'sta_hotel', 'post_status' => 'publish', 'numberposts' => 1, 'fields' => 'ids',
+            'tax_query' => [['taxonomy' => 'sta_hotel_type', 'field' => 'slug', 'terms' => ['hotel'], 'operator' => 'NOT IN']]]);
     }
 
     /* ======================== Gutenberg blocks ======================== */

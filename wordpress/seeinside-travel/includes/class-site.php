@@ -307,16 +307,35 @@ class STA_Site
             $m = $add(__('Organized tours', 'seeinside-travel'), $link('aranzmani', 'sta_tour'));
             $terms('sta_group', 0, $m);
         }
-        if ($count('sta_hotel')) {
-            $m = $add(__('Accommodation', 'seeinside-travel'), $link('hoteli', 'sta_hotel'));
+        // hotels from a booking system: "Hotels" → its destinations (the search asks for the dates)
+        $api = STA_Hotels::enabled();
+        if ($api && $page('hoteli')) {
+            $hm = $add(__('Hotels', 'seeinside-travel'), $link('hoteli', ''));
+            $byCountry = [];
+            foreach (STA_Hotels::destinations() as $hd) {
+                $byCountry[$hd['country'] ?? ''][] = $hd;
+            }
+            $hbase = get_permalink($page('hoteli'));
+            foreach ($byCountry as $country => $list) {
+                $parent = count($byCountry) > 1 && $country !== '' ? $add($country, ['menu-item-type' => 'custom', 'menu-item-url' => $hbase], $hm) : $hm;
+                foreach (array_slice($list, 0, 30) as $hd) {
+                    $add($hd['name'], ['menu-item-type' => 'custom', 'menu-item-url' => add_query_arg('destination', $hd['id'], $hbase)], $parent);
+                }
+            }
+        }
+        if ($count('sta_hotel') && (! $api || $page('apartmani'))) {
+            $m = $add($api ? __('Apartments & villas', 'seeinside-travel') : __('Accommodation', 'seeinside-travel'), $link($api ? 'apartmani' : 'hoteli', 'sta_hotel'));
             $types = get_terms(['taxonomy' => 'sta_hotel_type', 'hide_empty' => true]);
             foreach (is_wp_error($types) ? [] : $types as $t) {
+                if ($api && $t->slug === 'hotel') {
+                    continue;
+                }
                 $add($t->name, ['menu-item-type' => 'taxonomy', 'menu-item-object' => 'sta_hotel_type', 'menu-item-object-id' => $t->term_id], $m);
             }
             // destinations that have accommodation → the hotels page with that destination filtered
             $hotelIds = get_posts(['post_type' => 'sta_hotel', 'post_status' => 'publish', 'numberposts' => -1, 'fields' => 'ids']);
             $dests = $hotelIds ? get_terms(['taxonomy' => 'sta_destination', 'hide_empty' => true, 'object_ids' => $hotelIds, 'orderby' => 'name']) : [];
-            $base = $page('hoteli') ? get_permalink($page('hoteli')) : get_post_type_archive_link('sta_hotel');
+            $base = $api && $page('apartmani') ? get_permalink($page('apartmani')) : ($page('hoteli') ? get_permalink($page('hoteli')) : get_post_type_archive_link('sta_hotel'));
             if (! is_wp_error($dests) && $dests && $base) {
                 $d = $add(__('By destination', 'seeinside-travel'), ['menu-item-type' => 'custom', 'menu-item-url' => $base], $m);
                 $ids = wp_list_pluck($dests, 'term_id');

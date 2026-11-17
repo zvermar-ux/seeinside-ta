@@ -79,12 +79,38 @@ class BookingResource extends Resource
             ? ['custom' => \App\Filament\Resources\CustomRecordResource::types()->map(fn ($t) => $t->label())->implode(' / ')] : [];
     }
 
+    protected static function supplierInfo(?Booking $b): \Illuminate\Support\HtmlString
+    {
+        $s = (array) $b?->supplier_data;
+        $status = ['quoted' => __('Waiting – not booked at the supplier yet'), 'booked' => __('Booked at the supplier'), 'failed' => __('Booking at the supplier failed'), 'cancelled' => __('Cancelled at the supplier')][$b?->supplier_status] ?? '—';
+        $cancel = collect($s['cancellation'] ?? [])->map(fn ($p) => e(number_format((float) $p['amount'], 2).' '.($s['currency'] ?? '').' '.__('from').' '.\Illuminate\Support\Carbon::parse($p['from'])->format('d.m.Y H:i')))->implode('<br>');
+        $rows = [
+            __('Hotel') => e(($s['hotel_name'] ?? '').(! empty($s['stars']) ? ' '.str_repeat('★', (int) $s['stars']) : '').' · '.($s['place'] ?? '')),
+            __('Room') => e(($s['rooms'] ?? 1).' × '.($s['room_name'] ?? '').' · '.($s['board'] ?? '')),
+            __('Price') => e(($s['price'] ?? '').' '.($s['currency'] ?? '').' · '.__('net').' '.($s['net'] ?? '').(! empty($s['booked_net']) ? ' ('.__('booked').' '.$s['booked_net'].')' : '')),
+            __('Status') => '<b>'.e($status).'</b>'.($b?->external_ref ? ' · '.__('Supplier ref.').' <b>'.e($b->external_ref).'</b>' : '').(! empty($s['error']) ? '<br><span style="color:#dc2626">'.e($s['error']).'</span>' : ''),
+            __('Cancellation') => (! ($s['refundable'] ?? true) ? '<b style="color:#dc2626">'.e(__('Non-refundable')).'</b><br>' : '').($cancel ?: '—'),
+            __('Payment') => e(! empty($s['pay_at_hotel']) ? __('At the hotel') : __('To the agency')),
+            __('Notes of the hotel') => nl2br(e(\Illuminate\Support\Str::limit((string) ($s['comments'] ?? ''), 1500))) ?: '—',
+        ];
+        $html = '<table style="width:100%;font-size:.9rem;border-collapse:collapse">';
+        foreach ($rows as $k => $v) {
+            $html .= '<tr><td style="padding:.3rem .8rem .3rem 0;color:#6b7280;white-space:nowrap;vertical-align:top">'.e($k).'</td><td style="padding:.3rem 0">'.$v.'</td></tr>';
+        }
+
+        return new \Illuminate\Support\HtmlString($html.'</table>');
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
             Forms\Components\Grid::make(3)->schema([
                 Forms\Components\Tabs::make('booking')->columnSpan(2)->persistTabInQueryString()->tabs([
                     Forms\Components\Tabs\Tab::make(__('Offer'))->icon('heroicon-o-map')->schema([
+                        // hotel from a booking system: what was chosen on the website
+                        Forms\Components\Placeholder::make('supplier_info')->label(__('Hotel from a booking system'))
+                            ->visible(fn (?Booking $record) => $record?->isSupplierHotel())
+                            ->content(fn (?Booking $record) => static::supplierInfo($record)),
                         Forms\Components\Grid::make(2)->schema(static::offerFields()),
                     ]),
                     Forms\Components\Tabs\Tab::make(__('Holder & passengers'))->icon('heroicon-o-users')

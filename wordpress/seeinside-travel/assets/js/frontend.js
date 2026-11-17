@@ -58,6 +58,12 @@
       return [C.direct + 'reviews', Object.assign({}, opts, { body: JSON.stringify(rv), headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })];
     }
     if (name === 'visa') { opts.body.append('locale', C.lang); return [C.direct + 'visa-applications', Object.assign({}, opts, { headers: { Accept: 'application/json' } })]; }
+    if (name === 'hotels/book') {
+      var hb = JSON.parse(opts.body || '{}'); hb.locale = C.lang; hb.message = ((hb.message || '') + '\n\n[' + C.site + ']').trim();
+      return [C.direct + 'hotels/book', Object.assign({}, opts, { body: JSON.stringify(hb), headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })];
+    }
+    if (name === 'hotels/hotel') { var hid = q.get('id'); q.delete('id'); return [C.direct + 'hotels/' + encodeURIComponent(hid) + '?' + q, { headers: { Accept: 'application/json' } }]; }
+    if (name.indexOf('hotels/') === 0) return [C.direct + name + '?' + q, { headers: { Accept: 'application/json' } }];
     var slug = q.get('slug'); q.delete('slug'); q.delete('website'); q.delete('sta_ts');
     if (name === 'quote') return [C.direct + 'accommodations/' + encodeURIComponent(slug) + '/quote?' + q, { headers: { Accept: 'application/json' } }];
     if (name === 'terms') return [C.direct + 'accommodations/' + encodeURIComponent(slug) + '/terms', { headers: { Accept: 'application/json' } }];
@@ -702,9 +708,10 @@
     });
   });
 
-  /* ---------- search box with tabs (hotels · tours · flights) ---------- */
+  /* ---------- search box with tabs (hotels · apartments · tours · flights) ---------- */
   $$('[data-sta-sbox]').forEach(function (box) {
     var MONTHS = Array.isArray(T.months) ? T.months : 'Јануари,Февруари,Март,Април,Мај,Јуни,Јули,Август,Септември,Октомври,Ноември,Декември'.split(','), DAYS = (T.sbDays || 'Пон,Вто,Сре,Чет,Пет,Саб,Нед').split(',');
+    var URLQ = new URLSearchParams(location.search), prefill = box.classList.contains('sta-sbox--compact');
     function closeAll(except) { $$('.sta-sb-pop', box).forEach(function (p) { if (p !== except) { p.hidden = true; var f = p.closest('.sta-sb-f'); if (f) f.classList.remove('is-open'); } }); }
     function open(pop) { var was = !pop.hidden; closeAll(); if (!was) { pop.hidden = false; pop.closest('.sta-sb-f').classList.add('is-open'); } }
     document.addEventListener('click', function (e) { if (e.target.isConnected && !box.contains(e.target)) closeAll(); });
@@ -722,41 +729,65 @@
     $$('[data-sb-form]', box).forEach(function (form) {
       $$('[data-sb-open]', form).forEach(function (b) { b.addEventListener('click', function () { open($('[data-sb-pop]', b.closest('.sta-sb-f'))); }); });
       $$('[data-sb-done]', form).forEach(function (b) { b.addEventListener('click', function () { closeAll(); }); });
+      function nextField(after) {
+        var fields = $$('.sta-sb-f', form), i = fields.indexOf(after), nx = fields[i + 1];
+        if (!nx) return;
+        var q2 = $('[data-sb-q]', nx); if (q2 && !$('[data-sb-h]', nx).value) { q2.focus(); return; }
+        var o = $('[data-sb-open]', nx); if (o && nx.matches('[data-sb-dates]')) o.click();
+      }
 
-      /* destination: suggestions while typing */
-      var dest = $('[data-sb-dest]', form);
-      if (dest) {
-        var q = $('[data-sb-q]', dest), sugg = $('[data-sb-sugg]', dest), items = [];
+      /* destination / airports: suggestions while typing */
+      $$('[data-sb-dest]', form).forEach(function (dest) {
+        var q = $('[data-sb-q]', dest), sugg = $('[data-sb-sugg]', dest), items = [], remote = [], timer;
         try { items = JSON.parse($('[data-sb-items]', dest).textContent) || []; } catch (e) {}
         var hidden = $$('[data-sb-h]', dest);
         function norm(v) { return String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
-        function clearPick() { hidden.forEach(function (h) { h.value = ''; }); q.name = q.dataset.name || q.name; }
-        q.dataset.name = q.name;
+        function clearPick() { hidden.forEach(function (h) { h.value = ''; }); if (q.dataset.name) q.name = q.dataset.name; }
+        q.dataset.name = q.getAttribute('name') || '';
+        function all() { return items.concat(remote); }
         function render() {
-          var v = norm(q.value.trim()), html = '', groups = { dest: [], place: [], group: [], item: [] };
-          items.forEach(function (it) { if (!v || norm(it.l).indexOf(v) > -1 || norm(it.s).indexOf(v) > -1) groups[it.k].push(it); });
-          var titles = { dest: T.sbDest, place: T.sbPlace, group: T.sbGroup, item: T.sbItem }, lim = { dest: 8, place: 8, group: 6, item: v ? 8 : 0 }, n = 0;
-          ['dest', 'place', 'group', 'item'].forEach(function (k) {
+          var v = norm(q.value.trim()), html = '', list = all(), groups = { dest: [], place: [], group: [], hotel: [], item: [], air: [] };
+          list.forEach(function (it) { if (it.k === 'hotel' || !v || norm(it.l).indexOf(v) > -1 || norm(it.s).indexOf(v) > -1 || norm(it.v) === v) groups[it.k].push(it); });
+          // an exact airport code first
+          groups.air.sort(function (x, y) { return (norm(y.v) === v) - (norm(x.v) === v); });
+          var titles = { dest: T.sbDest, place: T.sbPlace, group: T.sbGroup, hotel: T.sbHotels, item: T.sbItem, air: T.sbAir }, lim = { dest: 8, place: 8, group: 6, hotel: 8, item: v ? 8 : 0, air: 8 }, n = 0;
+          ['dest', 'place', 'group', 'hotel', 'item', 'air'].forEach(function (k) {
             var l = groups[k].slice(0, lim[k]); if (!l.length) return;
             html += '<div class="sta-sb-sg-t">' + esc(titles[k]) + '</div>';
             l.forEach(function (it) {
               n++;
-              html += '<button type="button" class="sta-sb-sg" data-k="' + k + '" data-i="' + items.indexOf(it) + '">' + (k === 'item' ? '<span class="sta-sb-sg-ic is-item"></span>' : '<span class="sta-sb-sg-ic"></span>') + '<span><b>' + esc(it.l) + '</b>' + (it.s ? '<small>' + esc(it.s) + '</small>' : '') + '</span></button>';
+              html += '<button type="button" class="sta-sb-sg" data-k="' + k + '" data-i="' + list.indexOf(it) + '">' + '<span class="sta-sb-sg-ic' + (k === 'item' || k === 'hotel' ? ' is-item' : k === 'air' ? ' is-air' : '') + '"></span><span><b>' + esc(it.l) + '</b>' + (it.s ? '<small>' + esc(it.s) + '</small>' : '') + '</span></button>';
             });
           });
-          sugg.innerHTML = n ? html : '<div class="sta-sb-sg-none">' + esc(T.sbNone) + '</div>';
+          sugg.innerHTML = n ? html : '<div class="sta-sb-sg-none">' + esc(dest.classList.contains('sta-sb-air') ? T.sbAirNone : T.sbNone) + '</div>';
         }
-        q.addEventListener('focus', function () { closeAll(sugg); render(); sugg.hidden = false; dest.classList.add('is-open'); });
-        q.addEventListener('input', function () { clearPick(); render(); sugg.hidden = false; });
+        function ask() {
+          // hotels by name from the app (live list)
+          if (!dest.dataset.sbRemote) return;
+          clearTimeout(timer);
+          var v = q.value.trim();
+          if (v.length < 3) { remote = []; return; }
+          timer = setTimeout(function () {
+            api(dest.dataset.sbRemote + '?q=' + encodeURIComponent(v)).then(function (r) {
+              remote = ((r.body && r.body.data) || []).map(function (h) { return { k: 'hotel', v: h.id, l: h.name + (h.stars ? ' ' + new Array(h.stars + 1).join('★') : ''), s: h.place, f: 'hotel' }; });
+              render();
+            });
+          }, 250);
+        }
+        q.addEventListener('focus', function () { closeAll(sugg); render(); sugg.hidden = false; dest.classList.add('is-open'); if (q.value && hidden[0] && hidden[0].value) q.select(); });
+        q.addEventListener('input', function () { clearPick(); render(); ask(); sugg.hidden = false; });
         sugg.addEventListener('click', function (e) {
           var b = e.target.closest('.sta-sb-sg'); if (!b) return;
-          var it = items[+b.dataset.i];
+          var it = all()[+b.dataset.i];
           if (it.u) { location.href = it.u; return; }
           clearPick();
           var h = hidden.filter(function (x) { return x.dataset.sbH === it.f || x.dataset.sbH === it.f + '[]'; })[0];
-          if (h) { h.value = it.v; q.value = it.l; q.removeAttribute('name'); }
-          sugg.hidden = true; dest.classList.remove('is-open');
-          var nx = $('[data-sb-dates] [data-sb-open]', form); if (nx) nx.click();
+          if (h) {
+            h.value = it.v; q.value = it.l; q.removeAttribute('name');
+            if (it.k === 'hotel') { var hn = $('input[name="hn"]', form) || form.appendChild(Object.assign(document.createElement('input'), { type: 'hidden', name: 'hn' })); hn.value = it.l; }
+          }
+          sugg.hidden = true; dest.classList.remove('is-open'); dest.classList.remove('is-invalid');
+          nextField(dest);
         });
         q.addEventListener('keydown', function (e) {
           if (e.key !== 'ArrowDown' && e.key !== 'Enter') return;
@@ -764,16 +795,30 @@
           if (e.key === 'Enter' && !sugg.hidden && first && q.value.trim()) { e.preventDefault(); first.click(); }
           if (e.key === 'ArrowDown' && first) { e.preventDefault(); first.focus(); }
         });
-      }
+        // results page: show what was searched
+        if (prefill) {
+          hidden.forEach(function (h) {
+            var v = URLQ.get(h.name); if (!v) return;
+            h.value = v; q.removeAttribute('name');
+            var it = items.filter(function (x) { return x.v === v; })[0];
+            q.value = it ? it.l : (h.name === 'hotel' ? (URLQ.get('hn') || v) : v);
+            if (h.name === 'hotel') { var hn = form.appendChild(Object.assign(document.createElement('input'), { type: 'hidden', name: 'hn' })); hn.value = URLQ.get('hn') || ''; }
+          });
+        }
+      });
 
-      /* dates: range calendar */
+      /* dates: range calendar (one date for one-way flights) */
       var dbox = $('[data-sb-dates]', form);
+      var fromI = dbox && $('[data-sb-from]', dbox), toI = dbox && $('[data-sb-to]', dbox);
+      var oneway = $('[data-sb-oneway]', form);
+      function single() { return !!(oneway && oneway.checked); }
       if (dbox) {
-        var fromI = $('[data-sb-from]', dbox), toI = $('[data-sb-to]', dbox), val = $('[data-sb-dates-val]', dbox), monthsEl = $('[data-sb-months]', dbox);
+        var val = $('[data-sb-dates-val]', dbox), monthsEl = $('[data-sb-months]', dbox);
         var today = new Date(); today.setHours(0, 0, 0, 0);
         var view = new Date(today.getFullYear(), today.getMonth(), 1), a = null, b2 = null;
         function iso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
         function show(d) { return ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + d.getFullYear(); }
+        function parse(v) { var p = String(v || '').split('-'); return p.length === 3 ? new Date(+p[0], +p[1] - 1, +p[2]) : null; }
         function month(m) {
           var y = m.getFullYear(), mo = m.getMonth(), first = (new Date(y, mo, 1).getDay() + 6) % 7, len = new Date(y, mo + 1, 0).getDate();
           var h = '<div class="sta-sb-month"><div class="sta-sb-mt">' + MONTHS[mo] + ' ' + y + '</div><div class="sta-sb-grid">';
@@ -792,36 +837,78 @@
         function draw() {
           var two = window.matchMedia('(min-width: 720px)').matches;
           monthsEl.innerHTML = month(view) + (two ? month(new Date(view.getFullYear(), view.getMonth() + 1, 1)) : '');
-          val.textContent = a ? show(a) + ' - ' + (b2 ? show(b2) : '…') : T.sbDates;
+          val.textContent = a ? show(a) + (single() ? '' : ' - ' + (b2 ? show(b2) : '…')) : (single() ? T.sbDate : T.sbDates);
           dbox.classList.toggle('has-value', !!a);
-          fromI.value = a ? iso(a) : ''; toI.value = b2 ? iso(b2) : '';
+          fromI.value = a ? iso(a) : ''; toI.value = b2 && !single() ? iso(b2) : '';
         }
         monthsEl.addEventListener('click', function (e) {
           var d = e.target.closest('[data-d]'); if (!d) return;
-          var p = d.dataset.d.split('-'), dt = new Date(+p[0], +p[1] - 1, +p[2]);
-          if (!a || b2 || dt <= a) { a = dt; b2 = null; } else { b2 = dt; }
-          draw();
-          if (a && b2) setTimeout(function () { closeAll(); var g = $('[data-sb-guests] [data-sb-open]', form); if (g) g.click(); }, 150);
+          var dt = parse(d.dataset.d);
+          if (single() || !a || b2 || dt <= a) { a = dt; b2 = null; } else { b2 = dt; }
+          draw(); dbox.classList.remove('is-invalid');
+          if (a && (b2 || single())) setTimeout(function () { closeAll(); var g = $('[data-sb-guests] [data-sb-open]', form); if (g) g.click(); }, 150);
         });
         $$('[data-sb-m]', dbox).forEach(function (bt) { bt.addEventListener('click', function () { var nv = new Date(view.getFullYear(), view.getMonth() + (+bt.dataset.sbM), 1); if (nv >= new Date(today.getFullYear(), today.getMonth(), 1)) { view = nv; draw(); } }); });
         $('[data-sb-clear]', dbox).addEventListener('click', function () { a = b2 = null; draw(); });
+        $$('[data-sb-trip]', form).forEach(function (r) { r.addEventListener('change', function () { if (single()) b2 = null; draw(); }); });
+        if (prefill) {
+          a = parse(URLQ.get(fromI.name)); b2 = parse(URLQ.get(toI.name));
+          if (a && a < today) { a = b2 = null; }
+          if (a) view = new Date(a.getFullYear(), a.getMonth(), 1);
+        }
         draw();
       }
 
-      /* guests */
+      /* guests: adults / children (hotels: rooms + ages; flights: passengers + class) */
       var gbox = $('[data-sb-guests]', form);
+      function role(r) { return gbox ? $('[data-sb-role="' + r + '"]', gbox) : null; }
+      function ages() {
+        var wrap = gbox && $('[data-sb-ages]', gbox); if (!wrap) return;
+        var ch = +role('ch').value, list = $('[data-sb-ages-list]', wrap), tpl = $('[data-sb-age-tpl]', wrap), have = $$('select', list);
+        for (var i = have.length; i < ch; i++) {
+          var node = tpl.content.firstElementChild.cloneNode(true);
+          $('span', node).textContent = (T.childAge || 'Child') + ' ' + (i + 1); $('select', node).value = '6';
+          $('select', node).addEventListener('change', agesValue);
+          list.appendChild(node);
+        }
+        have.slice(ch).forEach(function (sel) { sel.parentNode.remove(); });
+        wrap.hidden = ch === 0; agesValue();
+      }
+      function agesValue() { var v = $('[data-sb-ages-value]', gbox); if (v) v.value = $$('[data-sb-ages-list] select', gbox).map(function (s) { return s.value; }).join(','); }
       function guests() {
         if (!gbox) return;
-        var ad = +$('[name="f_ad"]', gbox).value, ch = +$('[name="f_ch"]', gbox).value;
-        $('[data-sb-guests-val]', gbox).textContent = ad + ' ' + (ad === 1 ? T.adult1 : T.adultN) + ' · ' + ch + ' ' + (ch === 1 ? T.child1 : T.childN);
+        var ad = +role('ad').value, ch = role('ch') ? +role('ch').value : 0, out;
+        if (role('rooms')) {
+          var rm = +role('rooms').value;
+          out = rm + ' ' + (rm === 1 ? T.room1 : T.roomN) + ' · ' + (ad * rm) + ' ' + (ad * rm === 1 ? T.adult1 : T.adultN) + (ch ? ' · ' + (ch * rm) + ' ' + (ch * rm === 1 ? T.child1 : T.childN) : '');
+        } else if (role('inf')) {
+          var pax = ad + ch + +role('inf').value, bus = $('[data-sb-business]', gbox);
+          out = pax + ' ' + (pax === 1 ? T.passenger1 : T.passengerN) + ' · ' + (bus && bus.checked ? 'Business' : 'Economy');
+          var cls = $('[data-sb-class]', gbox); if (cls) cls.value = bus && bus.checked ? 'BUS' : 'ECO';
+        } else {
+          out = ad + ' ' + (ad === 1 ? T.adult1 : T.adultN) + ' · ' + ch + ' ' + (ch === 1 ? T.child1 : T.childN);
+        }
+        $('[data-sb-guests-val]', gbox).textContent = out;
       }
       $$('[data-sb-step]', form).forEach(function (bt) {
         bt.addEventListener('click', function () {
           var inp = $('input', bt.parentNode), v = Math.max(+inp.min, Math.min(+inp.max, +inp.value + (+bt.dataset.sbStep)));
-          inp.value = v; guests();
+          // flights: max 9 passengers, an infant needs an adult
+          if (role('inf') && +bt.dataset.sbStep > 0 && +role('ad').value + +role('ch').value + +role('inf').value >= 9) return;
+          if (inp === role('inf') && v > +role('ad').value) return;
+          inp.value = v;
+          if (role('inf') && +role('inf').value > +role('ad').value) role('inf').value = role('ad').value;
+          ages(); guests();
         });
       });
-      guests();
+      var busBox = gbox && $('[data-sb-business]', gbox); if (busBox) busBox.addEventListener('change', guests);
+      if (prefill && gbox) {
+        ['room_count', 'adults'].forEach(function (n) { var el = $('[name="' + n + '"]', gbox); if (el && URLQ.get(n)) el.value = Math.max(+el.min, Math.min(+el.max, +URLQ.get(n))); });
+        var ag = (URLQ.get('ages') || '').split(',').filter(function (x) { return x !== ''; });
+        if (role('ch') && ag.length) { var per = Math.min(4, ag.length); role('ch').value = per; ages(); $$('[data-sb-ages-list] select', gbox).forEach(function (sel, i) { if (ag[i] != null) sel.value = ag[i]; }); agesValue(); }
+        $$('input[type=checkbox][name]', form).forEach(function (c) { if (URLQ.getAll(c.name).indexOf(c.value) > -1) c.checked = true; });
+      }
+      ages(); guests();
 
       /* price: two handles */
       var pr = $('[data-sb-price]', form);
@@ -841,14 +928,43 @@
         if (pr) { $('[data-sb-lo]', pr).value = pr.dataset.lo; $('[data-sb-hi]', pr).value = pr.dataset.hi; price(); }
       });
 
-      /* clean address: no empty fields */
-      form.addEventListener('submit', function () {
+      /* before sending: what is required, a typed airport code, a clean address */
+      form.addEventListener('submit', function (e) {
+        var missing = [];
+        if (form.hasAttribute('data-sb-hotels')) {
+          var d1 = $('[data-sb-dest]', form);
+          if (!$('[name="destination"]', form).value && !$('[name="hotel"]', form).value) missing.push(d1);
+          if (!fromI.value || !toI.value) missing.push(dbox);
+        }
+        if (form.hasAttribute('data-sb-flights')) {
+          $$('[data-sb-dest]', form).forEach(function (d) {
+            var h = $('[data-sb-h]', d), typed = $('[data-sb-q]', d).value.trim();
+            if (!h.value && /^[a-z]{3}$/i.test(typed)) h.value = typed.toUpperCase();
+            var m = !h.value && typed.match(/\(([A-Z]{3})\)\s*$/); if (m) h.value = m[1];
+            if (!h.value) missing.push(d);
+          });
+          if (!fromI.value || (!single() && !toI.value)) missing.push(dbox);
+        }
+        if (missing.length) {
+          e.preventDefault();
+          missing.forEach(function (m) { m.classList.add('is-invalid'); });
+          var q1 = $('[data-sb-q]', missing[0]); if (q1) q1.focus(); else { var o = $('[data-sb-open]', missing[0]); if (o) o.click(); }
+          return;
+        }
+        agesValue();
         $$('input, select', form).forEach(function (el) {
-          if (el.type === 'checkbox') return;
-          if (String(el.value).trim() === '' || (el.name === 'f_ad' && el.value === '2' && !(fromI && fromI.value)) || (el.name === 'f_ch' && el.value === '0')) el.disabled = true;
+          if (el.type === 'checkbox' || el.type === 'radio') { if (el.name === 'sb_trip') el.disabled = true; return; }
+          if (el.matches('[data-sb-ages-list] select')) { el.disabled = true; return; }
+          if (String(el.value).trim() === '' || (el.name === 'f_ad' && el.value === '2' && !(fromI && fromI.value)) || (el.name === 'f_ch' && el.value === '0') || (el.name === 'children' && form.hasAttribute('data-sb-hotels'))) {
+            if (!(form.hasAttribute('data-sb-flights') && el.name === 'returnDate')) el.disabled = true;
+          }
         });
-        setTimeout(function () { $$('input', form).forEach(function (el) { if (!el.matches('[data-sb-pmin],[data-sb-pmax]')) el.disabled = false; }); price(); }, 500);
+        setTimeout(function () { $$('input, select', form).forEach(function (el) { if (!el.matches('[data-sb-pmin],[data-sb-pmax]')) el.disabled = false; }); price(); }, 500);
       });
+      $$('.sta-sb-f', form).forEach(function (f) { f.addEventListener('click', function () { f.classList.remove('is-invalid'); }); });
     });
   });
+
+  // shared with hotels.js (hotel results, hotel page and booking)
+  window.staCore = { api: api, money: money, esc: esc, t: t, $: $, $$: $$, validate: validate, msg: msg, errors: errors, T: T, C: C };
 })();

@@ -47,6 +47,9 @@ class STA_Frontend
                 'sbDays' => implode(',', [__('Mon', 'seeinside-travel'), __('Tue', 'seeinside-travel'), __('Wed', 'seeinside-travel'), __('Thu', 'seeinside-travel'), __('Fri', 'seeinside-travel'), __('Sat', 'seeinside-travel'), __('Sun', 'seeinside-travel')]),
                 'sbDest' => __('Destinations', 'seeinside-travel'), 'sbPlace' => __('Places', 'seeinside-travel'), 'sbGroup' => __('Categories', 'seeinside-travel'), 'sbItem' => __('Offers', 'seeinside-travel'),
                 'sbNone' => __('Nothing found – press Search to search by text.', 'seeinside-travel'), 'sbDates' => __('dd.mm.yyyy - dd.mm.yyyy', 'seeinside-travel'),
+                'sbHotels' => __('Hotels', 'seeinside-travel'), 'sbAir' => __('Airports', 'seeinside-travel'), 'sbAirNone' => __('Type the city or the 3-letter airport code (e.g. IST).', 'seeinside-travel'),
+                'sbDate' => __('dd.mm.yyyy', 'seeinside-travel'), 'room1' => __('room', 'seeinside-travel'), 'roomN' => __('rooms', 'seeinside-travel'),
+                'passenger1' => __('passenger', 'seeinside-travel'), 'passengerN' => __('passengers', 'seeinside-travel'),
                 'adult1' => __('adult', 'seeinside-travel'), 'adultN' => __('adults', 'seeinside-travel'), 'child1' => __('child', 'seeinside-travel'), 'childN' => __('children', 'seeinside-travel'),
                 'freePlaces' => __('free for your dates', 'seeinside-travel'),
                 'freeNote' => __('Showing only places that are free for your dates, with the total price.', 'seeinside-travel'),
@@ -342,18 +345,8 @@ class STA_Frontend
             // embed code from the flight partner (GOL IBE), set by the agency in SeeInside
             return '<div class="sta sta-flights">'.$widget.'</div>';
         }
-        $url = $f['search_url'] ?? '';
-        if (! $url) {
-            return '';
-        }
-
-        return '<form class="sta sta-search sta-flights-form" action="'.esc_url($url).'" method="get" target="_blank">'
-            .'<div class="sta-search-row">'
-            .'<label class="sta-field"><span>'.esc_html__('From', 'seeinside-travel').'</span><input name="from" value="Skopje"></label>'
-            .'<label class="sta-field"><span>'.esc_html__('To', 'seeinside-travel').'</span><input name="to" placeholder="'.esc_attr__('City or airport', 'seeinside-travel').'"></label>'
-            .'<label class="sta-field"><span>'.esc_html__('Departure', 'seeinside-travel').'</span><input type="date" name="departure"></label>'
-            .'<label class="sta-field"><span>'.esc_html__('Return', 'seeinside-travel').'</span><input type="date" name="return"></label>'
-            .'<button class="sta-btn" type="submit">'.sta_icon('plane').' '.esc_html__('Search flights', 'seeinside-travel').'</button></div></form>';
+        // our search form → results on the agency's GOL IBE site (aviokarti.golibe.com/results?from=…&to=…)
+        return STA_Search_Box::shortcode(['tabs' => 'flights']);
     }
 
     public static function sc_charters($atts = []): string

@@ -70,6 +70,8 @@ class CatalogController extends Controller
             ],
             'slider' => $this->sliderItems($agency->id),
             'flights' => ['search_url' => $agency->flight_search_url, 'widget_code' => $agency->flight_widget_code],
+            // hotels from booking systems (live prices) – the website shows a hotel search when this is on
+            'hotels' => ['enabled' => \App\Services\Hotels\HotelService::enabled($agency->id), 'destinations' => \App\Services\Hotels\HotelService::destinations($agency->id)],
             'destinations' => $groups->where('type', GroupType::Destination)->map(fn ($g) => P::group($g) + ['parent_id' => $g->parent_id, 'image' => P::url($g->image)])->values(),
             'places' => $groups->where('type', GroupType::Place)->map(function ($g) use ($groups) {
                 $parent = $g->parent_id ? $groups->firstWhere('id', $g->parent_id) : null;

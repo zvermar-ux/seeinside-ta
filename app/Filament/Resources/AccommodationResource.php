@@ -47,12 +47,13 @@ class AccommodationResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return mb_strtolower(__('Hotel / apartment'));
+        return mb_strtolower(__('Apartment / villa'));
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Hotels & apartments');
+        // own apartments, villas, studios (and hotels the agency enters itself); hotels from booking systems are in "Hotels (API)"
+        return __('Apartments & villas');
     }
 
     public static function getGloballySearchableAttributes(): array
@@ -70,7 +71,7 @@ class AccommodationResource extends Resource
                             AgencyField::select(),
                             Forms\Components\TextInput::make('name')->label(__('Name'))->required()->maxLength(255)->columnSpanFull(),
                             Forms\Components\ToggleButtons::make('type')->label(__('Type'))->options(AccommodationType::class)
-                                ->inline()->required()->default(AccommodationType::Hotel->value)->columnSpanFull(),
+                                ->inline()->required()->default(AccommodationType::Apartment->value)->columnSpanFull(),
                             Forms\Components\Select::make('stars')->label(__('Category'))
                                 ->options([1 => '★', 2 => '★★', 3 => '★★★', 4 => '★★★★', 5 => '★★★★★']),
                             Forms\Components\Select::make('tour_operator_id')->label(__('Tour operator'))

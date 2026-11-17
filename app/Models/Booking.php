@@ -37,6 +37,7 @@ class Booking extends Model
             'option_until' => 'date',
             'payment_due' => 'date',
             'cancel_requested_at' => 'datetime',
+            'supplier_data' => 'array',
         ];
     }
 
@@ -127,6 +128,17 @@ class Booking extends Model
     public function bookable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /** Booking system the hotel was booked through (Hotelbeds…) */
+    public function supplierConnection(): BelongsTo
+    {
+        return $this->belongsTo(SupplierConnection::class);
+    }
+
+    public function isSupplierHotel(): bool
+    {
+        return $this->supplier_connection_id !== null && ! empty($this->supplier_data['hotel_code']);
     }
 
     public function departure(): BelongsTo
@@ -327,7 +339,12 @@ class Booking extends Model
     {
         $item = $this->bookable;
         if (! $item) {
-            return '—';
+            // hotel from a booking system: "Hotel Name 4* – Double room, half board"
+            $s = (array) $this->supplier_data;
+
+            return ! empty($s['hotel_name'])
+                ? trim($s['hotel_name'].(! empty($s['stars']) ? ' '.$s['stars'].'*' : '').' – '.($s['room_name'] ?? '').(! empty($s['board']) ? ', '.$s['board'] : ''), ' –,')
+                : '—';
         }
 
         return method_exists($item, 'tr') && is_array($item->getAttribute('title'))

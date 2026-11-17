@@ -55,6 +55,43 @@ class EditBooking extends EditRecord
                             : Notification::make()->success()->title(__('Sent to :to', ['to' => $data['to']]))->send();
                     }),
             ])->label(__('Documents'))->icon('heroicon-o-printer')->button()->color('gray'),
+            // hotel from a booking system (Hotelbeds…): book / cancel there
+            Actions\Action::make('supplierBook')->label(__('Book at the supplier'))->icon('heroicon-o-bolt')->color('success')
+                ->visible(fn () => $record()->isSupplierHotel() && $record()->supplier_status !== 'booked' && $record()->supplier_status !== 'cancelled')
+                ->requiresConfirmation()
+                ->modalDescription(fn () => __('A real booking at :sys for :price :cur (net :net). The guests are taken from the passengers of the booking.', [
+                    'sys' => $record()->supplierConnection()->withoutGlobalScopes()->value('name'), 'price' => $record()->supplier_data['price'] ?? $record()->total,
+                    'cur' => $record()->currency, 'net' => $record()->supplier_data['net'] ?? '—',
+                ]))
+                ->action(function () use ($record, $page) {
+                    try {
+                        $b = app(\App\Services\Hotels\HotelService::class)->bookAtSupplier($record());
+                        Notification::make()->success()->title(__('Booked: :ref', ['ref' => $b->external_ref]))->persistent()->send();
+                        $page?->refreshFormData(['status', 'external_ref']);
+                    } catch (\Throwable $e) {
+                        Notification::make()->danger()->title(__('The supplier refused the booking'))->body($e->getMessage())->persistent()->send();
+                    }
+                }),
+            Actions\Action::make('supplierCancel')->label(__('Cancel at the supplier'))->icon('heroicon-o-x-circle')->color('danger')
+                ->visible(fn () => $record()->isSupplierHotel() && $record()->supplier_status === 'booked')
+                ->requiresConfirmation()
+                ->modalDescription(function () use ($record) {
+                    try {
+                        $sim = app(\App\Services\Hotels\HotelService::class)->cancelAtSupplier($record(), true);
+
+                        return __('Cancellation fee according to the supplier: :fee', ['fee' => $sim['fee'] !== null ? $sim['fee'].' '.$record()->currency : '—']);
+                    } catch (\Throwable $e) {
+                        return $e->getMessage();
+                    }
+                })
+                ->action(function () use ($record) {
+                    try {
+                        app(\App\Services\Hotels\HotelService::class)->cancelAtSupplier($record());
+                        Notification::make()->success()->title(__('Cancelled at the supplier'))->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()->danger()->title(__('Not cancelled'))->body($e->getMessage())->persistent()->send();
+                    }
+                }),
             Actions\Action::make('issueInvoice')->label(__('Proforma / invoice'))->icon('heroicon-o-document-currency-euro')->color('gray')
                 ->visible(fn () => auth()->user()?->isSuperAdmin() || auth()->user()?->can('finance.manage'))
                 ->modalHeading(__('Issue a proforma or invoice for this booking'))

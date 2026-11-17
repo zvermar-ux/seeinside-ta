@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\HotelController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Middleware\AuthenticateApiClient;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,13 @@ Route::prefix('public/{site}')->middleware([\App\Http\Middleware\AuthenticatePub
     Route::get('bookings/{reference}', [BookingController::class, 'status']);
     Route::get('visa-applications/{reference}', [BookingController::class, 'visaStatus']);
     Route::post('reviews', [ReviewController::class, 'store']);
+
+    // hotels from booking systems (Hotelbeds…): live prices, so own limits
+    Route::get('hotels/destinations', [HotelController::class, 'destinations']);
+    Route::get('hotels/suggest', [HotelController::class, 'suggest'])->middleware('throttle:120,1');
+    Route::get('hotels/search', [HotelController::class, 'search'])->middleware('throttle:30,1');
+    Route::get('hotels/{id}', [HotelController::class, 'show'])->middleware('throttle:60,1');
+    Route::post('hotels/book', [HotelController::class, 'book'])->middleware('throttle:10,1');
 
 });
 
@@ -64,6 +72,12 @@ Route::middleware([AuthenticateApiClient::class, 'throttle:website'])->group(fun
     Route::get('accommodations/{slug}/availability', [CatalogController::class, 'availability'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
     Route::get('accommodations/{slug}/terms', [CatalogController::class, 'terms'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations');
     Route::get('accommodations-available', [CatalogController::class, 'available'])->middleware(\App\Http\Middleware\AgencyModule::class.':accommodations')->middleware('throttle:60,1');
+
+    Route::get('hotels/destinations', [HotelController::class, 'destinations']);
+    Route::get('hotels/suggest', [HotelController::class, 'suggest']);
+    Route::get('hotels/search', [HotelController::class, 'search'])->middleware('throttle:60,1');
+    Route::get('hotels/{id}', [HotelController::class, 'show']);
+    Route::post('hotels/book', [HotelController::class, 'book'])->middleware('throttle:website-forms');
 
     Route::get('custom-records', [CatalogController::class, 'customRecords']);
     Route::get('custom-records/{slug}', [CatalogController::class, 'customRecord']);

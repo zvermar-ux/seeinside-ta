@@ -2936,3 +2936,187 @@ msgid_plural "%d reviews"
 msgstr[0] "%d рецензија"
 msgstr[1] "%d рецензии"
 
+msgid "Apartments & villas"
+msgstr "Апартмани и вили"
+
+msgid "Choose a destination and dates to see the hotels with prices."
+msgstr "Изберете дестинација и датуми за да ги видите хотелите со цени."
+
+msgid "Searching the best prices…"
+msgstr "Ги бараме најдобрите цени…"
+
+msgid "No free hotels for this search. Try other dates or a nearby destination."
+msgstr "Нема слободни хотели за ова пребарување. Пробајте други датуми или блиска дестинација."
+
+msgid "No hotel matches these filters."
+msgstr "Ниту еден хотел не одговара на овие филтри."
+
+msgid "hotels"
+msgstr "хотели"
+
+msgid "hotel"
+msgstr "хотел"
+
+msgid "night"
+msgstr "ноќевање"
+
+msgid "for"
+msgstr "за"
+
+msgid "room"
+msgstr "соба"
+
+msgid "rooms"
+msgstr "соби"
+
+msgid "See rooms"
+msgstr "Види соби"
+
+msgid "All hotels"
+msgstr "Сите хотели"
+
+msgid "Free cancellation"
+msgstr "Бесплатно откажување"
+
+msgid "Free cancellation until %s"
+msgstr "Бесплатно откажување до %s"
+
+msgid "Non-refundable"
+msgstr "Неповратно"
+
+msgid "Pay at the hotel"
+msgstr "Плаќање во хотелот"
+
+msgid "Only %d left"
+msgstr "Уште само %d"
+
+msgid "Hotel name"
+msgstr "Име на хотел"
+
+msgid "Only with free cancellation"
+msgstr "Само со бесплатно откажување"
+
+msgid "Highest price"
+msgstr "Највисока цена"
+
+msgid "Read more"
+msgstr "Прочитај повеќе"
+
+msgid "Facilities"
+msgstr "Содржини"
+
+msgid "Show on map"
+msgstr "Види на мапа"
+
+msgid "Rooms and prices"
+msgstr "Соби и цени"
+
+msgid "extra charge"
+msgstr "се доплаќа"
+
+msgid "Local taxes paid at the hotel"
+msgstr "Локалните такси се плаќаат во хотелот"
+
+msgid "Your booking"
+msgstr "Вашата резервација"
+
+msgid "Names as in the passport (Latin letters)."
+msgstr "Имиња како во пасошот (латиница)."
+
+msgid "Room"
+msgstr "Соба"
+
+msgid "years"
+msgstr "год."
+
+msgid "Name and surname"
+msgstr "Име и презиме"
+
+msgid "Message (optional)"
+msgstr "Порака (по желба)"
+
+msgid "Checking the price with the hotel…"
+msgstr "Ја проверуваме цената со хотелот…"
+
+msgid "The hotel changed the price to %s. Do you accept the new price?"
+msgstr "Хотелот ја промени цената на %s. Ја прифаќате ли новата цена?"
+
+msgid "Thank you! Your booking request was received."
+msgstr "Ви благодариме! Вашето барање за резервација е примено."
+
+msgid "We confirm the booking with the hotel and send you the confirmation by e-mail."
+msgstr "Резервацијата ја потврдуваме со хотелот и ви праќаме потврда по е-пошта."
+
+msgid "Your booking is confirmed."
+msgstr "Вашата резервација е потврдена."
+
+msgid "The prices are older than 15 minutes – search again for the current ones."
+msgstr "Цените се постари од 15 минути – пребарајте повторно за актуелните."
+
+msgid "Search again"
+msgstr "Пребарај повторно"
+
+msgid "Please fill in the marked fields."
+msgstr "Пополнете ги означените полиња."
+
+msgid "Hotel search: add a hotel booking system (Hotelbeds) in the app under Booking systems (API), import destinations and hotels, then \"Sync all\" here."
+msgstr "Пребарување хотели: во апликацијата додајте резервациски систем (Hotelbeds) во Резервациски системи (API), увезете дестинации и хотели, па тука „Синхронизирај сè“."
+
+msgid "Age of each child at check-out"
+msgstr "Возраст на секое дете при одјавување"
+
+msgid "One way"
+msgstr "Во еден правец"
+
+msgid "Departure – return"
+msgstr "Заминување – враќање"
+
+msgid "Passengers / class"
+msgstr "Патници / класа"
+
+msgid "12+ years"
+msgstr "12+ години"
+
+msgid "2–11 years"
+msgstr "2–11 години"
+
+msgid "Infants"
+msgstr "Бебиња"
+
+msgid "under 2 years"
+msgstr "под 2 години"
+
+msgid "Maximum 9 passengers"
+msgstr "Најмногу 9 патници"
+
+msgid "Business class"
+msgstr "Бизнис класа"
+
+msgid "Airports"
+msgstr "Аеродроми"
+
+msgid "Type the city or the 3-letter airport code (e.g. IST)."
+msgstr "Внесете град или код на аеродромот од 3 букви (на пр. IST)."
+
+msgid "dd.mm.yyyy"
+msgstr "дд.мм.гггг"
+
+msgid "passenger"
+msgstr "патник"
+
+msgid "passengers"
+msgstr "патници"
+
+msgid "%d hotel"
+msgid_plural "%d hotels"
+msgstr[0] "%d хотел"
+msgstr[1] "%d хотели"
+
+msgid "Return trip"
+msgstr "Повратен лет"
+
+msgid "Hotels with live prices from the booking system (Hotelbeds): results with filters, hotel page with rooms, booking"
+msgstr "Хотели со цени во живо од резервацискиот систем (Hotelbeds): резултати со филтри, страница на хотел со соби, резервација"
+
+msgid "Own apartments and villas with filters (without hotels)"
+msgstr "Сопствени апартмани и вили со филтри (без хотели)"

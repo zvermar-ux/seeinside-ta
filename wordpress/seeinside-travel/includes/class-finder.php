@@ -150,10 +150,15 @@ class STA_Finder
 
     public static function shortcode($atts = []): string
     {
-        $atts = shortcode_atts(['destination' => '', 'place' => '', 'group' => '', 'type' => '', 'per_page' => 12, 'columns' => 3], $atts, 'sta_hotel_finder');
+        $atts = shortcode_atts(['destination' => '', 'place' => '', 'group' => '', 'type' => '', 'exclude_type' => '', 'per_page' => 12, 'columns' => 3], $atts, 'sta_hotel_finder');
         STA_Listings::enqueue();
         $f = self::filters($atts);
         $rows = self::rows();
+        // apartments page: exclude_type="hotel" (the hotels come from a booking system)
+        if ($atts['exclude_type'] !== '') {
+            $ex = array_map(fn ($v) => sanitize_title(trim($v)), explode(',', $atts['exclude_type']));
+            $rows = array_filter($rows, fn ($r) => ! array_intersect($ex, $r['types']));
+        }
         $hits = array_filter($rows, fn ($r) => self::match($r, $f));
         $count = fn (string $skip, callable $test) => count(array_filter($rows, fn ($r) => self::match($r, $f, $skip) && $test($r)));
 
