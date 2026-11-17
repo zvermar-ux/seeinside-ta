@@ -1977,5 +1977,14 @@
     "Id in the old system": "Id во старата апликација",
     "For a villa in fixed terms: the first day of a term.": "За вила со фиксни термини: првиот ден од некој термин.",
     "Nights (hotel only)": "Ноќевања (само за хотел)",
-    ":n offers": ":n понуди"
+    ":n offers": ":n понуди",
+    "Runs in the background on the server (a few minutes for 365 days); the progress and the result are shown in this list. Every night it runs by itself.": "Се извршува во позадина на серверот (неколку минути за 365 дена); напредокот и резултатот се гледаат во оваа листа. Секоја ноќ се извршува сама.",
+    "The sync starts within a minute": "Синхронизацијата почнува за најмногу една минута",
+    "You can leave this page; the progress is shown under \"Last sync\".": "Можеш да ја напуштиш страницата; напредокот се гледа под „Последна синхронизација“.",
+    "Sync running": "Синхронизацијата е во тек",
+    "Tours: :d dates · Apartments: :n new terms, :t room prices · offers found: :o": "Аранжмани: :d термини · Апартмани: :n нови термини, :t цени на соби · најдени понуди: :o",
+    "dates :a of :b": "датуми :a од :b",
+    "saving terms and prices": "се зачувуваат термините и цените",
+    "waiting to start (within a minute)…": "чека да почне (до една минута)…",
+    "started": "почна"
 }

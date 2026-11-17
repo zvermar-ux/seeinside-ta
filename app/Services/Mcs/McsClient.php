@@ -29,25 +29,75 @@ class McsClient
         return $url;
     }
 
-    /** @return mixed decoded JSON (or the plain text answer, e.g. a booking number) */
-    public function call(string $operation, array $params = [], int $timeout = 60)
+    protected function creds(): array
     {
         $user = (string) ($this->c->username ?: ($this->c->credentials['username'] ?? ''));
         $pass = (string) ($this->c->credentials['password'] ?? '');
         if ($user === '' || $pass === '') {
             throw new RuntimeException(__('Enter the username and password of the API (Booking systems → edit the connection).'));
         }
+
+        return ['username' => $user, 'password' => $pass];
+    }
+
+    /** The same request settings for single and parallel calls */
+    protected function prepare($request, int $timeout)
+    {
+        // the old server does not send its full certificate chain: optionally encrypted without checking it
+        return $request->asForm()->accept('*/*')->timeout($timeout)->connectTimeout(10)
+            ->withOptions(['verify' => ($this->c->settings['verify_ssl'] ?? true) !== false]);
+    }
+
+    /** @return mixed decoded JSON (or the plain text answer, e.g. a booking number) */
+    public function call(string $operation, array $params = [], int $timeout = 60)
+    {
+        $creds = $this->creds();
         $started = microtime(true);
         try {
-            // the old server does not send its full certificate chain: optionally encrypted without checking it
-            $res = Http::asForm()->accept('*/*')->timeout($timeout)->connectTimeout(10)
-                ->withOptions(['verify' => ($this->c->settings['verify_ssl'] ?? true) !== false])
-                ->post($this->base().'/'.$operation, ['username' => $user, 'password' => $pass] + $params);
+            $res = $this->prepare(Http::withHeaders([]), $timeout)->post($this->base().'/'.$operation, $creds + $params);
         } catch (\Throwable $e) {
             throw new RuntimeException(__('The old system does not answer: :e', ['e' => $e->getMessage()]));
         }
+        Log::info('MCS '.$operation, ['status' => $res->status(), 'ms' => (int) ((microtime(true) - $started) * 1000), 'bytes' => strlen((string) $res->body())]);
+
+        return $this->parse($res);
+    }
+
+    /**
+     * Several calls at the same time (8 by default): each item is the answer or the exception.
+     *
+     * @param  array<int|string, array>  $paramSets
+     */
+    public function many(string $operation, array $paramSets, int $concurrency = 8, int $timeout = 60): array
+    {
+        $creds = $this->creds();
+        $url = $this->base().'/'.$operation;
+        $out = [];
+        foreach (array_chunk($paramSets, max(1, $concurrency), true) as $chunk) {
+            $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($chunk, $creds, $url, $timeout) {
+                foreach ($chunk as $key => $params) {
+                    $this->prepare($pool->as((string) $key), $timeout)->post($url, $creds + $params);
+                }
+            });
+            foreach ($chunk as $key => $params) {
+                $res = $responses[(string) $key] ?? null;
+                try {
+                    if (! $res instanceof \Illuminate\Http\Client\Response) {
+                        throw new RuntimeException(__('The old system does not answer: :e', ['e' => $res instanceof \Throwable ? $res->getMessage() : '—']));
+                    }
+                    $out[$key] = $this->parse($res);
+                } catch (\Throwable $e) {
+                    $out[$key] = $e;
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    protected function parse(\Illuminate\Http\Client\Response $res)
+    {
         $body = trim((string) $res->body());
-        Log::info('MCS '.$operation, ['status' => $res->status(), 'ms' => (int) ((microtime(true) - $started) * 1000), 'bytes' => strlen($body)]);
         if (in_array($res->status(), [401, 403], true)) {
             throw new RuntimeException(__('The old system refused the username or password (HTTP :s).', ['s' => $res->status()]));
         }
@@ -123,6 +173,18 @@ class McsClient
         return self::rows($this->call('HotelSearch', self::params($q) + ['nights' => (int) $q['nights']] + array_filter(['hotel' => $q['hotel'] ?? null, 'category' => $q['category'] ?? null])), ['HotelResult', 'Hotels', 'result']);
     }
 
+    /** Package searches for many check-in days at once: key => rows (or the exception) */
+    public function packageSearchMany(array $queries, int $concurrency = 8): array
+    {
+        $sets = array_map(fn ($q) => self::params($q) + array_filter(['package' => $q['package'] ?? null]), $queries);
+        $out = [];
+        foreach ($this->many('PackageSearch', $sets, $concurrency) as $k => $v) {
+            $out[$k] = $v instanceof \Throwable ? $v : self::rows($v, ['PackagesResult', 'PackageResult', 'Packages', 'result']);
+        }
+
+        return $out;
+    }
+
     public function packageSearch(array $q): array
     {
         return self::rows($this->call('PackageSearch', self::params($q) + array_filter(['package' => $q['package'] ?? null])), ['PackagesResult', 'PackageResult', 'Packages', 'result']);
@@ -145,7 +207,7 @@ class McsClient
         return trim((string) $r, " \t\n\r\0\x0B\"");
     }
 
-    protected static function params(array $q): array
+    public static function params(array $q): array
     {
         $ages = array_values(array_map('intval', (array) ($q['children_ages'] ?? [])));
         $p = ['checkin' => $q['checkin'], 'adults' => max(1, (int) ($q['adults'] ?? 2))] + array_filter([

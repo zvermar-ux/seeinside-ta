@@ -61,10 +61,19 @@ Artisan::command('aries:catalog', function () {
     }
 })->purpose('Hotels/apartments and packages of the old Aries system (for linking)');
 
-Artisan::command('aries:prices {--days=}', function () {
+Artisan::command('aries:prices {--days=} {--requested : only connections where "Sync prices now" was clicked}', function () {
     foreach (\App\Models\SupplierConnection::withoutGlobalScopes()->where('provider', 'mcs')->where('is_active', true)->get() as $c) {
-        $r = \App\Services\Mcs\McsService::syncPrices($c, $this->option('days') ? (int) $this->option('days') : null);
-        $this->info($c->name.': '.json_encode($r, JSON_UNESCAPED_UNICODE));
+        $days = $this->option('days') ? (int) $this->option('days') : null;
+        if ($this->option('requested')) {
+            $req = $c->settings['sync_request'] ?? null;
+            if (! $req) {
+                continue;
+            }
+            $days = (int) ($req['days'] ?? 0) ?: null;
+            $c->forceFill(['settings' => array_diff_key((array) $c->settings, ['sync_request' => 1])])->saveQuietly();
+        }
+        $r = \App\Services\Mcs\McsService::runLocked($c, $days);
+        $this->info($c->name.': '.($r === null ? 'already running or failed' : json_encode($r, JSON_UNESCAPED_UNICODE)));
     }
 })->purpose('Dates and prices of linked tours and apartments from the old Aries system');
 
@@ -77,5 +86,6 @@ Artisan::command('aries:retry', function () {
 })->purpose('Send again the bookings that did not reach the old Aries system');
 
 \Illuminate\Support\Facades\Schedule::command('aries:catalog')->dailyAt('02:40')->withoutOverlapping();
-\Illuminate\Support\Facades\Schedule::command('aries:prices')->dailyAt('03:20')->withoutOverlapping();
+\Illuminate\Support\Facades\Schedule::command('aries:prices')->dailyAt('03:20')->runInBackground();
+\Illuminate\Support\Facades\Schedule::command('aries:prices --requested')->everyMinute()->runInBackground();
 \Illuminate\Support\Facades\Schedule::command('aries:retry')->everyThirtyMinutes()->withoutOverlapping();

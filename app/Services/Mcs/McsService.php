@@ -491,7 +491,7 @@ class McsService
         if (($c->settings['sync_prices'] ?? true) === false) {
             return $out;
         }
-        $days = max(7, min(400, (int) ($daysAhead ?? ($c->settings['days_ahead'] ?? 240))));
+        $days = max(7, min(400, (int) ($daysAhead ?? ($c->settings['days_ahead'] ?? 365))));
         $api = self::client($c);
         $k = 1 + self::markup($c) / 100;
 
@@ -508,20 +508,29 @@ class McsService
         if ($codes->isNotEmpty()) {
             $countries = SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('kind', 'package')
                 ->whereIn('code', $codes)->pluck('country')->filter()->unique()->values();
+            // every day of the period × country, 8 searches at the same time
+            $queries = [];
             for ($d = 1; $d <= $days; $d++) {
-                $date = now()->addDays($d)->toDateString();
                 foreach ($countries as $country) {
-                    try {
-                        $out['calls']++;
-                        foreach ($api->packageSearch(['checkin' => $date, 'country' => $country, 'adults' => 2]) as $r) {
-                            $out['results']++;
-                            $found[(string) ($r['id'] ?? '')][(string) ($r['checkin'] ?? $date)][] = $r;
-                        }
-                    } catch (Throwable $e) {
-                        $out['errors'][$e->getMessage()] = true;
+                    $queries[] = ['checkin' => now()->addDays($d)->toDateString(), 'country' => $country, 'adults' => 2];
+                }
+            }
+            foreach (array_chunk($queries, 40, true) as $i => $chunk) {
+                self::progress($c, __('dates :a of :b', ['a' => min(count($queries), ($i + 1) * 40), 'b' => count($queries)]));
+                foreach ($api->packageSearchMany($chunk) as $k => $rows) {
+                    $out['calls']++;
+                    if ($rows instanceof Throwable) {
+                        $out['errors'][$rows->getMessage()] = true;
+
+                        continue;
+                    }
+                    foreach ($rows as $r) {
+                        $out['results']++;
+                        $found[(string) ($r['id'] ?? '')][(string) ($r['checkin'] ?? $chunk[$k]['checkin'])][] = $r;
                     }
                 }
             }
+            self::progress($c, __('saving terms and prices'));
         }
         $window = [now()->addDay()->toDateString(), now()->addDays($days)->toDateString()];
 
@@ -671,11 +680,56 @@ class McsService
                 $a->touch();
             }
         }
-        $c->forceFill(['last_sync_at' => now()])->saveQuietly();
         $out['errors'] = array_keys($out['errors']);
         Log::info('MCS price sync', $out);
+        // the result stays on the connection (shown in Booking systems)
+        $c->refresh();
+        $c->forceFill(['last_sync_at' => now(), 'settings' => array_merge((array) $c->settings, ['last_sync_result' => $out + ['at' => now()->toIso8601String(), 'days' => $days]])])->saveQuietly();
+        \Illuminate\Support\Facades\Cache::forget('mcs-sync-progress-'.$c->id);
 
         return $out;
+    }
+
+    /** What the background sync is doing now (shown in Booking systems) */
+    public static function progress(SupplierConnection $c, ?string $text = null): ?string
+    {
+        $key = 'mcs-sync-progress-'.$c->id;
+        if ($text !== null) {
+            \Illuminate\Support\Facades\Cache::put($key, $text, 1800);
+        }
+
+        return \Illuminate\Support\Facades\Cache::get($key);
+    }
+
+    /** The button asks for a sync: the scheduler runs it within a minute in the background (no time limit) */
+    public static function requestSync(SupplierConnection $c, int $days): void
+    {
+        $c->forceFill(['settings' => array_merge((array) $c->settings, ['sync_request' => ['days' => $days, 'at' => now()->toIso8601String()]])])->saveQuietly();
+        \Illuminate\Support\Facades\Cache::put('mcs-sync-progress-'.$c->id, __('waiting to start (within a minute)…'), 1800);
+    }
+
+    /** Runs one sync of a connection at a time */
+    public static function runLocked(SupplierConnection $c, ?int $days = null): ?array
+    {
+        $lock = \Illuminate\Support\Facades\Cache::lock('mcs-sync-'.$c->id, 4 * 3600);
+        if (! $lock->get()) {
+            return null;   // already running
+        }
+        try {
+            @set_time_limit(0);
+            self::progress($c, __('started'));
+
+            return self::syncPrices($c, $days);
+        } catch (Throwable $e) {
+            report($e);
+            $c->refresh();
+            $c->forceFill(['settings' => array_merge((array) $c->settings, ['last_sync_result' => ['errors' => [$e->getMessage()], 'at' => now()->toIso8601String()]])])->saveQuietly();
+            \Illuminate\Support\Facades\Cache::forget('mcs-sync-progress-'.$c->id);
+
+            return null;
+        } finally {
+            $lock->release();
+        }
     }
 
     /** Raw answer of a search, to see what the old system gives for one Id and date */

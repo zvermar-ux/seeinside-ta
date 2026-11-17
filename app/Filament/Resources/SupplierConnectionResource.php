@@ -91,7 +91,7 @@ class SupplierConnectionResource extends Resource
                             ->helperText(__('Turn off when the old server has an SSL certificate problem: the connection stays encrypted (https), only the certificate is not checked.')),
                         Forms\Components\Toggle::make('settings.push_bookings')->label(__('Send new bookings to the old system'))->default(true)->inline(false),
                         Forms\Components\Toggle::make('settings.sync_prices')->label(__('Take dates and prices from the old system'))->default(true)->inline(false),
-                        Forms\Components\TextInput::make('settings.days_ahead')->label(__('Days ahead for dates and prices'))->numeric()->default(240)->minValue(7)->maxValue(400),
+                        Forms\Components\TextInput::make('settings.days_ahead')->label(__('Days ahead for dates and prices'))->numeric()->default(365)->minValue(7)->maxValue(400),
                         Forms\Components\TextInput::make('settings.markup_percent')->label(__('Change of the prices taken %'))->numeric()->default(0)->suffix('%')
                             ->helperText(__('0 = the same prices as in the old system.')),
                     ]),
@@ -108,11 +108,28 @@ class SupplierConnectionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->poll('15s')
             ->columns([
                 Tables\Columns\TextColumn::make('name')->label(__('Name'))->weight('semibold'),
                 Tables\Columns\TextColumn::make('provider')->label(__('System'))->badge(),
                 AgencyField::column(),
-                Tables\Columns\TextColumn::make('last_sync_at')->label(__('Last sync'))->since()->placeholder('—'),
+                Tables\Columns\TextColumn::make('last_sync_at')->label(__('Last sync'))->since()->placeholder('—')->wrap()
+                    ->description(function (SupplierConnection $r) {
+                        if ($r->provider !== SupplierProvider::Mcs) {
+                            return null;
+                        }
+                        if ($p = \App\Services\Mcs\McsService::progress($r)) {
+                            return '⏳ '.__('Sync running').': '.$p;
+                        }
+                        $x = $r->settings['last_sync_result'] ?? null;
+                        if (! $x) {
+                            return null;
+                        }
+
+                        return __('Tours: :d dates · Apartments: :n new terms, :t room prices · offers found: :o', ['d' => $x['departures'] ?? 0, 'n' => $x['terms'] ?? 0, 't' => $x['term_prices'] ?? 0, 'o' => $x['results'] ?? 0])
+                            .(! empty($x['errors']) ? ' · ⚠ '.\Illuminate\Support\Str::limit(implode(' · ', $x['errors']), 160) : '')
+                            .(! empty($x['notes']) ? ' · '.\Illuminate\Support\Str::limit(implode(' · ', $x['notes']), 300) : '');
+                    }),
                 Tables\Columns\ToggleColumn::make('is_active')->label(__('Active')),
             ])
             ->actions([
@@ -200,16 +217,11 @@ class SupplierConnectionResource extends Resource
                     }),
                 Tables\Actions\Action::make('mcsPrices')->label(__('Sync prices now'))->icon('heroicon-o-arrow-path')->color('gray')
                     ->visible(fn (SupplierConnection $r) => $r->provider === SupplierProvider::Mcs)
-                    ->form([Forms\Components\TextInput::make('days')->label(__('Days ahead'))->numeric()->default(45)->minValue(7)->maxValue(400)
-                        ->helperText(__('Every night the full period from the settings is synced automatically; here a shorter one is faster.'))])
+                    ->form([Forms\Components\TextInput::make('days')->label(__('Days ahead'))->numeric()->default(365)->minValue(7)->maxValue(400)
+                        ->helperText(__('Runs in the background on the server (a few minutes for 365 days); the progress and the result are shown in this list. Every night it runs by itself.'))])
                     ->action(function (SupplierConnection $r, array $data) {
-                        @set_time_limit(900);
-                        $n = \App\Services\Mcs\McsService::syncPrices($r, (int) $data['days']);
-                        Notification::make()->title(__('Dates and prices synced'))->{$n['errors'] ? 'warning' : 'success'}()->persistent()
-                            ->body(new \Illuminate\Support\HtmlString(e(__('Tour dates: :d (no longer offered: :s). Apartments: :n new terms, :t room prices (stop sale: :x).', ['d' => $n['departures'], 's' => $n['sold_out'], 'n' => $n['terms'], 't' => $n['term_prices'], 'x' => $n['stop_sale']]))
-                                .'<br>'.e(__('Searches: :c, offers found: :r.', ['c' => $n['calls'], 'r' => $n['results']]))
-                                .($n['errors'] ? '<br><b>'.e(__('Errors')).':</b> '.e(implode(' · ', array_slice($n['errors'], 0, 3))) : '')
-                                .($n['notes'] ? '<br>'.collect($n['notes'])->take(15)->map(fn ($x) => '• '.e($x))->implode('<br>') : '')))->send();
+                        \App\Services\Mcs\McsService::requestSync($r, (int) $data['days']);
+                        Notification::make()->title(__('The sync starts within a minute'))->body(__('You can leave this page; the progress is shown under "Last sync".'))->success()->send();
                     }),
                 Tables\Actions\Action::make('destinations')->label(__('Import destinations'))->icon('heroicon-o-map')->color('gray')
                     ->visible(fn (SupplierConnection $r) => HotelService::supports($r))
