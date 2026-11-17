@@ -59,7 +59,7 @@ class Permissions
         return match ($module) {
             'tours' => __('Organized tours'),
             'events' => __('Events'),
-            'accommodations' => __('Hotels & apartments'),
+            'accommodations' => __('Apartments & villas'),
             'visas' => __('Visa services'),
             'bookings' => __('Bookings'),
             'visa_applications' => __('Visa applications'),

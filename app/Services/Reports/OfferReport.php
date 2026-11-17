@@ -96,7 +96,7 @@ class OfferReport
 
     public static function typeLabels(): array
     {
-        return ['tour' => __('Organized tours'), 'accommodation' => __('Hotels & apartments'), 'event' => __('Events'), 'charter' => __('Charters'), 'visa_type' => __('Visa services')];
+        return ['tour' => __('Organized tours'), 'accommodation' => __('Apartments & villas'), 'event' => __('Events'), 'charter' => __('Charters'), 'visa_type' => __('Visa services')];
     }
 
     public static function money($value, ?string $currency = 'EUR'): string

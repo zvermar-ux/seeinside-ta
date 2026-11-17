@@ -219,7 +219,7 @@ class STA_Widget_List extends STA_Elementor_Widget
             'current' => __('Current archive (in archive templates)', 'seeinside-travel'),
         ]]);
         $this->add_control('type', ['label' => __('Type', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'tour', 'condition' => ['query' => 'custom'], 'options' => [
-            'tour' => __('Organized tours', 'seeinside-travel'), 'hotel' => __('Hotels & apartments', 'seeinside-travel'),
+            'tour' => __('Organized tours', 'seeinside-travel'), 'hotel' => __('Apartments', 'seeinside-travel'),
             'event' => __('Events', 'seeinside-travel'), 'visa' => __('Visas', 'seeinside-travel'), 'custom' => __('Other offers', 'seeinside-travel'), 'all' => __('Everything', 'seeinside-travel'),
         ]]);
         $terms = get_terms(['taxonomy' => 'sta_destination', 'hide_empty' => false]);
@@ -431,11 +431,11 @@ class STA_Widget_Search_Box extends STA_Simple_Widget
     public function get_icon(): string { return 'eicon-search'; }
     protected function extra_controls(): void
     {
-        $this->add_control('tabs', ['label' => __('Tabs', 'seeinside-travel'), 'type' => Controls_Manager::SELECT2, 'multiple' => true, 'default' => ['hotels', 'apartments', 'tours', 'flights'], 'options' => [
-            'hotels' => __('Hotels', 'seeinside-travel'), 'apartments' => __('Apartments & villas', 'seeinside-travel'), 'tours' => __('Tours', 'seeinside-travel'), 'flights' => __('Flights', 'seeinside-travel'),
+        $this->add_control('tabs', ['label' => __('Tabs', 'seeinside-travel'), 'type' => Controls_Manager::SELECT2, 'multiple' => true, 'default' => ['apartments', 'hotels', 'tours', 'flights'], 'options' => [
+            'apartments' => __('Apartments', 'seeinside-travel'), 'hotels' => __('Hotels', 'seeinside-travel'), 'tours' => __('Tours', 'seeinside-travel'), 'flights' => __('Flights', 'seeinside-travel'),
         ]]);
         $this->add_control('active', ['label' => __('Open tab', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => '', 'options' => [
-            '' => __('First', 'seeinside-travel'), 'hotels' => __('Hotels', 'seeinside-travel'), 'apartments' => __('Apartments & villas', 'seeinside-travel'), 'tours' => __('Tours', 'seeinside-travel'), 'flights' => __('Flights', 'seeinside-travel'),
+            '' => __('First', 'seeinside-travel'), 'apartments' => __('Apartments', 'seeinside-travel'), 'hotels' => __('Hotels', 'seeinside-travel'), 'tours' => __('Tours', 'seeinside-travel'), 'flights' => __('Flights', 'seeinside-travel'),
         ]]);
         $this->add_control('title', ['label' => __('Title', 'seeinside-travel'), 'type' => Controls_Manager::TEXT]);
         $this->add_control('subtitle', ['label' => __('Subtitle', 'seeinside-travel'), 'type' => Controls_Manager::TEXT]);
@@ -443,7 +443,7 @@ class STA_Widget_Search_Box extends STA_Simple_Widget
     }
     protected function html(array $s): string
     {
-        return STA_Search_Box::shortcode(['tabs' => implode(',', (array) ($s['tabs'] ?: ['hotels', 'apartments', 'tours', 'flights'])), 'active' => $s['active'] ?? '', 'title' => $s['title'] ?? '', 'subtitle' => $s['subtitle'] ?? '', 'tours_label' => $s['tours_label'] ?? '']);
+        return STA_Search_Box::shortcode(['tabs' => implode(',', (array) ($s['tabs'] ?: ['apartments', 'hotels', 'tours', 'flights'])), 'active' => $s['active'] ?? '', 'title' => $s['title'] ?? '', 'subtitle' => $s['subtitle'] ?? '', 'tours_label' => $s['tours_label'] ?? '']);
     }
 }
 

@@ -74,7 +74,7 @@ class LastMinute extends Page
             ]);
         $sections[__('Organized tours')] = $tours->concat($deps)->all();
 
-        $sections[__('Hotels & apartments')] = Accommodation::lastMinute()->get()->map(fn (Accommodation $a) => [
+        $sections[__('Apartments & villas')] = Accommodation::lastMinute()->get()->map(fn (Accommodation $a) => [
             'title' => $a->name, 'meta' => trim($a->place.', '.$a->country, ', '), 'price' => $fmt($a->price_from, $a->currency),
             'until' => $a->last_minute_until?->format('d.m.Y'), 'url' => AccommodationResource::getUrl('edit', ['record' => $a]), 'image' => $a->cover_image,
         ])->all();

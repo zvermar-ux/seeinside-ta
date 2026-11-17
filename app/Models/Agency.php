@@ -32,7 +32,7 @@ class Agency extends Model
         $out = [
             'tours' => __('Organized tours'),
             'events' => __('Events'),
-            'accommodations' => __('Hotels & apartments'),
+            'accommodations' => __('Apartments & villas'),
             'visas' => __('Visa services'),
             'charters' => __('Charters'),
             'finance' => __('Invoices, cash register & supplier invoices'),

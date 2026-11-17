@@ -742,14 +742,35 @@
         try { items = JSON.parse($('[data-sb-items]', dest).textContent) || []; } catch (e) {}
         var hidden = $$('[data-sb-h]', dest);
         function norm(v) { return String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+        // Cyrillic typed text -> Latin (Атина -> atina, Лондон -> london)
+        function lat(v) {
+          var m = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', ѓ: 'gj', е: 'e', ж: 'zh', з: 'z', ѕ: 'dz', и: 'i', ј: 'j', к: 'k', л: 'l', љ: 'lj', м: 'm', н: 'n', њ: 'nj', о: 'o', п: 'p', р: 'r', с: 's', т: 't', ќ: 'kj', у: 'u', ф: 'f', х: 'h', ц: 'c', ч: 'ch', џ: 'dz', ш: 'sh', й: 'j', ы: 'y', э: 'e', ю: 'ju', я: 'ja', ь: '', ъ: '', щ: 'sht' };
+          return String(v || '').toLowerCase().replace(/[а-яѓѕјљњќџ]/g, function (c) { return m[c] != null ? m[c] : c; });
+        }
         function clearPick() { hidden.forEach(function (h) { h.value = ''; }); if (q.dataset.name) q.name = q.dataset.name; }
         q.dataset.name = q.getAttribute('name') || '';
-        function all() { return items.concat(remote); }
+        // flights "To": the whole world, loaded on the first click (assets/data/airports.json)
+        var world = null, worldUrl = dest.dataset.sbWorld, loading = false;
+        function loadWorld() {
+          if (!worldUrl || world || loading) return;
+          loading = true;
+          fetch(worldUrl, { credentials: 'omit' }).then(function (r) { return r.json(); }).then(function (rows) {
+            var f = items[0] ? items[0].f : 'to';
+            world = rows.map(function (a) { return { k: 'air', v: a[0], l: a[1] + ' (' + a[0] + ')', s: [a[2], a[3]].filter(Boolean).join(', '), x: norm(a[5] || ''), r: a[4] || 0, f: f }; });
+            if (document.activeElement === q && q.value.trim()) render();
+          }).catch(function () { loading = false; });
+        }
+        function all() { return (q.value.trim() && world ? world : items).concat(remote); }
         function render() {
-          var v = norm(q.value.trim()), html = '', list = all(), groups = { dest: [], place: [], group: [], hotel: [], item: [], air: [] };
-          list.forEach(function (it) { if (it.k === 'hotel' || !v || norm(it.l).indexOf(v) > -1 || norm(it.s).indexOf(v) > -1 || norm(it.v) === v) groups[it.k].push(it); });
-          // an exact airport code first
-          groups.air.sort(function (x, y) { return (norm(y.v) === v) - (norm(x.v) === v); });
+          var raw = dest.hasAttribute('data-sb-strict') ? '' : q.value.trim(), v = norm(raw), vl = norm(lat(raw)), html = '', list = all(), groups = { dest: [], place: [], group: [], hotel: [], item: [], air: [] };
+          list.forEach(function (it) {
+            if (it.k === 'hotel' || !v) { groups[it.k].push(it); return; }
+            var l = norm(it.l), s2 = norm(it.s), x = it.x || '';
+            if (l.indexOf(v) > -1 || s2.indexOf(v) > -1 || x.indexOf(v) > -1 || norm(it.v) === v || (vl !== v && (l.indexOf(vl) > -1 || s2.indexOf(vl) > -1 || x.indexOf(vl) > -1))) groups[it.k].push(it);
+          });
+          // airports: the exact code, then the city that starts with the text, then the big airports
+          function score(it) { var l = norm(it.l); return (norm(it.v) === v ? 100 : 0) + (l.indexOf(v) === 0 || l.indexOf(vl) === 0 || (it.x || '').indexOf(v) === 0 ? 10 : 0) + (it.r || 0); }
+          if (v) groups.air.sort(function (x, y) { return score(y) - score(x); });
           var titles = { dest: T.sbDest, place: T.sbPlace, group: T.sbGroup, hotel: T.sbHotels, item: T.sbItem, air: T.sbAir }, lim = { dest: 8, place: 8, group: 6, hotel: 8, item: v ? 8 : 0, air: 8 }, n = 0;
           ['dest', 'place', 'group', 'hotel', 'item', 'air'].forEach(function (k) {
             var l = groups[k].slice(0, lim[k]); if (!l.length) return;
@@ -774,7 +795,7 @@
             });
           }, 250);
         }
-        q.addEventListener('focus', function () { closeAll(sugg); render(); sugg.hidden = false; dest.classList.add('is-open'); if (q.value && hidden[0] && hidden[0].value) q.select(); });
+        q.addEventListener('focus', function () { loadWorld(); closeAll(sugg); render(); sugg.hidden = false; dest.classList.add('is-open'); if (q.value && hidden[0] && hidden[0].value) q.select(); });
         q.addEventListener('input', function () { clearPick(); render(); ask(); sugg.hidden = false; });
         sugg.addEventListener('click', function (e) {
           var b = e.target.closest('.sta-sb-sg'); if (!b) return;
@@ -941,6 +962,8 @@
             var h = $('[data-sb-h]', d), typed = $('[data-sb-q]', d).value.trim();
             if (!h.value && /^[a-z]{3}$/i.test(typed)) h.value = typed.toUpperCase();
             var m = !h.value && typed.match(/\(([A-Z]{3})\)\s*$/); if (m) h.value = m[1];
+            // "from": only the departure airports of the agency
+            if (h.value && d.hasAttribute('data-sb-strict') && !(function () { try { return JSON.parse($('[data-sb-items]', d).textContent) || []; } catch (e) { return []; } })().some(function (it) { return it.v === h.value; })) h.value = '';
             if (!h.value) missing.push(d);
           });
           if (!fromI.value || (!single() && !toI.value)) missing.push(dbox);

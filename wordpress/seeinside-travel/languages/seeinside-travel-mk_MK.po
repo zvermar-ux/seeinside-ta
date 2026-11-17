@@ -3120,3 +3120,15 @@ msgstr "Хотели со цени во живо од резервацискио
 
 msgid "Own apartments and villas with filters (without hotels)"
 msgstr "Сопствени апартмани и вили со филтри (без хотели)"
+
+msgid "Apartments"
+msgstr "Апартмани"
+
+msgid "Apartment"
+msgstr "Апартман"
+
+msgid "Hotels (page with the search)"
+msgstr "Хотели (страница со пребарување)"
+
+msgid "Apartments (page with filters)"
+msgstr "Апартмани (страница со филтри)"

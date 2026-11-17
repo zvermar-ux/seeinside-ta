@@ -1810,8 +1810,8 @@
     "Town / resort, e.g. Sandanski or Lefkada › Nikiana. Places are kept in Groups & destinations.": "Град / летувалиште, на пр. Сандански или Лефкада › Никиана. Местата се во Групи, дестинации и места.",
     "Group / destination / place": "Група / дестинација / место",
     "Groups, destinations & places": "Групи, дестинации и места",
-    "Apartment / villa": "Апартман / вила",
-    "Apartments & villas": "Апартмани и вили",
+    "Apartment / villa": "Апартман",
+    "Apartments & villas": "Апартмани",
     "Waiting – not booked at the supplier yet": "Чека – уште не е резервирано кај добавувачот",
     "Booked at the supplier": "Резервирано кај добавувачот",
     "Booking at the supplier failed": "Резервацијата кај добавувачот не успеа",
@@ -1898,5 +1898,6 @@
     "This price is no longer available. Search again.": "Оваа цена повеќе не е достапна. Пребарајте повторно.",
     "Enter the Hotelbeds \"api_key\" and \"secret\" in the connection (Access keys).": "Внесете ги Hotelbeds „API key“ и „Secret“ во врската.",
     "Access refused – check the API key / secret and that the keys belong to this environment (test or live).": "Пристапот е одбиен – проверете го API клучот / тајната и дали клучевите се за оваа околина (тест или продукција).",
-    "Hotelbeds request limit reached (test keys allow few searches per day). Try again later.": "Достигнат е лимитот на барања кон Hotelbeds (тест клучевите дозволуваат малку пребарувања дневно). Обидете се подоцна."
+    "Hotelbeds request limit reached (test keys allow few searches per day). Try again later.": "Достигнат е лимитот на барања кон Hotelbeds (тест клучевите дозволуваат малку пребарувања дневно). Обидете се подоцна.",
+    "Choose an apartment. Rooms are added in Apartments & villas → Rooms & price list.": "Избери апартман. Собите се додаваат во Апартмани → Соби и ценовник."
 }

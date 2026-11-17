@@ -3,8 +3,8 @@
 defined('ABSPATH') || exit;
 
 /**
- * Big search box with tabs (Hotels & apartments · Tours · Flights), for the homepage hero or anywhere:
- * [sta_search_box tabs="hotels,tours,flights" active="hotels" title="" subtitle=""]
+ * Big search box with tabs (Apartments · Hotels · Tours · Flights), for the homepage hero or anywhere:
+ * [sta_search_box tabs="apartments,hotels,tours,flights" active="hotels" title="" subtitle=""]
  * Hotels go to the hotels page with filters, tours to the tours page, flights show the GOL IBE form.
  */
 class STA_Search_Box
@@ -108,12 +108,15 @@ class STA_Search_Box
     public static function shortcode($atts = []): string
     {
         $a = shortcode_atts(['tabs' => 'hotels,apartments,tours,flights', 'active' => '', 'title' => '', 'subtitle' => '', 'hotels_label' => '', 'apartments_label' => '', 'tours_label' => '', 'flights_label' => '', 'compact' => ''], $atts, 'sta_search_box');
-        $tabs = array_values(array_intersect(array_map('trim', explode(',', $a['tabs'])), ['hotels', 'apartments', 'tours', 'flights']));
+        $order = ['apartments', 'hotels', 'tours', 'flights'];
+        $tabs = array_values(array_intersect(array_map('trim', explode(',', $a['tabs'])), $order));
         $api = STA_Hotels::enabled();
-        // without a hotel booking system the hotels tab shows the own accommodation (as before)
-        if (! $api && in_array('hotels', $tabs, true) && in_array('apartments', $tabs, true)) {
-            $tabs = array_values(array_diff($tabs, ['apartments']));
+        // hotels and apartments are always separate tabs (older shortcodes/widgets only had "hotels")
+        if (count($tabs) > 1 && in_array('hotels', $tabs, true) && ! in_array('apartments', $tabs, true)) {
+            $tabs[] = 'apartments';
         }
+        $tabs = array_values(array_intersect($order, $tabs));
+        // hotels: from the booking system, otherwise the own accommodation
         if (! $api && in_array('hotels', $tabs, true) && ! wp_count_posts('sta_hotel')->publish) {
             $tabs = array_values(array_diff($tabs, ['hotels']));
         }
@@ -133,8 +136,8 @@ class STA_Search_Box
             STA_Hotels::enqueue();
         }
         $labels = [
-            'hotels' => $a['hotels_label'] ?: ($api ? __('Hotels', 'seeinside-travel') : __('Hotels & apartments', 'seeinside-travel')),
-            'apartments' => $a['apartments_label'] ?: __('Apartments & villas', 'seeinside-travel'),
+            'hotels' => $a['hotels_label'] ?: __('Hotels', 'seeinside-travel'),
+            'apartments' => $a['apartments_label'] ?: __('Apartments', 'seeinside-travel'),
             'tours' => $a['tours_label'] ?: __('Tours', 'seeinside-travel'),
             'flights' => $a['flights_label'] ?: __('Flights', 'seeinside-travel'),
         ];
@@ -246,10 +249,14 @@ class STA_Search_Box
     /** Own accommodation (apartments, villas…; with hotels when there is no hotel booking system) – the page with filters */
     protected static function hotels(bool $apartments = false): string
     {
-        $only = $apartments ? self::local_ids() : null;
+        $hotelIds = $apartments ? [] : array_values(array_diff(self::local_ids(false), self::local_ids()));
+        $only = $apartments ? self::local_ids() : ($hotelIds ?: null);
         $items = self::suggestions('sta_hotel', ['dest' => 'f_dest', 'place' => 'f_place', 'group' => 'f_group'], $only);
         $h = '<form class="sta-sbox-form" method="get" action="'.esc_url($apartments ? self::target('apartmani', 'sta_hotel') : self::target('hoteli', 'sta_hotel')).'" data-sb-form>';
         $h .= self::dest_field($items, ['f_dest', 'f_place', 'f_group[]'], 'f_q');
+        if ($hotelIds) {
+            $h .= '<input type="hidden" name="f_type[]" value="hotel">';
+        }
         $h .= self::dates_field(__('Check-in – out', 'seeinside-travel'), 'f_from', 'f_to');
         $h .= '<div class="sta-sb-f sta-sb-guests" data-sb-guests>'.sta_icon('users')
             .'<button type="button" class="sta-sb-lab sta-sb-btn" data-sb-open><span>'.esc_html__('Guests', 'seeinside-travel').'</span><b data-sb-guests-val></b><i class="sta-sb-caret"></i></button>'
@@ -338,22 +345,36 @@ class STA_Search_Box
     }
 
     /** Airport field: suggestions from the list below, or any 3-letter code */
-    protected static function airport_field(string $name, string $label, string $placeholder, string $default = ''): string
+    /** Departure airports of the agency (Skopje, Thessaloniki, Sofia, Belgrade) – filter sta_departure_airports */
+    protected static function departures(): array
     {
-        $items = [];
-        foreach (self::airports() as [$code, $city, $airport, $country]) {
-            $items[] = ['k' => 'air', 'v' => $code, 'l' => $city.' ('.$code.')', 's' => trim($airport.', '.$country, ', '), 'f' => $name];
+        return (array) apply_filters('sta_departure_airports', ['SKP', 'SKG', 'SOF', 'BEG']);
+    }
+
+    /**
+     * Airport field: "from" = only the departure airports, "to" = the whole world
+     * (assets/data/airports.json, about 3,250 airports with scheduled flights, loaded on the first click).
+     */
+    protected static function airport_field(string $name, string $label, string $placeholder, string $default = '', bool $world = false): string
+    {
+        $codes = $world ? (array) apply_filters('sta_popular_airports', ['IST', 'VIE', 'LON', 'PAR', 'ROM', 'MIL', 'BER', 'ZRH', 'DXB', 'NYC']) : self::departures();
+        $byCode = [];
+        foreach (self::airports() as $a) {
+            $byCode[$a[0]] = $a;
         }
+        $items = [];
         $label_default = '';
-        foreach (self::airports() as [$code, $city]) {
+        foreach ($codes as $code) {
+            [$code, $city, $airport, $country] = $byCode[$code] ?? [$code, $code, '', ''];
+            $items[] = ['k' => 'air', 'v' => $code, 'l' => $city.' ('.$code.')', 's' => trim($airport.', '.$country, ', '), 'f' => $name];
             if ($code === $default) {
                 $label_default = $city.' ('.$code.')';
             }
         }
 
-        return '<div class="sta-sb-f sta-sb-dest sta-sb-air" data-sb-dest>'.sta_icon('plane')
+        return '<div class="sta-sb-f sta-sb-dest sta-sb-air" data-sb-dest'.($world ? ' data-sb-world="'.esc_url(STA_URL.'assets/data/airports.json?ver='.STA_VERSION).'"' : ' data-sb-strict').'>'.sta_icon('plane')
             .'<label class="sta-sb-lab"><span>'.esc_html($label).'</span>'
-            .'<input type="text" class="sta-sb-q" placeholder="'.esc_attr($placeholder).'" autocomplete="off" spellcheck="false" data-sb-q value="'.esc_attr($label_default).'"></label>'
+            .'<input type="text" class="sta-sb-q" placeholder="'.esc_attr($placeholder).'" autocomplete="off" spellcheck="false" data-sb-q value="'.esc_attr($label_default).'"'.($world ? '' : ' readonly').'></label>'
             .'<input type="hidden" name="'.esc_attr($name).'" data-sb-h="'.esc_attr($name).'" value="'.esc_attr($default).'">'
             .'<div class="sta-sb-pop sta-sb-sugg" data-sb-sugg hidden></div>'
             .'<script type="application/json" data-sb-items>'.wp_json_encode($items, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP).'</script></div>';
@@ -374,8 +395,8 @@ class STA_Search_Box
         $h = '<form class="sta-sbox-form sta-sb-flights" method="get" action="'.esc_url($base).'" target="_blank" data-sb-form data-sb-flights>';
         $h .= '<div class="sta-sb-trip"><label><input type="radio" name="sb_trip" value="return" checked data-sb-trip> '.esc_html__('Return trip', 'seeinside-travel').'</label>'
             .'<label><input type="radio" name="sb_trip" value="oneway" data-sb-trip data-sb-oneway> '.esc_html__('One way', 'seeinside-travel').'</label></div>';
-        $h .= self::airport_field('from', __('From', 'seeinside-travel'), __('City or airport', 'seeinside-travel'), 'SKP');
-        $h .= self::airport_field('to', __('To', 'seeinside-travel'), __('City or airport', 'seeinside-travel'));
+        $h .= self::airport_field('from', __('From', 'seeinside-travel'), __('City or airport', 'seeinside-travel'), self::departures()[0] ?? 'SKP');
+        $h .= self::airport_field('to', __('To', 'seeinside-travel'), __('City or airport', 'seeinside-travel'), '', true);
         $h .= self::dates_field(__('Departure – return', 'seeinside-travel'), 'departureDate', 'returnDate');
         $h .= '<div class="sta-sb-f sta-sb-guests" data-sb-guests data-sb-flight-pax>'.sta_icon('users')
             .'<button type="button" class="sta-sb-lab sta-sb-btn" data-sb-open><span>'.esc_html__('Passengers / class', 'seeinside-travel').'</span><b data-sb-guests-val></b><i class="sta-sb-caret"></i></button>'

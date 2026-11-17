@@ -205,6 +205,13 @@ class STA_Admin
         foreach (STA_Schema::post_types() as $type => $pt) {
             echo '<tr><th>'.esc_html($pt['plural']).'</th><td><code>'.esc_html(home_url('/')).'</code><input name="slugs['.esc_attr($type).']" value="'.esc_attr(STA_Post_Types::slug($type)).'"><code>/…</code></td></tr>';
         }
+        // the listing pages: hotels (booking system) and apartments are separate pages
+        $pages = get_option('sta_pages', []);
+        foreach (['hoteli' => __('Hotels (page with the search)', 'seeinside-travel'), 'apartmani' => __('Apartments (page with filters)', 'seeinside-travel')] as $key => $label) {
+            if (! empty($pages[$key]) && ($pg = get_post($pages[$key])) && $pg->post_status === 'publish') {
+                echo '<tr><th>'.esc_html($label).'</th><td><code>'.esc_html(home_url('/')).'</code><input name="page_slugs['.esc_attr($key).']" value="'.esc_attr(rawurldecode($pg->post_name)).'"><code>/</code></td></tr>';
+            }
+        }
         $del = $s['delete_mode'] ?? 'trash';
         echo '<tr><th>'.esc_html__('Deleted in SeeInside', 'seeinside-travel').'</th><td><label><input type="radio" name="delete_mode" value="trash"'.checked($del, 'trash', false).'> '.esc_html__('Move to trash', 'seeinside-travel').'</label> &nbsp; <label><input type="radio" name="delete_mode" value="delete"'.checked($del, 'delete', false).'> '.esc_html__('Delete permanently', 'seeinside-travel').'</label></td></tr>';
         echo '</table>';
@@ -293,6 +300,13 @@ class STA_Admin
             $s['gallery_height'] = max(150, min(900, (int) ($_POST['gallery_height'] ?? 420)));
             $s['gallery_height_mobile'] = max(150, min(700, (int) ($_POST['gallery_height_mobile'] ?? 260)));
             $s['slugs'] = array_map('sanitize_title', array_intersect_key((array) wp_unslash($_POST['slugs'] ?? []), STA_Schema::post_types()));
+            $pages = get_option('sta_pages', []);
+            foreach (array_intersect_key((array) wp_unslash($_POST['page_slugs'] ?? []), ['hoteli' => 1, 'apartmani' => 1]) as $key => $slug) {
+                $slug = sanitize_title($slug);
+                if ($slug !== '' && ! in_array($slug, $s['slugs'], true) && ! empty($pages[$key]) && get_post_field('post_name', $pages[$key]) !== $slug) {
+                    wp_update_post(['ID' => (int) $pages[$key], 'post_name' => $slug]);
+                }
+            }
             update_option('sta_settings', $s);
             if ($old != $s['slugs']) {
                 STA_Post_Types::register();

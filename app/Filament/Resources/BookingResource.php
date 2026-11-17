@@ -175,7 +175,7 @@ class BookingResource extends Resource
         return [
             AgencyField::select(),
             Forms\Components\Select::make('bookable_type')->label(__('Type'))->live()
-                ->options(fn () => array_filter(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Hotel / apartment'), 'charter' => __('Charter')] + static::customTypeOptions(),
+                ->options(fn () => array_filter(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Apartment / villa'), 'charter' => __('Charter')] + static::customTypeOptions(),
                     fn ($label, $key) => $key === 'custom' || \App\Models\Agency::moduleOn(\App\Http\Middleware\AgencyModule::BY_TYPE[$key] ?? $key), ARRAY_FILTER_USE_BOTH))
                 ->afterStateUpdated(fn (Forms\Set $set) => $set('bookable_id', null)),
             Forms\Components\Select::make('bookable_id')->label(__('Offer'))->searchable()->live()
@@ -420,9 +420,9 @@ class BookingResource extends Resource
                     ->description(fn (Booking $r) => match ($r->bookable_type) {
                         'tour' => __('Organized tour').($r->departure ? ' · '.$r->departure->start_date->format('d.m.Y') : ''),
                         'event' => __('Event'),
-                        'accommodation' => __('Hotel / apartment').($r->date_from ? ' · '.$r->date_from->format('d.m.').' – '.$r->date_to?->format('d.m.Y') : ''),
+                        'accommodation' => __('Apartment / villa').($r->date_from ? ' · '.$r->date_from->format('d.m.').' – '.$r->date_to?->format('d.m.Y') : ''),
                         'charter' => __('Charter'),
-                        default => null,
+                        default => $r->supplier_connection_id ? __('Hotel (API)').($r->date_from ? ' · '.$r->date_from->format('d.m.').' – '.$r->date_to?->format('d.m.Y') : '') : null,
                     }),
                 Tables\Columns\TextColumn::make('pax')->label(__('Persons'))->state(fn (Booking $r) => $r->adults.($r->children ? ' + '.$r->children : '')),
                 Tables\Columns\TextColumn::make('total')->label(__('Total'))
@@ -437,8 +437,11 @@ class BookingResource extends Resource
                 Tables\Filters\SelectFilter::make('status')->label(__('Status'))->options(BookingStatus::class)->multiple(),
                 Tables\Filters\SelectFilter::make('payment_status')->label(__('Payment'))->options(PaymentStatus::class),
                 Tables\Filters\SelectFilter::make('bookable_type')->label(__('Type'))
-                    ->options(fn () => array_filter(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Hotel / apartment'), 'charter' => __('Charter')] + static::customTypeOptions(),
+                    ->options(fn () => array_filter(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Apartment / villa'), 'charter' => __('Charter')] + static::customTypeOptions(),
                     fn ($label, $key) => $key === 'custom' || \App\Models\Agency::moduleOn(\App\Http\Middleware\AgencyModule::BY_TYPE[$key] ?? $key), ARRAY_FILTER_USE_BOTH)),
+                // hotels from booking systems (Hotelbeds…) are separate from the own apartments
+                Tables\Filters\TernaryFilter::make('supplier_hotel')->label(__('Hotels (API)'))
+                    ->queries(true: fn ($q) => $q->whereNotNull('supplier_connection_id'), false: fn ($q) => $q->whereNull('supplier_connection_id')),
             ])
             ->actions([
                 Tables\Actions\Action::make('confirm')->label(__('Confirm'))->icon('heroicon-o-check')->color('success')->iconButton()->tooltip(__('Confirm'))

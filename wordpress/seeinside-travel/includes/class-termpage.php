@@ -132,7 +132,7 @@ class STA_Term_Page
         }
         $attr = ['sta_destination' => 'destination', 'sta_place' => 'place', 'sta_group' => 'group', 'sta_tour_type' => 'tour_type', 'sta_event_category' => 'category', 'sta_country' => 'country'][$t->taxonomy] ?? null;
         $types = array_map('trim', explode(',', $a['types']));
-        $titles = ['tour' => __('Organized tours', 'seeinside-travel'), 'accommodation' => __('Accommodation', 'seeinside-travel'), 'event' => __('Events', 'seeinside-travel')];
+        $titles = ['tour' => __('Organized tours', 'seeinside-travel'), 'accommodation' => __('Apartments', 'seeinside-travel'), 'event' => __('Events', 'seeinside-travel')];
         $slug = rawurldecode($t->slug);
         foreach ($types as $type) {
             $pt = STA_Schema::TYPES[$type] ?? null;

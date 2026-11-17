@@ -14,7 +14,7 @@ class STA_Items
     {
         return [
             'tour' => [__('Organized tours', 'seeinside-travel'), 'post', 'sta_tour'],
-            'accommodation' => [__('Hotels & apartments', 'seeinside-travel'), 'post', 'sta_hotel'],
+            'accommodation' => [__('Apartments', 'seeinside-travel'), 'post', 'sta_hotel'],
             'event' => [__('Events', 'seeinside-travel'), 'post', 'sta_event'],
             'visa' => [__('Visas', 'seeinside-travel'), 'post', 'sta_visa'],
             'custom' => [__('Other offers', 'seeinside-travel'), 'post', 'sta_offer'],

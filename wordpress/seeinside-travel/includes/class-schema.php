@@ -59,8 +59,8 @@ class STA_Schema
                 'taxonomies' => ['sta_event_category', 'sta_country'],
             ],
             'sta_hotel' => [
-                'singular' => __('Hotel / apartment', 'seeinside-travel'),
-                'plural' => __('Hotels & apartments', 'seeinside-travel'),
+                'singular' => __('Apartment', 'seeinside-travel'),
+                'plural' => __('Apartments', 'seeinside-travel'),
                 'slug' => 'smestuvanje',
                 'icon' => 'dashicons-building',
                 'taxonomies' => ['sta_destination', 'sta_place', 'sta_group', 'sta_hotel_type', 'sta_amenity', 'sta_country'],

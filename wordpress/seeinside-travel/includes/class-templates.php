@@ -192,7 +192,7 @@ class STA_Templates
         // own single design per accommodation type (hotel, apartment, villa…) – starts as the hotel design
         $hotelTypes = get_terms(['taxonomy' => 'sta_hotel_type', 'hide_empty' => false]);
         foreach (is_wp_error($hotelTypes) ? [] : $hotelTypes as $ht) {
-            $plan['hoteltype:'.$ht->slug] = [__('Accommodation', 'seeinside-travel').': '.$ht->name.' – SeeInside', 'single-post', fn () => self::single_layout('sta_hotel'), ['include/singular/in_sta_hotel_type/'.$ht->term_id]];
+            $plan['hoteltype:'.$ht->slug] = [__('Apartment', 'seeinside-travel').': '.$ht->name.' – SeeInside', 'single-post', fn () => self::single_layout('sta_hotel'), ['include/singular/in_sta_hotel_type/'.$ht->term_id]];
         }
 
         return $plan;
@@ -266,8 +266,8 @@ class STA_Templates
         $pages = [
             'aranzmani' => [__('Organized tours', 'seeinside-travel'), "[sta_search types=\"tour\"]\n[sta_list type=\"tour\" limit=\"12\" columns=\"3\" search=\"1\" pagination=\"1\" orderby=\"departure\"]"],
             // hotels from a booking system (live prices) – or the own accommodation when there is none
-            'hoteli' => STA_Hotels::enabled() ? [__('Hotels', 'seeinside-travel'), '[sta_hotels]'] : [__('Hotels & apartments', 'seeinside-travel'), '[sta_hotel_finder]'],
-            'apartmani' => [__('Apartments & villas', 'seeinside-travel'), '[sta_hotel_finder exclude_type="hotel"]'],
+            'hoteli' => STA_Hotels::enabled() ? [__('Hotels', 'seeinside-travel'), '[sta_hotels]'] : [__('Hotels', 'seeinside-travel'), '[sta_hotel_finder type="hotel"]'],
+            'apartmani' => [__('Apartments', 'seeinside-travel'), '[sta_hotel_finder exclude_type="hotel"]'],
             'nastani' => [__('Events', 'seeinside-travel'), '[sta_list type="event" limit="12" columns="3" orderby="departure" pagination="1"]'],
             'vizi' => [__('Visas', 'seeinside-travel'), '[sta_list type="visa" limit="24" columns="4" orderby="title"]'],
             'last-minute' => ['Last minute', '[sta_last_minute limit="24" columns="3"]'],
@@ -292,8 +292,10 @@ class STA_Templates
                     wp_update_post(['ID' => $known[$slug], 'post_content' => $content, 'post_title' => $title]);
                     $made[] = $title.' (Hotelbeds)';
                 }
-                if ($slug === 'apartmani' && ! self::own_apartments()) {
-                    continue;
+                // without a booking system the hotels page shows only the own hotels (apartments have their own page)
+                if ($slug === 'hoteli' && ! STA_Hotels::enabled() && $now === '[sta_hotel_finder]' && self::own_apartments()) {
+                    wp_update_post(['ID' => $known[$slug], 'post_content' => $content, 'post_title' => $title]);
+                    $made[] = $title;
                 }
                 continue;
             }

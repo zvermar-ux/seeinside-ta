@@ -64,7 +64,7 @@
 
     <div class="ta-cal-toolbar">
         <div class="grow">
-            <label class="fi-fo-field-wrp-label" style="display:block;font-size:.875rem;font-weight:500;margin-bottom:.4rem">{{ __('Hotel / apartment') }}</label>
+            <label class="fi-fo-field-wrp-label" style="display:block;font-size:.875rem;font-weight:500;margin-bottom:.4rem">{{ __('Apartment / villa') }}</label>
             <x-filament::input.wrapper>
                 <x-filament::input.select wire:model.live="accommodationId">
                     <option value="">— {{ __('Choose') }} —</option>
@@ -95,7 +95,7 @@
 
     @if (! $accommodation)
         <x-filament::section>
-            <p style="color:rgb(var(--gray-500))">{{ __('Choose a hotel or apartment. Rooms are added in Hotels & apartments → Rooms & price list.') }}</p>
+            <p style="color:rgb(var(--gray-500))">{{ __('Choose an apartment. Rooms are added in Apartments & villas → Rooms & price list.') }}</p>
         </x-filament::section>
     @else
         @if ($data['notice'])
