@@ -92,6 +92,12 @@ class SupplierConnectionResource extends Resource
                         Forms\Components\Toggle::make('settings.push_bookings')->label(__('Send new bookings to the old system'))->default(true)->inline(false),
                         Forms\Components\Toggle::make('settings.sync_prices')->label(__('Take dates and prices from the old system'))->default(true)->inline(false),
                         Forms\Components\TextInput::make('settings.days_ahead')->label(__('Days ahead for dates and prices'))->numeric()->default(365)->minValue(7)->maxValue(400),
+                        Forms\Components\TextInput::make('settings.concurrency')->label(__('Searches at the same time'))->numeric()->default(2)->minValue(1)->maxValue(8)
+                            ->helperText(__('The old server is slow: 1–2. More only if it answers quickly.')),
+                        Forms\Components\TextInput::make('settings.timeout')->label(__('Wait for an answer (seconds)'))->numeric()->default(90)->minValue(20)->maxValue(300),
+                        Forms\Components\CheckboxList::make('settings.months')->label(__('Months with terms (searched)'))->columns(6)->columnSpanFull()
+                            ->options(collect(range(1, 12))->mapWithKeys(fn ($m) => [$m => \Illuminate\Support\Carbon::create(2000, $m, 1)->translatedFormat('M')])->all())
+                            ->default(range(4, 10))->helperText(__('Only these months are searched for package terms (fewer searches). Departures in other months are not changed.')),
                         Forms\Components\TextInput::make('settings.markup_percent')->label(__('Change of the prices taken %'))->numeric()->default(0)->suffix('%')
                             ->helperText(__('0 = the same prices as in the old system.')),
                     ]),
@@ -204,15 +210,17 @@ class SupplierConnectionResource extends Resource
                         Forms\Components\TextInput::make('nights')->label(__('Nights (hotel only)'))->numeric()->default(7),
                     ])
                     ->action(function (SupplierConnection $r, array $data) {
+                        $t0 = microtime(true);
                         try {
                             $res = \App\Services\Mcs\McsService::probe($r, $data['kind'], trim($data['code']), \Illuminate\Support\Carbon::parse($data['date'])->toDateString(), (int) $data['nights']);
                         } catch (\Throwable $e) {
-                            Notification::make()->title(__('Search failed'))->body($e->getMessage())->danger()->persistent()->send();
+                            Notification::make()->title(__('Search failed').' ('.round(microtime(true) - $t0, 1).' s)')->body($e->getMessage())->danger()->persistent()->send();
 
                             return;
                         }
+                        $res = ['seconds' => round(microtime(true) - $t0, 1)] + $res;
                         $json = json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-                        Notification::make()->title(__(':n offers', ['n' => count($res['rows'])]))->{$res['rows'] ? 'success' : 'warning'}()->persistent()
+                        Notification::make()->title(__(':n offers', ['n' => count($res['rows'])]).' · '.$res['seconds'].' s')->{$res['rows'] ? 'success' : 'warning'}()->persistent()
                             ->body(new \Illuminate\Support\HtmlString('<pre style="font-size:.7rem;max-height:22rem;overflow:auto;white-space:pre-wrap">'.e(mb_substr($json, 0, 6000)).'</pre>'))->send();
                     }),
                 Tables\Actions\Action::make('mcsPrices')->label(__('Sync prices now'))->icon('heroicon-o-arrow-path')->color('gray')
@@ -241,6 +249,12 @@ class SupplierConnectionResource extends Resource
                 Tables\Actions\EditAction::make()
                     // secrets are never sent to the browser; an empty secret keeps the saved one
                     ->mutateRecordDataUsing(function (array $data, SupplierConnection $record): array {
+                        if ($record->provider === SupplierProvider::Mcs) {
+                            $data['settings']['months'] ??= range(1, 12);
+                            $data['settings']['concurrency'] ??= 2;
+                            $data['settings']['timeout'] ??= 90;
+                            $data['settings']['days_ahead'] ??= 365;
+                        }
                         $cred = (array) $record->credentials;
                         $data['credentials'] = $record->provider?->value === 'hotelbeds'
                             ? ['api_key' => $cred['api_key'] ?? '', 'secret' => '']

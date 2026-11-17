@@ -174,11 +174,11 @@ class McsClient
     }
 
     /** Package searches for many check-in days at once: key => rows (or the exception) */
-    public function packageSearchMany(array $queries, int $concurrency = 8): array
+    public function packageSearchMany(array $queries, int $concurrency = 2, int $timeout = 90): array
     {
         $sets = array_map(fn ($q) => self::params($q) + array_filter(['package' => $q['package'] ?? null]), $queries);
         $out = [];
-        foreach ($this->many('PackageSearch', $sets, $concurrency) as $k => $v) {
+        foreach ($this->many('PackageSearch', $sets, $concurrency, $timeout) as $k => $v) {
             $out[$k] = $v instanceof \Throwable ? $v : self::rows($v, ['PackagesResult', 'PackageResult', 'Packages', 'result']);
         }
 

@@ -505,30 +505,57 @@ class McsService
         // packages (tours and fixed-term villas): one search per country and day finds every package starting that day
         $codes = $tours->pluck('provider_code')->merge($termAccs->map(fn ($a) => self::ref($a->provider_code)[1]))->map(fn ($x) => (string) $x)->unique();
         $found = [];   // package => [checkin => [rows]]
+        $months = array_map('intval', array_filter((array) ($c->settings['months'] ?? []))) ?: range(1, 12);   // none chosen = all
         if ($codes->isNotEmpty()) {
-            $countries = SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('kind', 'package')
-                ->whereIn('code', $codes)->pluck('country')->filter()->unique()->values();
-            // every day of the period × country, 8 searches at the same time
+            // per package and day (the old server times out on whole-country searches), a few at the same time
+            $products = SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('kind', 'package')
+                ->whereIn('code', $codes)->get()->keyBy('code');
             $queries = [];
-            for ($d = 1; $d <= $days; $d++) {
-                foreach ($countries as $country) {
-                    $queries[] = ['checkin' => now()->addDays($d)->toDateString(), 'country' => $country, 'adults' => 2];
+            foreach ($codes as $code) {
+                $p = $products[$code] ?? null;
+                for ($d = 1; $d <= $days; $d++) {
+                    $day = now()->addDays($d);
+                    if (! in_array((int) $day->month, $months, true)) {
+                        continue;
+                    }
+                    $queries[] = ['checkin' => $day->toDateString(), 'package' => $code, 'adults' => 2] + (self::where($p) ?: ['country' => $p?->country]);
                 }
             }
-            foreach (array_chunk($queries, 40, true) as $i => $chunk) {
-                self::progress($c, __('dates :a of :b', ['a' => min(count($queries), ($i + 1) * 40), 'b' => count($queries)]));
-                foreach ($api->packageSearchMany($chunk) as $k => $rows) {
+            $concurrency = max(1, min(8, (int) ($c->settings['concurrency'] ?? 2)));
+            $timeout = max(20, min(300, (int) ($c->settings['timeout'] ?? 90)));
+            $failedInRow = 0;
+            $chunks = array_chunk($queries, $concurrency * 5, true);
+            foreach ($chunks as $i => $chunk) {
+                self::progress($c, __('searches :a of :b', ['a' => min(count($queries), ($i + 1) * $concurrency * 5), 'b' => count($queries)]));
+                foreach ($api->packageSearchMany($chunk, $concurrency, $timeout) as $k => $rows) {
                     $out['calls']++;
                     if ($rows instanceof Throwable) {
                         $out['errors'][$rows->getMessage()] = true;
+                        $failedInRow++;
 
                         continue;
                     }
+                    $failedInRow = 0;
                     foreach ($rows as $r) {
                         $out['results']++;
-                        $found[(string) ($r['id'] ?? '')][(string) ($r['checkin'] ?? $chunk[$k]['checkin'])][] = $r;
+                        $found[(string) ($r['id'] ?? $chunk[$k]['package'])][(string) ($r['checkin'] ?? $chunk[$k]['checkin'])][] = $r;
                     }
                 }
+                // the old server does not answer at all: stop instead of waiting for hours
+                if ($failedInRow >= 15) {
+                    $out['errors'][__('Stopped: the old system did not answer 15 searches in a row.')] = true;
+
+                    break;
+                }
+            }
+            // only results; nothing is marked as sold out when the searches failed
+            if ($failedInRow >= 15 || ($out['results'] === 0 && $out['errors'])) {
+                $out['errors'] = array_keys($out['errors']);
+                $c->refresh();
+                $c->forceFill(['settings' => array_merge((array) $c->settings, ['last_sync_result' => $out + ['at' => now()->toIso8601String(), 'days' => $days]])])->saveQuietly();
+                \Illuminate\Support\Facades\Cache::forget('mcs-sync-progress-'.$c->id);
+
+                return $out;
             }
             self::progress($c, __('saving terms and prices'));
         }
@@ -556,9 +583,10 @@ class McsService
                 $out['departures']++;
             }
             // future departures inside the window that the old system does not offer any more
-            $out['sold_out'] += TourDeparture::query()->where('tour_id', $t->id)->whereBetween('start_date', $window)
+            $ids = TourDeparture::query()->where('tour_id', $t->id)->whereBetween('start_date', $window)
                 ->whereNotIn('start_date', $seen ?: ['1900-01-01'])->where('status', '!=', DepartureStatus::Cancelled->value)
-                ->update(['status' => DepartureStatus::SoldOut->value]);
+                ->get(['id', 'start_date'])->filter(fn ($x) => in_array((int) $x->start_date->month, $months, true))->pluck('id');
+            $out['sold_out'] += $ids->isEmpty() ? 0 : TourDeparture::query()->whereIn('id', $ids)->update(['status' => DepartureStatus::SoldOut->value]);
         }
 
         // villas in fixed terms: the terms of the old system (check-in → check-out) and the price of every room for each term
@@ -622,7 +650,8 @@ class McsService
                 }
             }
             // our future terms inside the window that the old system does not offer any more: every room stop sale
-            $gone = StayTerm::query()->where('accommodation_id', $a->id)->whereBetween('date_from', $window)->whereNotIn('id', $seenTerms ?: [0])->pluck('id');
+            $gone = StayTerm::query()->where('accommodation_id', $a->id)->whereBetween('date_from', $window)->whereNotIn('id', $seenTerms ?: [0])
+                ->get(['id', 'date_from'])->filter(fn ($x) => in_array((int) $x->date_from->month, $months, true))->pluck('id');
             if ($gone->isNotEmpty()) {
                 $out['stop_sale'] += TermPrice::query()->whereIn('stay_term_id', $gone)->where('stop_sale', false)->update(['stop_sale' => true]);
             }

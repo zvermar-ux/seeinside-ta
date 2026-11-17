@@ -1986,5 +1986,12 @@
     "dates :a of :b": "датуми :a од :b",
     "saving terms and prices": "се зачувуваат термините и цените",
     "waiting to start (within a minute)…": "чека да почне (до една минута)…",
-    "started": "почна"
+    "started": "почна",
+    "Searches at the same time": "Пребарувања истовремено",
+    "The old server is slow: 1–2. More only if it answers quickly.": "Стариот сервер е бавен: 1–2. Повеќе само ако одговара брзо.",
+    "Wait for an answer (seconds)": "Чекај одговор (секунди)",
+    "Months with terms (searched)": "Месеци со термини (се пребаруваат)",
+    "Only these months are searched for package terms (fewer searches). Departures in other months are not changed.": "Термините се бараат само во овие месеци (помалку пребарувања). Термините во другите месеци не се менуваат.",
+    "searches :a of :b": "пребарувања :a од :b",
+    "Stopped: the old system did not answer 15 searches in a row.": "Запрено: старата апликација не одговори на 15 пребарувања по ред."
 }
