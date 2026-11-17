@@ -21,6 +21,10 @@ class McsClient
         if (! str_starts_with($url, 'https://') && ! str_starts_with($url, 'http://')) {
             $url = 'https://'.$url;
         }
+        // the old Apache maps /api/apib2b to apib2b.php only by content negotiation (406 otherwise): call the file itself
+        if (preg_match('#/apib2b$#', $url)) {
+            $url .= '.php';
+        }
 
         return $url;
     }
@@ -36,7 +40,7 @@ class McsClient
         $started = microtime(true);
         try {
             // the old server does not send its full certificate chain: optionally encrypted without checking it
-            $res = Http::asForm()->acceptJson()->timeout($timeout)->connectTimeout(10)
+            $res = Http::asForm()->accept('*/*')->timeout($timeout)->connectTimeout(10)
                 ->withOptions(['verify' => ($this->c->settings['verify_ssl'] ?? true) !== false])
                 ->post($this->base().'/'.$operation, ['username' => $user, 'password' => $pass] + $params);
         } catch (\Throwable $e) {
@@ -95,7 +99,11 @@ class McsClient
             return (array) $this->call('GetGeography');
         } catch (RuntimeException $e) {
             // the documentation writes it "GetGegraphy"
-            return (array) $this->call('GetGegraphy');
+            try {
+                return (array) $this->call('GetGegraphy');
+            } catch (RuntimeException) {
+                throw $e;
+            }
         }
     }
 
