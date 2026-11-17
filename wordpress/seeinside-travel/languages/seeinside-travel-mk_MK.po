@@ -3153,3 +3153,66 @@ msgstr "Се вчитува…"
 
 msgid "Hotels page: hotels from a booking system are not on yet. In the app, Booking systems (API) → Hotelbeds must be active with destinations switched on; then click \"Sync all\" and create the pages again."
 msgstr "Страница Хотели: хотелите од резервациски систем сè уште не се вклучени на сајтот. Во апликацијата, Резервациски системи (API) → Hotelbeds мора да е активен со вклучени дестинации; потоа кликни „Синхронизирај сè“ и пак „Креирај страници“."
+
+msgid "Header box"
+msgstr "Кутија на насловот"
+
+msgid "Background colour 1"
+msgstr "Боја на позадина 1"
+
+msgid "Background colour 2"
+msgstr "Боја на позадина 2"
+
+msgid "Gradient angle"
+msgstr "Агол на преливот"
+
+msgid "Darkening over the photo"
+msgstr "Затемнување над фотографијата"
+
+msgid "Colour with transparency, from the bottom up."
+msgstr "Боја со провидност, од долу нагоре."
+
+msgid "Even darkening (whole photo)"
+msgstr "Рамномерно затемнување (цела фотографија)"
+
+msgid "Inner space"
+msgstr "Внатрешен простор"
+
+msgid "Space below"
+msgstr "Простор под"
+
+msgid "Colour"
+msgstr "Боја"
+
+msgid "Badge, path and number of offers"
+msgstr "Ознака, патека и број на понуди"
+
+msgid "Show the badge (e.g. \"Accommodation type\")"
+msgstr "Прикажи ознака (на пр. „Тип на сместување“)"
+
+msgid "Badge background"
+msgstr "Позадина на ознаката"
+
+msgid "Badge text"
+msgstr "Текст на ознаката"
+
+msgid "Badge font"
+msgstr "Фонт на ознаката"
+
+msgid "Show the path (Greece › Lefkada)"
+msgstr "Прикажи патека (Грција › Лефкада)"
+
+msgid "Show the number of offers"
+msgstr "Прикажи број на понуди"
+
+msgid "Colour of the path and number"
+msgstr "Боја на патеката и бројот"
+
+msgid "Font of the path and number"
+msgstr "Фонт на патеката и бројот"
+
+msgid "Description under the header"
+msgstr "Опис под насловот"
+
+msgid "Show the description"
+msgstr "Прикажи опис"

@@ -472,7 +472,7 @@ body.sta-has-cta .sta-chat { bottom: 92px; }
 /* ---------- hotel finder: filters on the left ---------- */
 .sta-finder { margin: 0 0 2.5rem; }
 .sta-finder-wrap { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 28px; align-items: start; }
-.sta-finder-side { position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow: auto; background: #fff; border: 1px solid var(--sta-line); border-radius: var(--sta-radius); padding: 4px 18px 18px; scrollbar-width: thin; }
+.sta-finder-side { position: static !important; max-height: none !important; overflow: visible !important; background: #fff; border: 1px solid var(--sta-line); border-radius: var(--sta-radius); padding: 4px 18px 18px; scrollbar-width: thin; }
 .sta-ff { padding: 14px 0; border-bottom: 1px solid var(--sta-line); }
 .sta-ff h4 { margin: 0 0 .55rem; font-size: .95rem; font-weight: 700; display: flex; justify-content: space-between; gap: .5rem; }
 .sta-ff h4 output { color: var(--sta-primary); }
@@ -696,8 +696,10 @@ input.sta-sb-q { color: var(--sta-primary) !important; font-size: 1.02rem !impor
 .sta-sbox button:focus:not(:focus-visible) { outline: none !important; }
 
 /* ---------- destination / place / group / type pages ---------- */
-.sta-term-head { position: relative; display: flex; align-items: flex-end; min-height: var(--th-h, 340px); margin: 0 0 1.5rem; padding: 2rem clamp(1rem, 4vw, 3rem); border-radius: var(--sta-radius); background: linear-gradient(135deg, var(--sta-primary), #1e2a4a) center / cover; color: #fff; overflow: hidden; isolation: isolate; }
-.sta-term-head.has-img::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(15, 23, 42, .05) 30%, rgba(15, 23, 42, .72)); }
+.sta-term-head { position: relative; display: flex; align-items: flex-end; min-height: var(--th-h, 340px); margin: 0 0 1.5rem; padding: 2rem clamp(1rem, 4vw, 3rem); border-radius: var(--sta-radius); background: linear-gradient(var(--th-angle, 135deg), var(--th-c1, var(--sta-primary)), var(--th-c2, #1e2a4a)) center / cover; color: #fff; overflow: hidden; isolation: isolate; }
+.sta-term-head.has-img { background-size: cover; background-position: center; }
+.sta-term-head.has-img::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--th-overlay, linear-gradient(180deg, rgba(15, 23, 42, .05) 30%, rgba(15, 23, 42, .72))); }
+.sta-term-head.has-img::after { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--th-overlay-full, transparent); }
 .sta-term-head-in { max-width: 900px; }
 .sta-term-kind { display: inline-block; padding: .2rem .7rem; border-radius: 999px; background: rgba(255, 255, 255, .2); backdrop-filter: blur(4px); font-size: .78rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
 .sta-term-crumbs { margin-top: .7rem; font-size: .95rem; opacity: .95; }
@@ -755,7 +757,7 @@ input.sta-sb-q { color: var(--sta-primary) !important; font-size: 1.02rem !impor
 .sta-ht-tools select { padding: .4rem .6rem; border: 1px solid var(--sta-line); border-radius: 8px; font: inherit; }
 button.sta-ht-filters-btn { display: none; padding: .45rem 1rem !important; border: 1px solid var(--sta-line) !important; border-radius: 999px !important; background: #fff !important; color: var(--sta-ink) !important; font: inherit !important; font-weight: 600 !important; cursor: pointer; min-height: 0 !important; }
 .sta-ht-wrap { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; }
-.sta-ht-side { position: sticky; top: 90px; background: #fff; border: 1px solid var(--sta-line); border-radius: var(--sta-radius); padding: 4px 16px 14px; }
+.sta-ht-side { position: static; max-height: none; overflow: visible; background: #fff; border: 1px solid var(--sta-line); border-radius: var(--sta-radius); padding: 4px 16px 14px; }
 .sta-ht-side input[type=search] { width: 100%; padding: .5rem .6rem; border: 1px solid var(--sta-line); border-radius: 8px; font: inherit; }
 button.sta-ht-close-side { display: none; }
 .sta-ht-list { display: grid; gap: 16px; }

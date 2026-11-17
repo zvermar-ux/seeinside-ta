@@ -3,6 +3,8 @@
 defined('ABSPATH') || exit;
 
 use Elementor\Controls_Manager;
+use Elementor\Group_Control_Text_Shadow;
+use Elementor\Group_Control_Typography;
 use Elementor\Widget_Base;
 
 /** Elementor widgets – each one shows a part of the synced data (works in Theme Builder templates and pages) */
@@ -281,7 +283,11 @@ abstract class STA_Simple_Widget extends STA_Elementor_Widget
         $this->start_controls_section('style', ['label' => __('Colours', 'seeinside-travel'), 'tab' => Controls_Manager::TAB_STYLE]);
         $this->add_control('primary', ['label' => __('Main colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => ['{{WRAPPER}} .sta' => '--sta-primary: {{VALUE}}']]);
         $this->end_controls_section();
+        $this->style_controls();
     }
+
+    /** More design settings of a widget (Style tab) */
+    protected function style_controls(): void {}
 
     protected function render(): void
     {
@@ -457,7 +463,63 @@ class STA_Widget_Term_Header extends STA_Simple_Widget
         $this->add_control('preview_tax', ['label' => __('Preview in the editor with', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'sta_destination', 'options' => sta_term_page_taxonomies()]);
         $this->add_control('height', ['label' => __('Height', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => 340]);
     }
-    protected function html(array $s): string { return STA_Term_Page::header(['preview_tax' => $s['preview_tax'] ?? '', 'height' => $s['height'] ?? 340]); }
+    protected function html(array $s): string { return STA_Term_Page::header(['preview_tax' => $s['preview_tax'] ?? '', 'height' => $s['height'] ?? 340, 'kind' => ($s['show_kind'] ?? 'yes') === 'yes' ? '1' : '', 'crumbs' => ($s['show_crumbs'] ?? 'yes') === 'yes' ? '1' : '', 'count' => ($s['show_count'] ?? 'yes') === 'yes' ? '1' : '', 'desc' => ($s['show_desc'] ?? 'yes') === 'yes' ? '1' : '']); }
+
+    protected function style_controls(): void
+    {
+        $w = '{{WRAPPER}} .sta-term-head';
+        // the box: size, background, photo darkening, position of the text
+        $this->start_controls_section('th_box', ['label' => __('Header box', 'seeinside-travel'), 'tab' => Controls_Manager::TAB_STYLE]);
+        $this->add_responsive_control('th_height', ['label' => __('Height', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'size_units' => ['px', 'vh'], 'range' => ['px' => ['min' => 120, 'max' => 900], 'vh' => ['min' => 10, 'max' => 100]],
+            'selectors' => [$w => 'min-height: {{SIZE}}{{UNIT}} !important;']]);
+        $this->add_control('th_c1', ['label' => __('Background colour 1', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => [$w => '--th-c1: {{VALUE}};']]);
+        $this->add_control('th_c2', ['label' => __('Background colour 2', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => [$w => '--th-c2: {{VALUE}};']]);
+        $this->add_control('th_angle', ['label' => __('Gradient angle', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'size_units' => ['deg'], 'range' => ['deg' => ['min' => 0, 'max' => 360]], 'selectors' => [$w => '--th-angle: {{SIZE}}deg;']]);
+        $this->add_control('th_overlay', ['label' => __('Darkening over the photo', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'description' => __('Colour with transparency, from the bottom up.', 'seeinside-travel'),
+            'selectors' => [$w => '--th-overlay: linear-gradient(180deg, transparent 20%, {{VALUE}});']]);
+        $this->add_control('th_overlay_full', ['label' => __('Even darkening (whole photo)', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => [$w => '--th-overlay-full: {{VALUE}};']]);
+        $this->add_responsive_control('th_align', ['label' => __('Text alignment', 'seeinside-travel'), 'type' => Controls_Manager::CHOOSE, 'options' => [
+            'left' => ['title' => __('Left', 'seeinside-travel'), 'icon' => 'eicon-text-align-left'], 'center' => ['title' => __('Centre', 'seeinside-travel'), 'icon' => 'eicon-text-align-center'], 'right' => ['title' => __('Right', 'seeinside-travel'), 'icon' => 'eicon-text-align-right']],
+            'selectors_dictionary' => ['left' => 'justify-content:flex-start;text-align:left;', 'center' => 'justify-content:center;text-align:center;', 'right' => 'justify-content:flex-end;text-align:right;'],
+            'selectors' => [$w => '{{VALUE}}']]);
+        $this->add_responsive_control('th_valign', ['label' => __('Vertical position', 'seeinside-travel'), 'type' => Controls_Manager::CHOOSE, 'options' => [
+            'flex-start' => ['title' => __('Top', 'seeinside-travel'), 'icon' => 'eicon-v-align-top'], 'center' => ['title' => __('Middle', 'seeinside-travel'), 'icon' => 'eicon-v-align-middle'], 'flex-end' => ['title' => __('Bottom', 'seeinside-travel'), 'icon' => 'eicon-v-align-bottom']],
+            'selectors' => [$w => 'align-items: {{VALUE}};']]);
+        $this->add_responsive_control('th_width', ['label' => __('Text width', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'size_units' => ['px', '%'], 'range' => ['px' => ['min' => 200, 'max' => 1400], '%' => ['min' => 20, 'max' => 100]],
+            'selectors' => ['{{WRAPPER}} .sta-term-head-in' => 'max-width: {{SIZE}}{{UNIT}};']]);
+        $this->add_responsive_control('th_padding', ['label' => __('Inner space', 'seeinside-travel'), 'type' => Controls_Manager::DIMENSIONS, 'size_units' => ['px', 'em', '%'],
+            'selectors' => [$w => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};']]);
+        $this->add_responsive_control('th_radius', ['label' => __('Corner radius', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'range' => ['px' => ['min' => 0, 'max' => 60]], 'selectors' => [$w => 'border-radius: {{SIZE}}px;']]);
+        $this->add_responsive_control('th_margin', ['label' => __('Space below', 'seeinside-travel'), 'type' => Controls_Manager::SLIDER, 'range' => ['px' => ['min' => 0, 'max' => 120]], 'selectors' => [$w => 'margin-bottom: {{SIZE}}px;']]);
+        $this->end_controls_section();
+
+        // the title
+        $this->start_controls_section('th_title', ['label' => __('Title', 'seeinside-travel'), 'tab' => Controls_Manager::TAB_STYLE]);
+        $this->add_control('th_title_color', ['label' => __('Colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'selectors' => ['{{WRAPPER}} .sta-term-head h1' => 'color: {{VALUE}} !important;']]);
+        $this->add_group_control(Group_Control_Typography::get_type(), ['name' => 'th_title_typo', 'selector' => '{{WRAPPER}} .sta-term-head h1']);
+        $this->add_group_control(Group_Control_Text_Shadow::get_type(), ['name' => 'th_title_shadow', 'selector' => '{{WRAPPER}} .sta-term-head h1']);
+        $this->end_controls_section();
+
+        // the badge (type: destination, place…), the path and the number of offers
+        $this->start_controls_section('th_kind', ['label' => __('Badge, path and number of offers', 'seeinside-travel'), 'tab' => Controls_Manager::TAB_STYLE]);
+        $this->add_control('show_kind', ['label' => __('Show the badge (e.g. "Accommodation type")', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes']);
+        $this->add_control('th_kind_bg', ['label' => __('Badge background', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'condition' => ['show_kind' => 'yes'], 'selectors' => ['{{WRAPPER}} .sta-term-kind' => 'background: {{VALUE}};']]);
+        $this->add_control('th_kind_color', ['label' => __('Badge text', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'condition' => ['show_kind' => 'yes'], 'selectors' => ['{{WRAPPER}} .sta-term-kind' => 'color: {{VALUE}};']]);
+        $this->add_group_control(Group_Control_Typography::get_type(), ['name' => 'th_kind_typo', 'label' => __('Badge font', 'seeinside-travel'), 'condition' => ['show_kind' => 'yes'], 'selector' => '{{WRAPPER}} .sta-term-kind']);
+        $this->add_control('show_crumbs', ['label' => __('Show the path (Greece › Lefkada)', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'separator' => 'before']);
+        $this->add_control('show_count', ['label' => __('Show the number of offers', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes']);
+        $this->add_control('th_meta_color', ['label' => __('Colour of the path and number', 'seeinside-travel'), 'type' => Controls_Manager::COLOR,
+            'selectors' => ['{{WRAPPER}} .sta-term-count, {{WRAPPER}} .sta-term-crumbs, {{WRAPPER}} .sta-term-crumbs a' => 'color: {{VALUE}} !important;']]);
+        $this->add_group_control(Group_Control_Typography::get_type(), ['name' => 'th_meta_typo', 'label' => __('Font of the path and number', 'seeinside-travel'), 'selector' => '{{WRAPPER}} .sta-term-count, {{WRAPPER}} .sta-term-crumbs']);
+        $this->end_controls_section();
+
+        // the description under the header
+        $this->start_controls_section('th_desc', ['label' => __('Description under the header', 'seeinside-travel'), 'tab' => Controls_Manager::TAB_STYLE]);
+        $this->add_control('show_desc', ['label' => __('Show the description', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes']);
+        $this->add_control('th_desc_color', ['label' => __('Colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'condition' => ['show_desc' => 'yes'], 'selectors' => ['{{WRAPPER}} .sta-term-desc' => 'color: {{VALUE}};']]);
+        $this->add_group_control(Group_Control_Typography::get_type(), ['name' => 'th_desc_typo', 'condition' => ['show_desc' => 'yes'], 'selector' => '{{WRAPPER}} .sta-term-desc']);
+        $this->end_controls_section();
+    }
 }
 
 class STA_Widget_Term_Offers extends STA_Simple_Widget

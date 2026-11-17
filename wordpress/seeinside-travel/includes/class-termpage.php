@@ -46,7 +46,7 @@ class STA_Term_Page
 
     public static function header($atts = []): string
     {
-        $a = shortcode_atts(['taxonomy' => '', 'term' => '', 'preview_tax' => '', 'height' => 340], $atts, 'sta_term_header');
+        $a = shortcode_atts(['taxonomy' => '', 'term' => '', 'preview_tax' => '', 'height' => 340, 'kind' => '1', 'crumbs' => '1', 'count' => '1', 'desc' => '1'], $atts, 'sta_term_header');
         $t = self::term($a);
         if (! $t) {
             return '';
@@ -69,12 +69,12 @@ class STA_Term_Page
 
         return '<header class="sta sta-term-head'.($img ? ' has-img' : '').'" style="--th-h:'.max(160, (int) $a['height']).'px'.($img ? ';background-image:url(\''.esc_url($img).'\')' : '').'">'
             .'<div class="sta-term-head-in">'
-            .'<span class="sta-term-kind">'.esc_html($tax ? $tax->labels->singular_name : '').'</span>'
-            .($crumbs ? '<nav class="sta-term-crumbs">'.implode(' › ', $crumbs).'</nav>' : '')
+            .($a['kind'] ? '<span class="sta-term-kind">'.esc_html($tax ? $tax->labels->singular_name : '').'</span>' : '')
+            .($crumbs && $a['crumbs'] ? '<nav class="sta-term-crumbs">'.implode(' › ', $crumbs).'</nav>' : '')
             .'<h1>'.esc_html(self::name($t)).'</h1>'
-            .'<span class="sta-term-count">'.esc_html(sprintf(_n('%d offer', '%d offers', self::count($t), 'seeinside-travel'), self::count($t))).'</span>'
+            .($a['count'] ? '<span class="sta-term-count">'.esc_html(sprintf(_n('%d offer', '%d offers', self::count($t), 'seeinside-travel'), self::count($t))).'</span>' : '')
             .'</div></header>'
-            .($desc ? '<div class="sta sta-term-desc sta-prose">'.wp_kses_post($desc).'</div>' : '');
+            .($desc && $a['desc'] ? '<div class="sta sta-term-desc sta-prose">'.wp_kses_post($desc).'</div>' : '');
     }
 
     /** Offers on this term and its children (the term count does not include children) */
