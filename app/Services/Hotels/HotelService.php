@@ -158,7 +158,7 @@ class HotelService
             'destination' => $q['destination'] ?? null, 'hotel' => $q['hotel'] ?? null];
         $searchId = substr(sha1($agencyId.'|'.json_encode($norm)), 0, 20);
 
-        $result = Cache::remember('hotels:s:'.$searchId, 900, function () use ($agencyId, $norm, $nights) {
+        $result = Cache::get('hotels:s:'.$searchId) ?: (function () use ($agencyId, $norm, $nights, $searchId) {
             $hotels = [];
             $errors = [];
             foreach (self::connections($agencyId) as $c) {
@@ -209,8 +209,12 @@ class HotelService
                 }
             }
 
-            return ['hotels' => $hotels, 'errors' => $errors, 'nights' => $nights];
-        });
+            $result = ['hotels' => $hotels, 'errors' => $errors, 'nights' => $nights];
+            // prices stay 15 minutes; an empty answer or an error only 2 minutes
+            Cache::put('hotels:s:'.$searchId, $result, $hotels ? 900 : 120);
+
+            return $result;
+        })();
 
         $locals = SupplierHotel::withoutGlobalScopes()->whereIn('id', array_filter(array_column($result['hotels'], 'local_id')))->get()->keyBy('id');
         $list = [];

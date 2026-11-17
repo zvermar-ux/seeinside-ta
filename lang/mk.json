@@ -1899,5 +1899,12 @@
     "Enter the Hotelbeds \"api_key\" and \"secret\" in the connection (Access keys).": "Внесете ги Hotelbeds „API key“ и „Secret“ во врската.",
     "Access refused – check the API key / secret and that the keys belong to this environment (test or live).": "Пристапот е одбиен – проверете го API клучот / тајната и дали клучевите се за оваа околина (тест или продукција).",
     "Hotelbeds request limit reached (test keys allow few searches per day). Try again later.": "Достигнат е лимитот на барања кон Hotelbeds (тест клучевите дозволуваат малку пребарувања дневно). Обидете се подоцна.",
-    "Choose an apartment. Rooms are added in Apartments & villas → Rooms & price list.": "Избери апартман. Собите се додаваат во Апартмани → Соби и ценовник."
+    "Choose an apartment. Rooms are added in Apartments & villas → Rooms & price list.": "Избери апартман. Собите се додаваат во Апартмани → Соби и ценовник.",
+    "Trial search": "Пробно пребарување",
+    "Search": "Барај",
+    "Hotel code (optional)": "Код на хотел (по желба)",
+    "Search failed": "Пребарувањето не успеа",
+    "for the client": "за клиентот",
+    ":n hotels with free rooms": ":n хотели со слободни соби",
+    "The booking system has no free rooms for this search. Try other dates, fewer nights or another destination.": "Резервацискиот систем нема слободни соби за ова пребарување. Пробај други датуми, помалку ноќевања или друга дестинација."
 }

@@ -107,6 +107,41 @@ class SupplierConnectionResource extends Resource
                         $res = HotelService::driver($r)->test($r);
                         Notification::make()->title($res['ok'] ? __('Connection works') : __('Connection failed'))->body($res['message'])->{$res['ok'] ? 'success' : 'danger'}()->persistent()->send();
                     }),
+                // what the booking system answers for one destination and dates (no cache, no website filters)
+                Tables\Actions\Action::make('trySearch')->label(__('Trial search'))->icon('heroicon-o-magnifying-glass')->color('gray')
+                    ->visible(fn (SupplierConnection $r) => HotelService::supports($r))
+                    ->modalSubmitActionLabel(__('Search'))
+                    ->form(fn (SupplierConnection $r) => [
+                        Forms\Components\Select::make('destination')->label(__('Destination'))->searchable()->required()
+                            ->options(fn () => \App\Models\SupplierDestination::query()->where('supplier_connection_id', $r->id)
+                                ->orderByDesc('is_active')->orderBy('name')->get()->mapWithKeys(fn ($d) => [$d->code => $d->name.' ('.$d->code.')'.($d->country_name ? ' – '.$d->country_name : '')])),
+                        Forms\Components\TextInput::make('hotel')->label(__('Hotel code (optional)'))->numeric(),
+                        Forms\Components\DatePicker::make('from')->label(__('Check-in'))->required()->native(false)->displayFormat('d.m.Y')->default(now()->addDays(30)),
+                        Forms\Components\TextInput::make('nights')->label(__('Nights'))->numeric()->minValue(1)->maxValue(30)->default(3)->required(),
+                        Forms\Components\TextInput::make('adults')->label(__('Adults'))->numeric()->minValue(1)->maxValue(8)->default(2)->required(),
+                    ])
+                    ->action(function (SupplierConnection $r, array $data) {
+                        $from = \Illuminate\Support\Carbon::parse($data['from']);
+                        $q = ['from' => $from->toDateString(), 'to' => $from->copy()->addDays((int) $data['nights'])->toDateString(), 'rooms' => [['adults' => (int) $data['adults'], 'children_ages' => []]]];
+                        $q += filled($data['hotel'] ?? null) ? ['hotels' => [(string) $data['hotel']]] : ['destination' => $data['destination']];
+                        try {
+                            $found = HotelService::driver($r)->search($r, $q);
+                        } catch (\Throwable $e) {
+                            Notification::make()->title(__('Search failed'))->body($e->getMessage())->danger()->persistent()->send();
+
+                            return;
+                        }
+                        $lines = collect($found)->take(8)->map(function ($h) use ($r) {
+                            $rates = collect($h['rooms'])->flatMap(fn ($x) => $x['rates']);
+                            $min = $rates->sortBy('net')->first();
+
+                            return '• '.$h['name'].' ('.$h['code'].')'.($min ? ' – '.__('net').' '.number_format($min['net'], 2).' '.$h['currency'].', '.__('for the client').' '.number_format(HotelService::sell($min, $r), 0).' '.$h['currency'] : '');
+                        })->implode("\n");
+                        Notification::make()
+                            ->title(__(':n hotels with free rooms', ['n' => count($found)]).' · '.$from->format('d.m.Y').' + '.(int) $data['nights'].' '.__('nights'))
+                            ->body($found ? new \Illuminate\Support\HtmlString(nl2br(e($lines))) : __('The booking system has no free rooms for this search. Try other dates, fewer nights or another destination.'))
+                            ->{$found ? 'success' : 'warning'}()->persistent()->send();
+                    }),
                 Tables\Actions\Action::make('destinations')->label(__('Import destinations'))->icon('heroicon-o-map')->color('gray')
                     ->visible(fn (SupplierConnection $r) => HotelService::supports($r))
                     ->form(fn (SupplierConnection $r) => [

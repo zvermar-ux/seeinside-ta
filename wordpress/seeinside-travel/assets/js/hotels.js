@@ -210,6 +210,8 @@
       if (dq) dq.value = name || '';
       if (hh) hh.value = id;
       if (hd) hd.value = '';
+      var hn = $('input[name="hn"]', form) || form.appendChild(Object.assign(document.createElement('input'), { type: 'hidden', name: 'hn' }));
+      hn.value = name || '';
       form.scrollIntoView({ behavior: 'smooth', block: 'center' });
       var from = $('[data-sb-from]', form);
       if (from && from.value) { (form.requestSubmit ? form.requestSubmit() : form.submit()); return; }
@@ -239,6 +241,9 @@
       api('hotels/hotel?id=' + encodeURIComponent(id) + '&' + qs(q) + (sid ? '&search_id=' + encodeURIComponent(sid) : '')).then(function (r) {
         if (!r.ok) { body.innerHTML = '<div class="sta-ht-empty is-error">' + K.errors(r.body) + '</div>'; return; }
         state.hotel = r.body.data; state.q = q; state.at = state.at || Date.now();
+        // the search above shows the hotel name, not its code
+        var f = $('[data-sb-hotels]', root), dq = f && $('[data-sb-q]', f);
+        if (dq && (dq.value === id || /^\d+-\d+$/.test(dq.value))) dq.value = state.hotel.name;
         renderHotel();
       });
     }
