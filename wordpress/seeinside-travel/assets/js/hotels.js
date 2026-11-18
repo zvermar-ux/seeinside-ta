@@ -46,9 +46,19 @@
       if (!q.from || !q.to || (!q.destination && !q.hotel)) { catalog(q); return; }
       loading(L.searching);
       api('hotels/search?' + qs(q)).then(function (r) {
-        if (!r.ok) { body.innerHTML = '<div class="sta-ht-empty is-error">' + K.errors(r.body) + '</div>'; return; }
+        if (!r.ok) {
+          state.res = { currency: 'EUR', hotels: [] }; state.list = []; state.q = q; state.lo = state.hi = 0; layout();
+          $('[data-hf-list]', body).innerHTML = '<div class="sta-ht-empty is-error">' + K.errors(r.body) + ' <button type="button" class="sta-btn sta-btn-sm" data-hf-clear>' + esc(L.showAll) + '</button></div>';
+          return;
+        }
         state.res = r.body.data; state.list = state.res.hotels || []; state.shown = perPage; state.q = q; state.at = Date.now();
-        if (!state.list.length) { body.innerHTML = '<div class="sta-ht-empty">' + esc(state.res.error || L.none) + '</div>'; return; }
+        if (!state.list.length) {
+          // nothing free: the filter column stays (other dates, another destination) + all hotels without dates
+          state.lo = state.hi = 0; layout(); list();
+          $('[data-hf-list]', body).innerHTML = '<div class="sta-ht-empty' + (state.res.error ? ' is-error' : '') + '">' + esc(state.res.error || L.none)
+            + ' <button type="button" class="sta-btn sta-btn-sm" data-hf-clear>' + esc(L.showAll) + '</button></div>';
+          return;
+        }
         // a single hotel searched by name → straight to its page
         if (q.hotel && state.list.length === 1) { open(state.list[0].id); return; }
         var prices = state.list.map(function (h) { return h.price; });
@@ -372,6 +382,7 @@
       }
     }
     body.addEventListener('click', function (e) {
+      if (e.target.closest('[data-hf-clear]')) { location.href = location.pathname; return; }
       var go = e.target.closest('[data-hd-go]');
       if (go) { goDates(go.closest('[data-hd]')); return; }
       // cards: open the hotel page
