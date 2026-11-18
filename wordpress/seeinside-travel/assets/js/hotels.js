@@ -188,7 +188,8 @@
         if (!r.ok) { box.innerHTML = '<div class="sta-ht-empty is-error">' + K.errors(r.body) + '</div>'; more.innerHTML = ''; return; }
         var d = r.body.data; cat.items = cat.items.concat(d.hotels || []); cat.pages = d.pages; cat.total = d.total;
         $('[data-hc-count]', body).textContent = plural(d.total, L.hotel1, L.hotels);
-        box.innerHTML = cat.items.length ? cat.items.map(catCard).join('') : '<div class="sta-ht-empty">' + esc(L.noneFilter) + '</div>';
+        box.innerHTML = cat.items.length ? cat.items.map(catCard).join('') : '<div class="sta-ht-empty">' + esc(L.noneFilter)
+          + (cat.dest || cat.name || cat.stars.length ? ' <button type="button" class="sta-btn sta-btn-sm" data-hc-all>' + esc(L.showAll) + '</button>' : '') + '</div>';
         more.innerHTML = cat.page < cat.pages ? '<button type="button" class="sta-btn sta-btn-ghost" data-hc-more-btn>' + esc(L.more) + ' (' + (cat.total - cat.items.length) + ')</button>' : '';
       });
     }
@@ -218,6 +219,18 @@
       setTimeout(function () { var b = $('.sta-sb-dates [data-sb-open]', form); if (b) b.click(); }, 350);
     }
     body.addEventListener('click', function (e) {
+      // no hotel for this destination / filters: all hotels again
+      if (e.target.closest('[data-hc-all]')) {
+        var sel = $('[data-hc-dest]', body), nm = $('[data-hc-name]', body);
+        if (sel) sel.value = '';
+        if (nm) nm.value = '';
+        $$('[data-hc-star]:checked', body).forEach(function (c) { c.checked = false; });
+        var f = $('[data-sb-hotels]', root);
+        if (f) { $$('[data-sb-h]', f).forEach(function (h) { h.value = ''; }); var dq = $('[data-sb-q]', f); if (dq) dq.value = ''; }
+        if (history.replaceState) { var u = new URL(location.href); u.searchParams.delete('destination'); u.searchParams.delete('hotel'); history.replaceState(null, '', u); }
+        catFilter();
+        return;
+      }
       var m = e.target.closest('[data-hc-more-btn]');
       if (m) { cat.page++; catLoad(); return; }
       var d = e.target.closest('[data-hc-dates]');

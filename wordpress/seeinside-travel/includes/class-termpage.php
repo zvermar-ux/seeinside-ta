@@ -95,6 +95,27 @@ class STA_Term_Page
         ];
     }
 
+    /** Photo of the newest offer of a kind (for a listing page without its own photo) */
+    protected static function sample_image(string $type): string
+    {
+        $pt = STA_Schema::TYPES[$type] ?? null;
+        if (! $pt) {
+            return '';
+        }
+        $ids = get_posts(['post_type' => $pt, 'post_status' => 'publish', 'numberposts' => 1, 'fields' => 'ids', 'meta_query' => [['key' => '_thumbnail_id', 'compare' => 'EXISTS']]]);
+        if ($ids) {
+            return (string) get_the_post_thumbnail_url($ids[0], 'full');
+        }
+        foreach (get_posts(['post_type' => $pt, 'post_status' => 'publish', 'numberposts' => 5, 'fields' => 'ids']) as $id) {
+            $it = STA_Items::from_post($id);
+            if (! empty($it['image'])) {
+                return (string) $it['image'];
+            }
+        }
+
+        return '';
+    }
+
     /** Header of a listing page: same look as the destination / type pages */
     protected static function page_header(array $a): string
     {
@@ -102,6 +123,10 @@ class STA_Term_Page
         $type = $a['page_type'];
         $pid = (int) get_queried_object_id();
         $img = $a['image_mode'] === 'always' && $a['image'] ? $a['image'] : ((string) get_the_post_thumbnail_url($pid ?: null, 'full') ?: $a['image']);
+        // no photo chosen: the photo of a hotel (booking system) or of the newest offer of this kind
+        if (! $img) {
+            $img = $type === 'hotels' ? (string) ((get_option('sta_meta', [])['hotels']['cover'] ?? '') ?: '') : self::sample_image($type);
+        }
         $title = $a['title'] ?: ($pid ? get_the_title($pid) : (self::page_kinds()[$type] ?? ''));
         if ($type === 'hotels') {
             $n = array_sum(array_map(fn ($d) => (int) ($d['hotels'] ?? 0), STA_Hotels::destinations()));

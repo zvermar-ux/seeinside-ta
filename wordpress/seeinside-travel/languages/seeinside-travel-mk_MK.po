@@ -3400,3 +3400,6 @@ msgstr "Дизајнот на страницата „Тип на сместув
 
 msgid "All lists then use one template: \"Page: lists – SeeInside\" (Templates → Theme Builder → Archive). Changes there show on every destination, group and type at once; click here again to copy them to the 4 pages. A page photo: the featured image of the page, or \"Background photo\" in its header. Other pages are not changed."
 msgstr "Тогаш сите листи користат еден темплејт: „Страница: листи – SeeInside“ (Templates → Theme Builder → Archive). Промените таму се гледаат веднаш на секоја дестинација, група и тип; кликни тука повторно за да ги копираш на 4-те страници. Слика на страница: истакнатата слика (Featured image) на страницата или „Слика во позадина“ во нејзиниот наслов. Другите страници не се менуваат."
+
+msgid "Show all hotels"
+msgstr "Прикажи ги сите хотели"

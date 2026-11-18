@@ -72,12 +72,33 @@ class HotelService
     /** Destinations offered in the website search (chosen in the app) */
     public static function destinations(int $agencyId): array
     {
-        return Cache::remember('hotels:dest:'.$agencyId, 600, fn () => SupplierDestination::withoutGlobalScopes()
-            ->where('agency_id', $agencyId)->where('is_active', true)
-            ->whereIn('supplier_connection_id', self::connections($agencyId)->pluck('id'))
-            ->orderBy('country_name')->orderBy('name')->get()
-            ->map(fn ($d) => ['id' => $d->supplier_connection_id.':'.$d->code, 'name' => $d->name, 'country' => $d->country_name ?: $d->country_code, 'hotels' => $d->hotels_count])
-            ->values()->all());
+        return Cache::remember('hotels:dest:'.$agencyId, 600, function () use ($agencyId) {
+            $conns = self::connections($agencyId)->pluck('id');
+            // hotels really shown on the website (imported and not hidden) per destination
+            $counts = SupplierHotel::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->whereIn('supplier_connection_id', $conns)
+                ->selectRaw('supplier_connection_id, destination_code, count(*) as n')->groupBy('supplier_connection_id', 'destination_code')->get()
+                ->mapWithKeys(fn ($r) => [$r->supplier_connection_id.':'.$r->destination_code => (int) $r->n]);
+
+            return SupplierDestination::withoutGlobalScopes()
+                ->where('agency_id', $agencyId)->where('is_active', true)->whereIn('supplier_connection_id', $conns)
+                ->orderBy('country_name')->orderBy('name')->get()
+                ->map(fn ($d) => ['id' => $d->supplier_connection_id.':'.$d->code, 'name' => $d->name, 'country' => $d->country_name ?: $d->country_code, 'hotels' => $counts[$d->supplier_connection_id.':'.$d->code] ?? 0])
+                ->filter(fn ($d) => $d['hotels'] > 0)   // destinations without imported hotels are not offered
+                ->values()->all();
+        });
+    }
+
+    /** A photo for the header of the hotels page: the best featured (or top) hotel */
+    public static function cover(int $agencyId): ?string
+    {
+        return Cache::remember('hotels:cover:'.$agencyId, 3600, function () use ($agencyId) {
+            $h = SupplierHotel::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)
+                ->whereIn('supplier_connection_id', self::connections($agencyId)->pluck('id'))->whereNotNull('images')
+                ->orderByDesc('is_featured')->orderByDesc('stars')->orderByDesc('ranking')->first();
+            $path = $h?->images[0]['path'] ?? null;
+
+            return $path ? HotelbedsDriver::imageUrl($path, 'xl') : null;
+        });
     }
 
     /** Hotels by name for the search field */

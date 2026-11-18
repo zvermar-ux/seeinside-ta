@@ -747,6 +747,8 @@ input.sta-sb-q { color: var(--sta-primary) !important; font-size: 1.02rem !impor
 .sta-spin { display: inline-block; width: 18px; height: 18px; border: 2.5px solid color-mix(in srgb, var(--sta-primary) 25%, transparent); border-top-color: var(--sta-primary); border-radius: 50%; animation: sta-spin .8s linear infinite; vertical-align: -3px; margin-right: .5rem; }
 @keyframes sta-spin { to { transform: rotate(360deg); } }
 .sta-hotels { max-width: 1240px; margin: 0 auto; }
+/* inside the list design (header + list) the hotels use the full width like the other lists */
+.sta-term-sec .sta-hotels { max-width: none; }
 .sta-hotels-search { margin: 0 0 1.6rem; }
 .sta-sbox--compact .sta-sbox-form { box-shadow: 0 4px 18px rgba(15, 23, 42, .1); border: 1px solid var(--sta-line); border-radius: 10px; --sb-h: 76px; }
 .sta-sbox--compact .sta-sb-go { min-width: 160px; }

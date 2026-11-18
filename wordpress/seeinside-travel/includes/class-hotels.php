@@ -51,6 +51,7 @@ class STA_Hotels
             'destinations' => self::destinations(),
             'i18n' => [
                 'allDest' => __('All destinations', 'seeinside-travel'),
+                'showAll' => __('Show all hotels', 'seeinside-travel'),
                 'destination' => __('Destination', 'seeinside-travel'),
                 'catalogNote' => __('choose dates to see prices', 'seeinside-travel'),
                 'pricesFor' => __('Prices for your dates', 'seeinside-travel'),
