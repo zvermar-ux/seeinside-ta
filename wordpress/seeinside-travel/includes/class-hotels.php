@@ -55,9 +55,16 @@ class STA_Hotels
             // the apartment card (same design) with placeholders – the hotels are filled in by hotels.js
             'card' => self::card_prototype(),
             'priceToken' => sta_money(98765, 'EUR'),
+            // names of the filters of the results (the same as the app gives without dates)
+            'types' => ['hotel' => ['mk' => 'Хотел', 'en' => 'Hotel'], 'aparthotel' => ['mk' => 'Апартхотел', 'en' => 'Aparthotel'], 'apartment' => ['mk' => 'Апартмани', 'en' => 'Apartments'], 'resort' => ['mk' => 'Ресорт', 'en' => 'Resort'], 'villa' => ['mk' => 'Вила', 'en' => 'Villa'], 'hostel' => ['mk' => 'Хостел', 'en' => 'Hostel'], 'guesthouse' => ['mk' => 'Пансион / B&B', 'en' => 'Guest house / B&B'], 'other' => ['mk' => 'Друго', 'en' => 'Other']],
+            'features' => ['pool' => ['mk' => 'Базен', 'en' => 'Swimming pool'], 'beach' => ['mk' => 'Плажа', 'en' => 'Beach'], 'wifi' => ['mk' => 'Wi-Fi', 'en' => 'Wi-Fi'], 'parking' => ['mk' => 'Паркинг', 'en' => 'Parking'], 'ac' => ['mk' => 'Клима уред', 'en' => 'Air conditioning'], 'restaurant' => ['mk' => 'Ресторан', 'en' => 'Restaurant'], 'spa' => ['mk' => 'Спа и сауна', 'en' => 'Spa & sauna'], 'gym' => ['mk' => 'Фитнес', 'en' => 'Gym'], 'kids' => ['mk' => 'За деца', 'en' => 'For children'], 'pets' => ['mk' => 'Дозволени миленици', 'en' => 'Pets allowed'], 'access' => ['mk' => 'Пристап за лица со попреченост', 'en' => 'Accessible']],
             'i18n' => [
                 'allDest' => __('All destinations', 'seeinside-travel'),
                 'showAll' => __('Show all hotels', 'seeinside-travel'),
+                'allCountries' => __('All countries', 'seeinside-travel'),
+                'allZones' => __('All areas', 'seeinside-travel'),
+                'typeH' => __('Type of accommodation', 'seeinside-travel'),
+                'afterDates' => __('Prices, free rooms and free cancellation: choose your dates above.', 'seeinside-travel'),
                 'yourDates' => __('Your dates', 'seeinside-travel'),
                 'adultsL' => __('Adults', 'seeinside-travel'),
                 'childrenL' => __('Children', 'seeinside-travel'),
@@ -215,7 +222,7 @@ class STA_Hotels
     {
         $q = [];
         foreach ($r->get_query_params() as $k => $v) {
-            if (in_array($k, ['q', 'from', 'to', 'destination', 'hotel', 'room_count', 'adults', 'ages', 'search_id', 'id', 'stars', 'page', 'per_page'], true)) {
+            if (in_array($k, ['q', 'from', 'to', 'destination', 'hotel', 'room_count', 'adults', 'ages', 'search_id', 'id', 'stars', 'page', 'per_page', 'country', 'zone', 'type', 'board', 'feature'], true)) {
                 $q[$k] = sanitize_text_field((string) $v);
             }
         }

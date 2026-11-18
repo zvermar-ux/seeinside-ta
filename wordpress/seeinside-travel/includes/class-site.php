@@ -310,6 +310,7 @@ class STA_Site
         // hotels from a booking system: "Hotels" → its destinations (the search asks for the dates)
         $api = STA_Hotels::enabled();
         if ($api && $page('hoteli')) {
+            // Hotels → country (only its hotels) → region (destination) → area (zone)
             $hm = $add(__('Hotels', 'seeinside-travel'), $link('hoteli', ''));
             $byCountry = [];
             foreach (STA_Hotels::destinations() as $hd) {
@@ -317,9 +318,17 @@ class STA_Site
             }
             $hbase = get_permalink($page('hoteli'));
             foreach ($byCountry as $country => $list) {
-                $parent = count($byCountry) > 1 && $country !== '' ? $add($country, ['menu-item-type' => 'custom', 'menu-item-url' => $hbase], $hm) : $hm;
+                $code = (string) ($list[0]['country_code'] ?? '');
+                $parent = count($byCountry) > 1 && $country !== '' ? $add($country, ['menu-item-type' => 'custom', 'menu-item-url' => $code ? add_query_arg('country', $code, $hbase) : $hbase], $hm) : $hm;
                 foreach (array_slice($list, 0, 30) as $hd) {
-                    $add($hd['name'], ['menu-item-type' => 'custom', 'menu-item-url' => add_query_arg('destination', $hd['id'], $hbase)], $parent);
+                    $durl = add_query_arg('destination', $hd['id'], $hbase);
+                    $dm = $add($hd['name'], ['menu-item-type' => 'custom', 'menu-item-url' => $durl], $parent);
+                    $zones = (array) ($hd['zones'] ?? []);
+                    if (count($zones) > 1) {
+                        foreach (array_slice($zones, 0, 12) as $z) {
+                            $add($z['name'], ['menu-item-type' => 'custom', 'menu-item-url' => add_query_arg('zone', rawurlencode($z['name']), $durl)], $dm);
+                        }
+                    }
                 }
             }
         }

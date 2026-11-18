@@ -3412,3 +3412,12 @@ msgstr "Изберете датум на пријавување и одјаву�
 
 msgid "Choose a destination (or open a hotel)."
 msgstr "Изберете дестинација (или отворете хотел)."
+
+msgid "All countries"
+msgstr "Сите земји"
+
+msgid "All areas"
+msgstr "Сите области"
+
+msgid "Prices, free rooms and free cancellation: choose your dates above."
+msgstr "Цени, слободни соби и бесплатно откажување: изберете ги датумите горе."

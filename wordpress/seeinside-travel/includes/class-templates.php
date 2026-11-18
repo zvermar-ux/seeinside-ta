@@ -329,6 +329,23 @@ class STA_Templates
         return $p && $p->post_status !== 'trash' ? (int) $p->ID : 0;
     }
 
+    /** Every top-level section / container on the full width (header and list, like the example page) */
+    protected static function full_width(array $els): array
+    {
+        foreach ($els as &$el) {
+            $st = (array) ($el['settings'] ?? []);
+            if (($el['elType'] ?? '') === 'section') {
+                $st['layout'] = 'full_width';
+                $st['stretch_section'] = 'section-stretched';
+            } elseif (($el['elType'] ?? '') === 'container') {
+                $st['content_width'] = 'full';
+            }
+            $el['settings'] = $st;
+        }
+
+        return $els;
+    }
+
     /** Elementor data with every element id renewed (a copy must not share ids with the original) */
     protected static function renew_ids(array $els): array
     {
@@ -366,6 +383,7 @@ class STA_Templates
             $o['settings'] = array_merge((array) $o['settings'], ['types' => ['tour', 'accommodation', 'event']]);
         }
         unset($o);
+        $data = self::full_width($data);
         self::save_data($ref, $data);
         $made = [];
         $notes = [];
@@ -392,7 +410,7 @@ class STA_Templates
                 continue;
             }
             $backup['archives'][$id] ??= get_post_meta($id, '_elementor_data', true);
-            $copy = self::renew_ids($data);
+            $copy = self::full_width(self::renew_ids($data));
             $h = &self::find_widget($copy, 'sta-term-header');
             if ($h !== null) {
                 $h['settings'] = array_merge((array) $h['settings'], ['page_type' => $type]);
@@ -425,7 +443,7 @@ class STA_Templates
                 update_post_meta($pid, '_sta_backup_content', ['content' => get_post_field('post_content', $pid), 'elementor' => get_post_meta($pid, '_elementor_data', true),
                     'template' => get_post_meta($pid, '_wp_page_template', true), 'mode' => get_post_meta($pid, '_elementor_edit_mode', true)]);
             }
-            $copy = self::renew_ids($data);
+            $copy = self::full_width(self::renew_ids($data));
             $h = &self::find_widget($copy, 'sta-term-header');
             if ($h !== null) {
                 // the photo chosen on this page stays

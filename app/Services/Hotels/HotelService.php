@@ -82,8 +82,14 @@ class HotelService
             return SupplierDestination::withoutGlobalScopes()
                 ->where('agency_id', $agencyId)->where('is_active', true)->whereIn('supplier_connection_id', $conns)
                 ->orderBy('country_name')->orderBy('name')->get()
-                ->map(fn ($d) => ['id' => $d->supplier_connection_id.':'.$d->code, 'name' => $d->name, 'country' => $d->country_name ?: $d->country_code, 'hotels' => $counts[$d->supplier_connection_id.':'.$d->code] ?? 0])
+                ->map(fn ($d) => ['id' => $d->supplier_connection_id.':'.$d->code, 'name' => $d->name, 'country' => $d->country_name ?: $d->country_code, 'country_code' => $d->country_code, 'hotels' => $counts[$d->supplier_connection_id.':'.$d->code] ?? 0])
                 ->filter(fn ($d) => $d['hotels'] > 0)   // destinations without imported hotels are not offered
+                ->map(function ($d) use ($agencyId) {
+                    // areas of the destination (Kassandra, Sithonia…) for the menu
+                    $zones = collect(self::index($agencyId))->where('dest', $d['id'])->countBy('zone')->forget('')->sortDesc()->take(15);
+
+                    return $d + ['zones' => $zones->map(fn ($n, $z) => ['name' => $z, 'hotels' => $n])->values()->all()];
+                })
                 ->values()->all();
         });
     }
@@ -119,49 +125,163 @@ class HotelService
      * List of the imported hotels for the website (no prices – the price needs dates): name, stars, place, photo, facilities.
      * $f = destination "conn:code", stars [4,5], q (name), page, per_page.
      */
-    public static function catalog(int $agencyId, array $f): array
+    /** Main facilities for the filters: key => [mk, en, words in the facility names] */
+    public const FEATURES = [
+        'pool' => ['Базен', 'Swimming pool', ['pool']],
+        'beach' => ['Плажа', 'Beach', ['beach']],
+        'wifi' => ['Wi-Fi', 'Wi-Fi', ['wi-fi', 'wifi', 'internet']],
+        'parking' => ['Паркинг', 'Parking', ['car park', 'parking', 'garage']],
+        'ac' => ['Клима уред', 'Air conditioning', ['air conditioning']],
+        'restaurant' => ['Ресторан', 'Restaurant', ['restaurant']],
+        'spa' => ['Спа и сауна', 'Spa & sauna', ['spa', 'sauna', 'hot tub', 'jacuzzi', 'wellness']],
+        'gym' => ['Фитнес', 'Gym', ['gym', 'fitness']],
+        'kids' => ['За деца', 'For children', ['children', 'kids', 'mini club', 'playground']],
+        'pets' => ['Дозволени миленици', 'Pets allowed', ['pets']],
+        'access' => ['Пристап за лица со попреченост', 'Accessible', ['wheelchair', 'disab']],
+    ];
+
+    /** Kinds of accommodation (Hotelbeds codes) */
+    public const TYPES = [
+        'hotel' => ['Хотел', 'Hotel'], 'aparthotel' => ['Апартхотел', 'Aparthotel'], 'apartment' => ['Апартмани', 'Apartments'],
+        'resort' => ['Ресорт', 'Resort'], 'villa' => ['Вила', 'Villa'], 'hostel' => ['Хостел', 'Hostel'], 'guesthouse' => ['Пансион / B&B', 'Guest house / B&B'], 'other' => ['Друго', 'Other'],
+    ];
+
+    public static function typeKey(?string $code): string
     {
-        $conns = self::connections($agencyId)->pluck('id');
-        $q = SupplierHotel::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->whereIn('supplier_connection_id', $conns);
-        if (! empty($f['destination']) && str_contains($f['destination'], ':')) {
-            [$conn, $code] = explode(':', $f['destination'], 2);
-            $q->where('supplier_connection_id', (int) $conn)->where('destination_code', $code);
-        } else {
-            // only destinations switched on in the app
-            $active = SupplierDestination::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->whereIn('supplier_connection_id', $conns)
-                ->get(['supplier_connection_id', 'code']);
-            $q->where(function ($w) use ($active) {
-                $w->whereRaw('1 = 0');
-                foreach ($active->groupBy('supplier_connection_id') as $conn => $list) {
-                    $w->orWhere(fn ($x) => $x->where('supplier_connection_id', $conn)->whereIn('destination_code', $list->pluck('code')));
+        $c = strtoupper((string) $code);
+
+        return match (true) {
+            $c === '' => 'hotel',
+            str_contains($c, 'APTHOTEL') || str_contains($c, 'APARTHOTEL') => 'aparthotel',
+            str_contains($c, 'APART') || str_contains($c, 'APTO') => 'apartment',
+            str_contains($c, 'RESORT') => 'resort',
+            str_contains($c, 'VILLA') || str_contains($c, 'HOUSE') && ! str_contains($c, 'GUEST') => 'villa',
+            str_contains($c, 'HOSTEL') || str_contains($c, 'HOSTAL') => 'hostel',
+            str_contains($c, 'GUEST') || str_contains($c, 'B&B') || str_contains($c, 'BB') || str_contains($c, 'PENSION') => 'guesthouse',
+            str_contains($c, 'HOTEL') => 'hotel',
+            default => 'other',
+        };
+    }
+
+    /** Filter values of one imported hotel */
+    public static function facts(SupplierHotel $h): array
+    {
+        $names = array_map(fn ($x) => mb_strtolower((string) ($x['name'] ?? '')), (array) $h->facilities);
+        $features = [];
+        foreach (self::FEATURES as $key => [, , $words]) {
+            foreach ($names as $n) {
+                foreach ($words as $w) {
+                    if (str_contains($n, $w)) {
+                        $features[] = $key;
+                        continue 3;
+                    }
                 }
-            });
+            }
         }
-        if ($stars = array_filter(array_map('intval', (array) ($f['stars'] ?? [])))) {
-            $q->whereIn('stars', $stars);
-        }
-        if (filled($f['q'] ?? null)) {
-            $q->where('name', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], trim($f['q'])).'%');
-        }
-        $per = max(6, min(48, (int) ($f['per_page'] ?? 24)));
-        $page = $q->orderByDesc('is_featured')->orderByDesc('stars')->orderByDesc('ranking')->orderBy('name')->paginate($per, ['*'], 'page', max(1, (int) ($f['page'] ?? 1)));
 
         return [
-            'hotels' => collect($page->items())->map(fn (SupplierHotel $h) => [
-                'id' => $h->publicId(),
-                'name' => $h->name,
-                'stars' => $h->stars,
-                'place' => trim(($h->zone_name ? $h->zone_name.', ' : '').$h->destination_name, ', '),
-                'destination' => $h->supplier_connection_id.':'.$h->destination_code,
-                'country' => $h->country_code,
-                'image' => ! empty($h->images[0]['path']) ? HotelbedsDriver::imageUrl($h->images[0]['path'], 'xl') : null,
-                'images' => array_map(fn ($i) => HotelbedsDriver::imageUrl($i['path'], 'bigger'), array_slice($h->images ?? [], 0, 5)),
-                'facilities' => array_map(fn ($x) => $x['name'], HotelText::facilities($h->facilities ?? [], 6)),
-                'featured' => (bool) $h->is_featured,
-            ])->all(),
-            'total' => $page->total(),
-            'page' => $page->currentPage(),
-            'pages' => $page->lastPage(),
+            'country' => (string) $h->country_code, 'dest' => $h->supplier_connection_id.':'.$h->destination_code, 'zone' => (string) $h->zone_name,
+            'type' => self::typeKey($h->accommodation_type),
+            'boards' => array_values(array_unique(array_map(fn ($b) => HotelText::boardGroup($b), (array) $h->boards))),
+            'features' => $features,
+        ];
+    }
+
+    /** Every hotel shown on the website with its filter values and card data (cached 10 minutes) */
+    public static function index(int $agencyId): array
+    {
+        return Cache::remember('hotels:index:'.$agencyId, 600, function () use ($agencyId) {
+            $conns = self::connections($agencyId)->pluck('id');
+            $active = SupplierDestination::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->whereIn('supplier_connection_id', $conns)
+                ->get(['supplier_connection_id', 'code', 'name', 'country_code', 'country_name'])->keyBy(fn ($d) => $d->supplier_connection_id.':'.$d->code);
+            $rows = [];
+            SupplierHotel::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->whereIn('supplier_connection_id', $conns)
+                ->orderByDesc('is_featured')->orderByDesc('stars')->orderByDesc('ranking')->orderBy('name')
+                ->chunk(500, function ($list) use (&$rows, $active) {
+                    foreach ($list as $h) {
+                        $f = self::facts($h);
+                        $d = $active[$f['dest']] ?? null;
+                        if (! $d) {
+                            continue;   // destination switched off
+                        }
+                        $rows[] = $f + [
+                            'id' => $h->publicId(), 'name' => $h->name, 'stars' => (int) $h->stars,
+                            'dest_name' => $d->name, 'country_name' => $d->country_name ?: $d->country_code,
+                            'place' => trim(($h->zone_name ? $h->zone_name.', ' : '').$h->destination_name, ', '),
+                            'image' => ! empty($h->images[0]['path']) ? HotelbedsDriver::imageUrl($h->images[0]['path'], 'xl') : null,
+                            'images' => array_map(fn ($i) => HotelbedsDriver::imageUrl($i['path'], 'bigger'), array_slice($h->images ?? [], 0, 5)),
+                            'facilities' => array_map(fn ($x) => $x['name'], HotelText::facilities($h->facilities ?? [], 6)),
+                            'featured' => (bool) $h->is_featured,
+                        ];
+                    }
+                });
+
+            return $rows;
+        });
+    }
+
+    /** Does a hotel pass the filters (all, or all but one – for the numbers next to the options) */
+    protected static function passes(array $r, array $f, string $skip = ''): bool
+    {
+        return ($skip === 'country' || ! $f['country'] || $r['country'] === $f['country'])
+            && ($skip === 'dest' || ! $f['dest'] || $r['dest'] === $f['dest'])
+            && ($skip === 'zone' || ! $f['zone'] || $r['zone'] === $f['zone'])
+            && ($skip === 'stars' || ! $f['stars'] || in_array($r['stars'], $f['stars'], true))
+            && ($skip === 'type' || ! $f['type'] || in_array($r['type'], $f['type'], true))
+            && ($skip === 'board' || ! $f['board'] || array_intersect($f['board'], $r['boards']))
+            && ($skip === 'feature' || ! $f['feature'] || ! array_diff($f['feature'], $r['features']))
+            && ($f['q'] === '' || mb_stripos($r['name'], $f['q']) !== false);
+    }
+
+    /**
+     * Imported hotels for the website without prices (the price needs dates), with every filter and the numbers:
+     * country, destination, zone, stars, kind, board, facilities, name.
+     */
+    public static function catalog(int $agencyId, array $f): array
+    {
+        $csv = fn ($v) => array_values(array_filter(array_map('trim', is_array($v) ? $v : explode(',', (string) $v)), fn ($x) => $x !== ''));
+        $f = [
+            'country' => strtoupper(trim((string) ($f['country'] ?? ''))), 'dest' => trim((string) ($f['destination'] ?? '')), 'zone' => trim((string) ($f['zone'] ?? '')),
+            'stars' => array_map('intval', $csv($f['stars'] ?? [])), 'type' => $csv($f['type'] ?? []), 'board' => array_map('strtoupper', $csv($f['board'] ?? [])),
+            'feature' => $csv($f['feature'] ?? []), 'q' => trim((string) ($f['q'] ?? '')),
+            'page' => max(1, (int) ($f['page'] ?? 1)), 'per' => max(6, min(48, (int) ($f['per_page'] ?? 24))),
+        ];
+        $rows = self::index($agencyId);
+        $hits = array_values(array_filter($rows, fn ($r) => self::passes($r, $f)));
+        $count = function (string $skip, string $key) use ($rows, $f) {
+            $n = [];
+            foreach ($rows as $r) {
+                if (! self::passes($r, $f, $skip)) {
+                    continue;
+                }
+                foreach ((array) $r[$key] as $v) {
+                    if ($v !== '' && $v !== null && $v !== 0) {
+                        $n[$v] = ($n[$v] ?? 0) + 1;
+                    }
+                }
+            }
+
+            return $n;
+        };
+        $names = fn (string $key, string $nameKey) => collect($rows)->mapWithKeys(fn ($r) => [$r[$key] => $r[$nameKey]])->all();
+        $countries = $names('country', 'country_name');
+        $dests = collect($rows)->mapWithKeys(fn ($r) => [$r['dest'] => ['name' => $r['dest_name'], 'country' => $r['country']]])->all();
+        $opt = fn (array $counts, callable $name) => collect($counts)->map(fn ($n, $id) => ['id' => (string) $id, 'name' => $name($id), 'n' => $n])->values()->all();
+        $facets = [
+            'countries' => collect($opt($count('country', 'country'), fn ($id) => $countries[$id] ?? $id))->sortBy('name')->values()->all(),
+            'destinations' => collect($opt($count('dest', 'dest'), fn ($id) => $dests[$id]['name'] ?? $id))->map(fn ($d) => $d + ['country' => $dests[$d['id']]['country'] ?? ''])->sortBy('name')->values()->all(),
+            'zones' => $f['dest'] ? collect($opt($count('zone', 'zone'), fn ($id) => $id))->sortBy('name')->values()->all() : [],
+            'stars' => collect($opt($count('stars', 'stars'), fn ($id) => (int) $id))->sortByDesc('id')->values()->all(),
+            'types' => collect($opt($count('type', 'type'), fn ($id) => ['mk' => self::TYPES[$id][0] ?? $id, 'en' => self::TYPES[$id][1] ?? $id]))->sortByDesc('n')->values()->all(),
+            'boards' => collect($opt($count('board', 'boards'), fn ($id) => HotelText::board($id)))->sortBy(fn ($b) => array_search($b['id'], ['RO', 'BB', 'HB', 'FB', 'AI']))->values()->all(),
+            'features' => collect($opt($count('feature', 'features'), fn ($id) => ['mk' => self::FEATURES[$id][0] ?? $id, 'en' => self::FEATURES[$id][1] ?? $id]))->sortByDesc('n')->values()->all(),
+        ];
+        $pages = max(1, (int) ceil(count($hits) / $f['per']));
+        $slice = array_slice($hits, ($f['page'] - 1) * $f['per'], $f['per']);
+
+        return [
+            'hotels' => array_map(fn ($r) => array_intersect_key($r, array_flip(['id', 'name', 'stars', 'place', 'dest', 'country', 'zone', 'type', 'boards', 'features', 'image', 'images', 'facilities', 'featured'])), $slice),
+            'total' => count($hits), 'page' => $f['page'], 'pages' => $pages, 'facets' => $facets,
         ];
     }
 
@@ -272,7 +392,7 @@ class HotelService
             'featured' => (bool) $l?->is_featured,
             'ranking' => (int) ($l?->ranking ?? 0),
             'left' => $cheapest['allotment'] !== null && $cheapest['allotment'] <= 3 ? $cheapest['allotment'] : null,
-        ];
+        ] + ($l ? array_intersect_key(self::facts($l), array_flip(['zone', 'type', 'features'])) : ['zone' => (string) ($h['zone'] ?? ''), 'type' => 'hotel', 'features' => []]);
     }
 
     /** One hotel: description, photos, facilities and (with a search) every room and rate */

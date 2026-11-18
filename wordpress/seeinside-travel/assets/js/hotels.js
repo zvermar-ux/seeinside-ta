@@ -12,7 +12,7 @@
 
   $$('[data-sta-hotels]').forEach(function (root) {
     var body = $('[data-sta-hotels-body]', root), perPage = +root.dataset.perPage || 20;
-    var state = { list: [], res: null, shown: perPage, filter: { name: '', min: null, max: null, stars: [], boards: [], free: false, sort: 'rec' } };
+    var state = { list: [], res: null, shown: perPage, filter: { name: '', min: null, max: null, stars: [], board: [], type: [], feature: [], zone: '', dest: '', country: '', free: false, sort: 'rec' } };
 
     /* ---------- what was searched ---------- */
     function query() {
@@ -22,7 +22,7 @@
       q.rooms = []; for (var i = 0; i < rooms; i++) q.rooms.push({ adults: ad, children_ages: ages });
       q.nights = q.from && q.to ? Math.round((new Date(q.to) - new Date(q.from)) / 864e5) : 0;
       q.open = u.get('h') || ''; q.searchId = u.get('sid') || '';
-      state.filter.stars = u.getAll('h_stars[]').map(Number); state.filter.boards = u.getAll('h_board[]');
+      state.filter.stars = u.getAll('h_stars[]'); state.filter.board = u.getAll('h_board[]');
       return q;
     }
     function qs(q) {
@@ -149,7 +149,7 @@
     });
     function goDates(box) {
       var from = $('[data-hd-from]', box).value, to = $('[data-hd-to]', box).value, err = $('[data-hd-err]', box);
-      var sel = $('[data-hc-dest]', body), q = state.q || query(), hotel = box.dataset.hotel || (!sel || !sel.value ? q.hotel : ''), dest = sel ? sel.value : q.destination;
+      var sel = $('[data-hf="dest"]', body), q = state.q || query(), hotel = box.dataset.hotel || (!sel || !sel.value ? q.hotel : ''), dest = sel ? sel.value : q.destination;
       var fail = function (m) { err.textContent = m; err.hidden = false; };
       if (!from || !to || to <= from) return fail(L.needDates);
       if (!dest && !hotel) return fail(L.pickDest);
@@ -160,35 +160,106 @@
       location.href = location.pathname + '?' + p.toString();
     }
 
+    /* ---------- filters (same blocks with and without dates) ---------- */
+    function nm(x) { return typeof x === 'object' && x ? tr(x) : String(x); }
+    function checks(title, key, opts, sel, label) {
+      opts = (opts || []).filter(function (o) { return o.n || sel.indexOf(String(o.id)) > -1; });
+      if (!opts.length) return '';
+      return '<div class="sta-ff"><h4>' + esc(title) + '</h4>' + opts.map(function (o) {
+        return '<label class="sta-ff-opt"><input type="checkbox" data-hf="' + key + '" value="' + esc(o.id) + '"' + (sel.indexOf(String(o.id)) > -1 ? ' checked' : '') + '> <span>' + (label ? label(o) : esc(nm(o.name))) + '</span><small>' + (o.n || 0) + '</small></label>';
+      }).join('') + '</div>';
+    }
+    function select(key, all, opts, cur) {
+      return '<select data-hf="' + key + '"><option value="">' + esc(all) + '</option>' + opts.map(function (o) {
+        return '<option value="' + esc(o.id) + '"' + (String(o.id) === String(cur) ? ' selected' : '') + '>' + esc(nm(o.name)) + ' (' + (o.n || 0) + ')</option>';
+      }).join('') + '</select>';
+    }
+    function blocks(fc, sel, withDates) {
+      var loc = '';
+      if ((fc.countries || []).length > 1 || sel.country) loc += select('country', L.allCountries, fc.countries || [], sel.country);
+      var dests = (fc.destinations || []).filter(function (d) { return !sel.country || d.country === sel.country || d.id === sel.dest; });
+      if (dests.length) loc += select('dest', L.allDest, dests, sel.dest);
+      if ((fc.zones || []).length) loc += select('zone', L.allZones, fc.zones, sel.zone);
+      return (loc ? '<div class="sta-ff sta-ff-loc"><h4>' + esc(L.destination) + '</h4>' + loc + '</div>' : '')
+        + checks(L.stars, 'stars', fc.stars, sel.stars, function (o) { return new Array(+o.id + 1).join('★'); })
+        + checks(L.typeH, 'type', fc.types, sel.type)
+        + checks(L.board, 'board', fc.boards, sel.board)
+        + checks(L.facilities, 'feature', fc.features, sel.feature)
+        + (withDates ? '' : '<div class="sta-ff sta-ff-later"><h4>' + esc(L.price) + '</h4><p class="sta-muted">' + esc(L.afterDates) + '</p></div>');
+    }
+    function readSel(scope, base) {
+      var v = function (k) { var e = $('[data-hf="' + k + '"]', scope); return e ? e.value : ''; };
+      var c = function (k) { return $$('[data-hf="' + k + '"]:checked', scope).map(function (x) { return x.value; }); };
+      return Object.assign(base || {}, { country: v('country'), dest: v('dest'), zone: v('zone'), stars: c('stars'), type: c('type'), board: c('board'), feature: c('feature') });
+    }
+
     /* ---------- results with prices (dates chosen) ---------- */
+    function facetsOf(list, f) {
+      var count = function (skip, get) {
+        var n = {};
+        list.forEach(function (h) { if (!passes(h, f, skip)) return; [].concat(get(h)).forEach(function (v) { if (v !== '' && v != null && v !== 0) n[v] = (n[v] || 0) + 1; }); });
+        return n;
+      };
+      var opts = function (o, name) { return Object.keys(o).map(function (k) { return { id: k, name: name(k), n: o[k] }; }); };
+      var bn = { RO: { mk: 'Само ноќевање', en: 'Room only' }, BB: { mk: 'Ноќевање со појадок', en: 'Bed & breakfast' }, HB: { mk: 'Полупансион', en: 'Half board' }, FB: { mk: 'Полн пансион', en: 'Full board' }, AI: 'All inclusive' };
+      return {
+        zones: opts(count('zone', function (h) { return h.zone || ''; }), function (k) { return k; }).sort(function (a, b) { return a.name.localeCompare(b.name); }),
+        stars: opts(count('stars', function (h) { return h.stars || 0; }), function (k) { return k; }).sort(function (a, b) { return b.id - a.id; }),
+        types: opts(count('type', function (h) { return h.type || ''; }), function (k) { return (H.types || {})[k] || k; }),
+        boards: opts(count('board', function (h) { return h.boards || []; }), function (k) { return bn[k] || k; }),
+        features: opts(count('feature', function (h) { return h.features || []; }), function (k) { return (H.features || {})[k] || k; }).sort(function (a, b) { return b.n - a.n; })
+      };
+    }
+    function passes(h, f, skip) {
+      if (f.name && h.name.toLowerCase().indexOf(f.name) < 0) return false;
+      if (skip !== 'price' && f.min !== null && h.price < f.min) return false;
+      if (skip !== 'price' && f.max !== null && h.price > f.max) return false;
+      if (skip !== 'zone' && f.zone && h.zone !== f.zone) return false;
+      if (skip !== 'stars' && f.stars.length && f.stars.indexOf(String(h.stars || 0)) < 0) return false;
+      if (skip !== 'type' && f.type.length && f.type.indexOf(h.type) < 0) return false;
+      if (skip !== 'board' && f.board.length && !(h.boards || []).some(function (b) { return f.board.indexOf(b) > -1; })) return false;
+      if (skip !== 'feature' && f.feature.length && f.feature.some(function (x) { return (h.features || []).indexOf(x) < 0; })) return false;
+      if (f.free && !h.refundable) return false;
+      return true;
+    }
     function layout() {
       var q = state.q, f = state.filter;
-      var boards = {}; state.list.forEach(function (h) { (h.boards || []).forEach(function (b) { boards[b] = (boards[b] || 0) + 1; }); });
-      var names = { RO: 'Room only', BB: 'BB', HB: 'HB', FB: 'FB', AI: 'All inclusive' };
-      var boardNames = window.STA_BOARDS || { RO: tr({ mk: 'Само ноќевање', en: 'Room only' }), BB: tr({ mk: 'Ноќевање со појадок', en: 'Bed & breakfast' }), HB: tr({ mk: 'Полупансион', en: 'Half board' }), FB: tr({ mk: 'Полн пансион', en: 'Full board' }), AI: 'All inclusive' };
-      var starCount = {}; state.list.forEach(function (h) { if (h.stars) starCount[h.stars] = (starCount[h.stars] || 0) + 1; });
-      var side = datesBox(q, { dest: !q.hotel })
+      f.dest = q.destination || ''; f.country = '';
+      var side = datesBox(q, {})
         + '<div class="sta-ff"><label class="sta-ff-search">' + esc(L.name) + '<input type="search" data-ht-f="name" value="' + esc(f.name) + '"></label></div>'
         + (state.hi > state.lo ? '<div class="sta-ff"><h4>' + esc(L.price) + ' <output data-ht-price-out></output></h4><div class="sta-sb-range"><div class="sta-sb-range-fill" data-ht-fill></div>'
           + '<input type="range" min="' + state.lo + '" max="' + state.hi + '" step="1" value="' + (f.min || state.lo) + '" data-ht-lo><input type="range" min="' + state.lo + '" max="' + state.hi + '" step="1" value="' + (f.max || state.hi) + '" data-ht-hi></div></div>' : '')
-        + '<div class="sta-ff"><h4>' + esc(L.stars) + '</h4>' + [5, 4, 3, 2, 1].filter(function (s) { return starCount[s]; }).map(function (s) {
-          return '<label class="sta-ff-opt"><input type="checkbox" data-ht-star value="' + s + '"' + (f.stars.indexOf(s) > -1 ? ' checked' : '') + '> <span>' + new Array(s + 1).join('★') + '</span><small>' + starCount[s] + '</small></label>';
-        }).join('') + '</div>'
-        + '<div class="sta-ff"><h4>' + esc(L.board) + '</h4>' + ['RO', 'BB', 'HB', 'FB', 'AI'].filter(function (b) { return boards[b]; }).map(function (b) {
-          return '<label class="sta-ff-opt"><input type="checkbox" data-ht-board value="' + b + '"' + (f.boards.indexOf(b) > -1 ? ' checked' : '') + '> <span>' + esc(boardNames[b] || names[b]) + '</span><small>' + boards[b] + '</small></label>';
-        }).join('') + '</div>'
-        + '<div class="sta-ff"><label class="sta-ff-opt"><input type="checkbox" data-ht-free' + (f.free ? ' checked' : '') + '> <span>' + esc(L.onlyFree) + '</span></label></div>';
+        + '<div class="sta-ff"><label class="sta-ff-opt"><input type="checkbox" data-ht-free' + (f.free ? ' checked' : '') + '> <span>' + esc(L.onlyFree) + '</span></label></div>'
+        + '<div data-hf-blocks></div>';
       var sort = '<label>' + esc(L.sort) + ' <select data-ht-sort>'
         + [['rec', L.sortRec], ['low', L.sortLow], ['high', L.sortHigh], ['stars', L.sortStars]].map(function (o) { return '<option value="' + o[0] + '"' + (f.sort === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('')
         + '</select></label>';
       shell(side, '', sort);
       $('[data-hf-note]', body).textContent = ' · ' + who(q);
       var side2 = $('.sta-finder-side', body);
-      side2.addEventListener('input', function (e) { if (!e.target.closest('[data-hd]')) onFilter(); });
-      side2.addEventListener('change', function (e) { if (!e.target.closest('[data-hd]')) onFilter(); });
+      side2.addEventListener('input', function (e) { if (e.target.matches('[data-ht-f], [data-ht-lo], [data-ht-hi]')) onFilter(); });
+      side2.addEventListener('change', function (e) {
+        if (e.target.closest('[data-hd]')) return;
+        // another destination / country: a new search with the same dates
+        if (e.target.matches('[data-hf="dest"], [data-hf="country"]')) {
+          var p = new URLSearchParams(location.search);
+          p.delete('hotel'); p.delete('hn'); p.delete('h'); p.delete('sid');
+          if (e.target.dataset.hf === 'dest' && e.target.value) { p.set('destination', e.target.value); location.href = location.pathname + '?' + p; }
+          else { p.delete('destination'); p.delete('from'); p.delete('to'); if (e.target.value) p.set('country', e.target.value); location.href = location.pathname + '?' + p; }
+          return;
+        }
+        onFilter();
+      });
       $('[data-ht-sort]', body).addEventListener('change', function (e) { f.sort = e.target.value; state.shown = perPage; list(); });
       priceOut();
+      renderBlocks();
       watchMore(function () { state.shown += perPage; list(true); });
+    }
+    function renderBlocks() {
+      var f = state.filter, fc = facetsOf(state.list, f);
+      // the destination of the search stays selectable (another one = a new search)
+      fc.destinations = (H.destinations || []).map(function (d) { return { id: d.id, name: d.name, n: d.hotels, country: d.country_code }; });
+      $('[data-hf-blocks]', body).innerHTML = blocks(fc, { country: '', dest: f.dest, zone: f.zone, stars: f.stars, type: f.type, board: f.board, feature: f.feature }, true);
     }
     function priceOut() {
       var lo = $('[data-ht-lo]', body), hi = $('[data-ht-hi]', body); if (!lo) return;
@@ -200,22 +271,13 @@
       var f = state.filter, lo = $('[data-ht-lo]', body), hi = $('[data-ht-hi]', body);
       f.name = $('[data-ht-f="name"]', body).value.trim().toLowerCase();
       if (lo) { priceOut(); f.min = +lo.value > state.lo ? +lo.value : null; f.max = +hi.value < state.hi ? +hi.value : null; }
-      f.stars = $$('[data-ht-star]:checked', body).map(function (c) { return +c.value; });
-      f.boards = $$('[data-ht-board]:checked', body).map(function (c) { return c.value; });
+      readSel($('[data-hf-blocks]', body), f);
       f.free = !!($('[data-ht-free]', body) || {}).checked;
-      state.shown = perPage; list();
+      state.shown = perPage; list(); renderBlocks();
     }
     function filtered() {
       var f = state.filter;
-      var out = state.list.filter(function (h) {
-        if (f.name && h.name.toLowerCase().indexOf(f.name) < 0) return false;
-        if (f.min !== null && h.price < f.min) return false;
-        if (f.max !== null && h.price > f.max) return false;
-        if (f.stars.length && f.stars.indexOf(h.stars || 0) < 0) return false;
-        if (f.boards.length && !(h.boards || []).some(function (b) { return f.boards.indexOf(b) > -1; })) return false;
-        if (f.free && !h.refundable) return false;
-        return true;
-      });
+      var out = state.list.filter(function (h) { return passes(h, f, ''); });
       var by = { rec: function (a, b) { return (b.featured - a.featured) || (a.price - b.price); }, low: function (a, b) { return a.price - b.price; }, high: function (a, b) { return b.price - a.price; }, stars: function (a, b) { return (b.stars || 0) - (a.stars || 0) || a.price - b.price; } };
       return out.sort(by[f.sort] || by.rec);
     }
@@ -230,34 +292,47 @@
     var cat = null, catTimer = null;
     function catalog(q) {
       state.q = q;
-      cat = { dest: q.destination || '', stars: state.filter.stars.slice(), name: '', page: 1, pages: 1, total: 0, items: [], loading: false };
-      var side = datesBox(q, { dest: true })
+      var u = new URLSearchParams(location.search);
+      cat = { sel: { country: (u.get('country') || '').toUpperCase(), dest: q.destination || '', zone: u.get('zone') || '', stars: state.filter.stars.slice(), type: [], board: state.filter.board.slice(), feature: [] }, name: '', page: 1, pages: 1, total: 0, items: [], loading: false };
+      var side = datesBox(q, {})
         + '<div class="sta-ff"><label class="sta-ff-search">' + esc(L.name) + '<input type="search" data-hc-name></label></div>'
-        + '<div class="sta-ff"><h4>' + esc(L.stars) + '</h4>' + [5, 4, 3, 2].map(function (n) {
-          return '<label class="sta-ff-opt"><input type="checkbox" data-hc-star value="' + n + '"' + (cat.stars.indexOf(n) > -1 ? ' checked' : '') + '> <span>' + new Array(n + 1).join('★') + '</span></label>';
-        }).join('') + '</div>';
+        + '<div data-hf-blocks><div class="sta-ht-loading"><span class="sta-spin"></span></div></div>';
       shell(side, '', '');
       $('[data-hf-note]', body).textContent = ' · ' + L.catalogNote;
-      var sd = $('.sta-finder-side', body);
-      sd.addEventListener('change', function (e) { if (e.target.matches('[data-hc-dest], [data-hc-star]')) catFilter(); });
+      $('.sta-finder-side', body).addEventListener('change', function (e) {
+        if (!e.target.matches('[data-hf]')) return;
+        if (e.target.dataset.hf === 'country') { $$('[data-hf="dest"], [data-hf="zone"]', body).forEach(function (x) { x.value = ''; }); }
+        if (e.target.dataset.hf === 'dest') { var z = $('[data-hf="zone"]', body); if (z) z.value = ''; }
+        catFilter();
+      });
       $('[data-hc-name]', body).addEventListener('input', function () { clearTimeout(catTimer); catTimer = setTimeout(catFilter, 350); });
       watchMore(function () { if (!cat.loading && cat.page < cat.pages) { cat.page++; catLoad(); } });
       catLoad();
     }
     function catFilter() {
-      var d = $('[data-hc-dest]', body);
-      cat.dest = d ? d.value : ''; cat.name = $('[data-hc-name]', body).value.trim();
-      cat.stars = $$('[data-hc-star]:checked', body).map(function (c) { return +c.value; });
+      readSel($('[data-hf-blocks]', body), cat.sel);
+      cat.name = $('[data-hc-name]', body).value.trim();
+      // the address keeps the choice (back button, sharing)
+      if (history.replaceState) {
+        var u = new URL(location.href);
+        ['country', 'destination', 'zone'].forEach(function (k) { u.searchParams.delete(k); });
+        if (cat.sel.country) u.searchParams.set('country', cat.sel.country);
+        if (cat.sel.dest) u.searchParams.set('destination', cat.sel.dest);
+        if (cat.sel.zone) u.searchParams.set('zone', cat.sel.zone);
+        history.replaceState(null, '', u);
+      }
       cat.page = 1; cat.items = []; catLoad();
     }
     function catLoad() {
-      var box = $('[data-hf-list]', body), more = $('[data-hf-more]', body);
+      var box = $('[data-hf-list]', body), more = $('[data-hf-more]', body), s2 = cat.sel;
       if (cat.page === 1) box.innerHTML = '<div class="sta-ht-loading"><span class="sta-spin"></span>' + esc(L.loading) + '</div>';
       cat.loading = true;
       var p = new URLSearchParams({ page: cat.page, per_page: perPage });
-      if (cat.dest) p.set('destination', cat.dest);
+      if (s2.country) p.set('country', s2.country);
+      if (s2.dest) p.set('destination', s2.dest);
+      if (s2.zone) p.set('zone', s2.zone);
+      ['stars', 'type', 'board', 'feature'].forEach(function (k) { if (s2[k].length) p.set(k, s2[k].join(',')); });
       if (cat.name) p.set('q', cat.name);
-      if (cat.stars.length) p.set('stars', cat.stars.join(','));
       var mine = cat;
       api('hotels/catalog?' + p).then(function (r) {
         if (mine !== cat || !$('[data-hf-list]', body)) return;
@@ -266,10 +341,11 @@
         var d = r.body.data, fresh = d.hotels || [];
         cat.pages = d.pages; cat.total = d.total;
         $('[data-hf-count]', body).textContent = plural(d.total, L.hotel1, L.hotels);
+        if (cat.page === 1 && d.facets) $('[data-hf-blocks]', body).innerHTML = blocks(d.facets, s2, false);
         if (cat.page === 1) box.innerHTML = '';
         if (!cat.items.length && !fresh.length) {
           box.innerHTML = '<div class="sta-ht-empty">' + esc(L.noneFilter)
-            + (cat.dest || cat.name || cat.stars.length ? ' <button type="button" class="sta-btn sta-btn-sm" data-hc-all>' + esc(L.showAll) + '</button>' : '') + '</div>';
+            + ' <button type="button" class="sta-btn sta-btn-sm" data-hc-all>' + esc(L.showAll) + '</button></div>';
         } else {
           box.insertAdjacentHTML('beforeend', fresh.map(function (h) { return stdCard(h, false); }).join(''));
         }
@@ -298,11 +374,10 @@
       if (e.target.closest('[data-ht-back]')) { e.preventDefault(); history.back(); return; }
       // no hotel for this destination / filters: all hotels again
       if (e.target.closest('[data-hc-all]')) {
-        var sel = $('[data-hc-dest]', body), nm = $('[data-hc-name]', body);
-        if (sel) sel.value = '';
-        if (nm) nm.value = '';
-        $$('[data-hc-star]:checked', body).forEach(function (c) { c.checked = false; });
-        if (history.replaceState) { var u = new URL(location.href); u.searchParams.delete('destination'); u.searchParams.delete('hotel'); history.replaceState(null, '', u); }
+        var nmI = $('[data-hc-name]', body);
+        if (nmI) nmI.value = '';
+        $$('select[data-hf]', body).forEach(function (x) { x.value = ''; });
+        $$('[data-hf]:checked', body).forEach(function (c) { c.checked = false; });
         catFilter();
         return;
       }

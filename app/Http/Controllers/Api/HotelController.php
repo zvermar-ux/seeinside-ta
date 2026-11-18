@@ -32,12 +32,16 @@ class HotelController extends Controller
     {
         $f = $request->validate([
             'destination' => 'nullable|string|max:40',
+            'country' => 'nullable|string|max:3',
+            'zone' => 'nullable|string|max:120',
+            'type' => 'nullable|string|max:200',
+            'board' => 'nullable|string|max:60',
+            'feature' => 'nullable|string|max:200',
             'stars' => 'nullable',
             'q' => 'nullable|string|max:80',
             'page' => 'nullable|integer|min:1|max:500',
             'per_page' => 'nullable|integer|min:6|max:48',
         ]);
-        $f['stars'] = is_array($f['stars'] ?? null) ? $f['stars'] : array_filter(explode(',', (string) ($f['stars'] ?? '')));
 
         return response()->json(['data' => HotelService::catalog($this->agencyId($request), $f)]);
     }
