@@ -307,10 +307,46 @@ class STA_Templates
         return $widget ? array_diff_key((array) ($widget['settings'] ?? []), array_flip(self::OWN_SETTINGS)) : [];
     }
 
+    /** Taxonomies whose pages share one design */
+    public const LIST_TAXES = ['sta_destination', 'sta_place', 'sta_group', 'sta_tour_type', 'sta_hotel_type', 'sta_event_category'];
+
+    /** Page id of a listing page (saved by "Create pages", or found by its address) */
+    protected static function list_page_id(string $slug): int
+    {
+        $pages = get_option('sta_pages', []);
+        $id = (int) ($pages[$slug] ?? 0);
+        if ($id && in_array(get_post_status($id), ['publish', 'draft', 'private'], true)) {
+            return $id;
+        }
+        if ($slug === 'hoteli' && STA_Hotels::enabled()) {
+            $id = url_to_postid(STA_Hotels::page_url());
+            if ($id) {
+                return $id;
+            }
+        }
+        $p = get_page_by_path($slug);
+
+        return $p && $p->post_status !== 'trash' ? (int) $p->ID : 0;
+    }
+
+    /** Elementor data with every element id renewed (a copy must not share ids with the original) */
+    protected static function renew_ids(array $els): array
+    {
+        foreach ($els as &$el) {
+            $el['id'] = self::eid();
+            if (! empty($el['elements'])) {
+                $el['elements'] = self::renew_ids($el['elements']);
+            }
+        }
+
+        return $els;
+    }
+
     /**
-     * The look of the accommodation-type page (header + offers, as designed in Elementor) is copied to the pages
-     * of every destination, place, group, tour type, event category, and to the pages Organized tours, Hotels,
-     * Apartments and Events. Each page keeps its own photo and what it shows.
+     * One design for every list. The template of the accommodation-type pages (as designed in Elementor) becomes
+     * THE template of the pages of destinations, places, groups, tour types, accommodation types and event
+     * categories (later changes there show everywhere at once), and the pages Organized tours, Hotels, Apartments
+     * and Events get an exact copy of it (click again after changing the design). Each page keeps its own photo.
      */
     public static function unify_design(string $from = 'tax:sta_hotel_type'): array
     {
@@ -320,69 +356,89 @@ class STA_Templates
         self::create_elementor_templates(false);
         $known = get_option('sta_elementor_templates', []);
         $ref = (int) ($known[$from] ?? 0);
-        $refData = $ref ? self::data($ref) : [];
-        $H = self::design(self::find_widget($refData, 'sta-term-header'));
-        $O = self::design(self::find_widget($refData, 'sta-term-offers'));
-        $headSection = (array) ($refData[0]['settings'] ?? ['layout' => 'full_width', 'stretch_section' => 'section-stretched']);
+        if (! $ref || ! get_post_status($ref)) {
+            return ['error' => __('The template "Page: Accommodation types – SeeInside" was not found. Click "Create Elementor templates" first.', 'seeinside-travel')];
+        }
+        $data = self::data($ref);
+        // the list shows whatever fits the page (tours, apartments, events), the header the term of the page
+        $o = &self::find_widget($data, 'sta-term-offers');
+        if ($o !== null) {
+            $o['settings'] = array_merge((array) $o['settings'], ['types' => ['tour', 'accommodation', 'event']]);
+        }
+        unset($o);
+        self::save_data($ref, $data);
         $made = [];
+        $notes = [];
 
-        // pages of destinations, places, groups, types, categories
+        // 1. one template for all the term pages; the other term templates are kept, without conditions (undo)
+        $backup = get_option('sta_unify_backup', []);
+        $conditions = array_map(fn ($tax) => 'include/archive/'.$tax, self::LIST_TAXES);
+        update_post_meta($ref, '_elementor_conditions', $conditions);
+        wp_update_post(['ID' => $ref, 'post_title' => __('Page: lists (destinations, places, groups, types) – SeeInside', 'seeinside-travel')]);
         foreach ($known as $key => $id) {
             if (! str_starts_with($key, 'tax:') || $key === $from || ! get_post_status($id)) {
                 continue;
             }
-            $data = self::data((int) $id);
-            $h = &self::find_widget($data, 'sta-term-header');
-            if ($h !== null) {
-                $h['settings'] = array_merge($H, array_intersect_key((array) $h['settings'], array_flip(self::OWN_SETTINGS)));
-            }
-            unset($h);
-            $o = &self::find_widget($data, 'sta-term-offers');
-            if ($o !== null) {
-                $o['settings'] = array_merge($O, array_intersect_key((array) $o['settings'], array_flip(self::OWN_SETTINGS)));
-            }
-            unset($o);
-            self::save_data((int) $id, $data);
-            $made[] = get_the_title($id);
+            $backup['conditions'][$id] ??= get_post_meta($id, '_elementor_conditions', true);
+            update_post_meta($id, '_elementor_conditions', []);
         }
+        update_option('sta_unify_backup', $backup, false);
+        $made[] = __('pages of destinations, places, groups and types', 'seeinside-travel');
 
-        // the listing pages: header + list, the same look
-        $pages = get_option('sta_pages', []);
+        // 2. the listing pages: an exact copy of the same design, showing their list
         foreach (self::LIST_PAGES as $slug => $type) {
-            $pid = (int) ($pages[$slug] ?? 0);
-            if (! $pid || ! in_array(get_post_status($pid), ['publish', 'draft', 'private'], true)) {
+            if ($type === 'hotels' && ! STA_Hotels::enabled()) {
                 continue;
             }
-            if ($type === 'hotels' && ! STA_Hotels::enabled()) {
+            $pid = self::list_page_id($slug);
+            if (! $pid) {
+                $notes[] = sprintf(__('Page /%s/ not found – click "Create pages" first.', 'seeinside-travel'), $slug);
+
                 continue;
             }
             $old = self::data($pid);
             $oldHead = self::find_widget($old, 'sta-term-header');
-            $oldList = self::find_widget($old, 'sta-term-offers');
-            // backup of the page as it was (once)
             if (! get_post_meta($pid, '_sta_backup_content', true)) {
-                update_post_meta($pid, '_sta_backup_content', ['content' => get_post_field('post_content', $pid), 'elementor' => get_post_meta($pid, '_elementor_data', true), 'template' => get_post_meta($pid, '_wp_page_template', true)]);
+                update_post_meta($pid, '_sta_backup_content', ['content' => get_post_field('post_content', $pid), 'elementor' => get_post_meta($pid, '_elementor_data', true),
+                    'template' => get_post_meta($pid, '_wp_page_template', true), 'mode' => get_post_meta($pid, '_elementor_edit_mode', true)]);
             }
-            $headOwn = $oldHead ? array_intersect_key((array) $oldHead['settings'], array_flip(['bg_image', 'bg_mode', 'page_title', 'page_label'])) : [];
-            $listOwn = $oldList ? array_intersect_key((array) $oldList['settings'], array_flip(['title_tour', 'title_accommodation', 'title_event'])) : [];
-            $layout = [
-                self::section([['size' => 100, 'widgets' => [self::widget('sta-term-header', array_merge($H, ['page_type' => $type], $headOwn))]]], $headSection),
-                self::section([['size' => 100, 'widgets' => [self::widget('sta-term-offers', array_merge($O, ['page_type' => $type, 'show_titles' => ''], $listOwn))]]]),
-            ];
+            $copy = self::renew_ids($data);
+            $h = &self::find_widget($copy, 'sta-term-header');
+            if ($h !== null) {
+                // the photo chosen on this page stays
+                $own = $oldHead ? array_intersect_key((array) $oldHead['settings'], array_flip(['bg_image', 'bg_mode', 'page_title', 'page_label'])) : [];
+                $h['settings'] = array_merge((array) $h['settings'], ['page_type' => $type], $own);
+                if (empty($own['bg_image']['url'])) {
+                    unset($h['settings']['bg_image']);
+                }
+            }
+            unset($h);
+            $l = &self::find_widget($copy, 'sta-term-offers');
+            if ($l !== null) {
+                $l['settings'] = array_merge((array) $l['settings'], ['page_type' => $type, 'show_titles' => '']);
+            }
+            unset($l);
             wp_update_post(['ID' => $pid, 'post_content' => '[sta_term_header page_type="'.$type.'"]'."\n".'[sta_term_offers page_type="'.$type.'" titles=""]']);
             update_post_meta($pid, '_elementor_edit_mode', 'builder');
             update_post_meta($pid, '_elementor_template_type', 'wp-page');
             update_post_meta($pid, '_elementor_version', ELEMENTOR_VERSION);
-            update_post_meta($pid, '_wp_page_template', 'elementor_header_footer');   // no theme title, full width like the archive pages
-            self::save_data($pid, $layout);
+            update_post_meta($pid, '_wp_page_template', 'elementor_header_footer');   // full width, no theme title – like the archive pages
+            self::save_data($pid, $copy);
             $made[] = get_the_title($pid);
+        }
+        if (class_exists('\ElementorPro\Modules\ThemeBuilder\Module')) {
+            try {
+                \ElementorPro\Modules\ThemeBuilder\Module::instance()->get_conditions_manager()->get_cache()->regenerate();
+            } catch (Throwable $e) {
+                sta_log('elementor conditions: '.$e->getMessage(), 'error');
+            }
         }
         if (class_exists('\Elementor\Plugin')) {
             \Elementor\Plugin::$instance->files_manager->clear_cache();
         }
-        sta_log('unified design: '.implode(', ', $made));
+        sta_log('unified design: '.implode(', ', $made).' '.implode(' ', $notes));
 
-        return ['made' => $made];
+        return ['made' => $made, 'notes' => $notes];
     }
 
     /** Back to how a listing page was before the unified design */
@@ -390,7 +446,7 @@ class STA_Templates
     {
         $n = 0;
         foreach (array_keys(self::LIST_PAGES) as $slug) {
-            $pid = (int) (get_option('sta_pages', [])[$slug] ?? 0);
+            $pid = self::list_page_id($slug);
             $b = $pid ? get_post_meta($pid, '_sta_backup_content', true) : null;
             if (! is_array($b)) {
                 continue;
@@ -403,8 +459,29 @@ class STA_Templates
                 delete_post_meta($pid, '_elementor_edit_mode');
             }
             update_post_meta($pid, '_wp_page_template', $b['template'] ?: 'default');
+            if (! empty($b['mode'])) {
+                update_post_meta($pid, '_elementor_edit_mode', $b['mode']);
+            }
             delete_post_meta($pid, '_sta_backup_content');
             $n++;
+        }
+        // the term templates get their own conditions back
+        $backup = get_option('sta_unify_backup', []);
+        $known = get_option('sta_elementor_templates', []);
+        if (! empty($backup['conditions'])) {
+            foreach ($backup['conditions'] as $id => $cond) {
+                update_post_meta((int) $id, '_elementor_conditions', $cond ?: []);
+            }
+            if (! empty($known['tax:sta_hotel_type'])) {
+                update_post_meta((int) $known['tax:sta_hotel_type'], '_elementor_conditions', ['include/archive/sta_hotel_type']);
+            }
+            delete_option('sta_unify_backup');
+            if (class_exists('\ElementorPro\Modules\ThemeBuilder\Module')) {
+                try {
+                    \ElementorPro\Modules\ThemeBuilder\Module::instance()->get_conditions_manager()->get_cache()->regenerate();
+                } catch (Throwable $e) {
+                }
+            }
         }
 
         return $n;
