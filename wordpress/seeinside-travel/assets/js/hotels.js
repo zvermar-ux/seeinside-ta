@@ -57,14 +57,118 @@
       });
     }
 
+    /* ---------- the same look as the apartment list: filters on the left, cards in a grid ---------- */
+    var CARD = H.card || '', PT = H.priceToken || '', cols = +root.dataset.columns || 3, io = null;
+    var today = new Date().toISOString().slice(0, 10);
+    function shell(side, count, tools) {
+      if (io) { io.disconnect(); io = null; }
+      body.innerHTML = '<section class="sta-finder sta-ht-finder">'
+        + '<button type="button" class="sta-finder-toggle" data-hf-toggle>' + esc(L.filters) + '</button>'
+        + '<div class="sta-finder-wrap"><aside class="sta-finder-side">' + side + '</aside><div class="sta-finder-main">'
+        + '<div class="sta-finder-head"><div><b data-hf-count>' + count + '</b><span class="sta-muted" data-hf-note></span></div>' + (tools || '') + '</div>'
+        + '<div class="sta-l sta-l--grid" style="--l-cols:' + cols + ';--l-cols-t:2;--l-cols-m:1;--l-gap:22px"><div class="sta-l-items" data-hf-list></div></div>'
+        + '<div class="sta-more-loader" data-hf-more hidden><span class="sta-spin"></span></div></div></div></section>';
+      $('[data-hf-toggle]', body).addEventListener('click', function () { $('.sta-finder', body).classList.toggle('is-open'); });
+    }
+    // endless list: more cards when the end of the list comes into view
+    function watchMore(more) {
+      var el = $('[data-hf-more]', body);
+      if (!el || !('IntersectionObserver' in window)) return;
+      if (io) io.disconnect();
+      io = new IntersectionObserver(function (en) { if (en[0].isIntersecting && !el.hidden) more(); }, { rootMargin: '500px 0px' });
+      io.observe(el);
+    }
+    // a card exactly like the apartment cards (rendered by the plugin with placeholders)
+    function stdCard(h, priced) {
+      var url = '#h=' + encodeURIComponent(h.id), html;
+      if (!CARD) {
+        html = '<article class="sta-c"><div class="sta-c-media">' + (h.image ? '<img src="' + esc(h.image) + '" alt="" loading="lazy">' : '') + '</div><div class="sta-c-body"><h3 class="sta-c-title"><a class="sta-c-stretch" href="' + url + '">' + esc(h.name) + '</a></h3><div class="sta-c-sub">' + esc(h.place || '') + '</div><div class="sta-c-foot"><div class="sta-c-price"><b>' + esc(PT) + '</b></div></div></div></article>';
+      } else {
+        html = CARD;
+      }
+      html = html.split('https://sta.invalid/__U__').join(url).split('https://sta.invalid/__I__.jpg').join(esc(h.image || ''))
+        .split('__T__').join(esc(h.name)).split('__P__').join(esc(h.place || '')).split('__ID__').join(esc(h.id));
+      if (!h.image) html = html.replace(/<img src=""[^>]*>/, '<span class="sta-c-noimg"></span>');
+      html = html.replace(/(<span class="sta-c-chip sta-c-stars"[^>]*>)★★★★★(<\/span>)/, h.stars ? '$1' + new Array(h.stars + 1).join('★') + '$2' : '');
+      if (priced) {
+        html = html.split(PT).join(esc(money(h.price, h.currency)));
+      } else {
+        // no dates yet: no price, only what the button does
+        html = html.replace(/<div class="sta-c-price">[\s\S]*?<\/div>/, '<div class="sta-c-price is-ask"><small>' + esc(L.pricesFor) + '</small></div>');
+      }
+      var tags = [];
+      if (priced && h.board) tags.push(esc(tr(h.board)));
+      if (priced && h.refundable) tags.push('✓ ' + esc(L.freeCancel));
+      if (priced && h.left) tags.push(esc(fmt(L.left, h.left)));
+      return '<div class="sta-l-cell sta-finder-cell">' + html + (tags.length ? '<div class="sta-finder-tags"><span>' + tags.join('</span><span>') + '</span></div>' : '') + '</div>';
+    }
+    function destSelect(sel) {
+      var dests = H.destinations || [], byCountry = {};
+      if (!dests.length) return '';
+      dests.forEach(function (d) { (byCountry[d.country || ''] = byCountry[d.country || ''] || []).push(d); });
+      return '<label>' + esc(L.destination) + '<select data-hc-dest><option value="">' + esc(L.allDest) + '</option>' + Object.keys(byCountry).map(function (c) {
+        var o = byCountry[c].map(function (d) { return '<option value="' + esc(d.id) + '"' + (d.id === sel ? ' selected' : '') + '>' + esc(d.name) + (d.hotels ? ' (' + d.hotels + ')' : '') + '</option>'; }).join('');
+        return c ? '<optgroup label="' + esc(c) + '">' + o + '</optgroup>' : o;
+      }).join('') + '</select></label>';
+    }
+    // "Your dates" – like the apartments: dates, guests, children's ages, then the free hotels with prices
+    function ageSelects(n, ages) {
+      var h = '';
+      for (var i = 0; i < n; i++) {
+        var opts = '';
+        for (var a = 0; a <= 17; a++) opts += '<option value="' + a + '"' + ((ages[i] != null ? ages[i] : 7) === a ? ' selected' : '') + '>' + a + '</option>';
+        h += '<label>' + esc(L.child) + ' ' + (i + 1) + '<select data-hd-age>' + opts + '</select></label>';
+      }
+      return h;
+    }
+    function datesBox(q, opt) {
+      opt = opt || {};
+      var ages = q.ages || [];
+      return '<div class="sta-ff sta-ff-dates" data-hd' + (opt.hotel ? ' data-hotel="' + esc(opt.hotel) + '" data-hname="' + esc(opt.name || '') + '"' : '') + '>'
+        + '<h4>' + esc(L.yourDates) + '</h4>'
+        + (opt.dest ? destSelect(q.destination) : '')
+        + '<label>' + esc(L.checkIn) + '<input type="date" data-hd-from value="' + esc(q.from || '') + '" min="' + today + '"></label>'
+        + '<label>' + esc(L.checkOut) + '<input type="date" data-hd-to value="' + esc(q.to || '') + '" min="' + today + '"></label>'
+        + '<div class="sta-ff-row"><label>' + esc(L.adultsL) + '<input type="number" min="1" max="8" data-hd-ad value="' + (q.adults || 2) + '"></label>'
+        + '<label>' + esc(L.childrenL) + '<input type="number" min="0" max="4" data-hd-ch value="' + ages.length + '"></label></div>'
+        + '<div class="sta-ff-row sta-ff-ages" data-hd-ages>' + ageSelects(ages.length, ages) + '</div>'
+        + '<p class="sta-ff-err" data-hd-err hidden></p>'
+        + '<button type="button" class="sta-btn sta-btn-block" data-hd-go>' + esc(opt.hotel ? L.checkPrices : L.showFree) + '</button></div>';
+    }
+    body.addEventListener('input', function (e) {
+      if (e.target.matches('[data-hd-ch]')) {
+        var box = e.target.closest('[data-hd]'), n = Math.max(0, Math.min(4, +e.target.value || 0));
+        var ages = $$('[data-hd-age]', box).map(function (x) { return +x.value; });
+        $('[data-hd-ages]', box).innerHTML = ageSelects(n, ages);
+      }
+      if (e.target.matches('[data-hd-from]')) {
+        var b2 = e.target.closest('[data-hd]'), to = $('[data-hd-to]', b2);
+        if (e.target.value && (!to.value || to.value <= e.target.value)) { var d = new Date(e.target.value); d.setDate(d.getDate() + 7); to.value = d.toISOString().slice(0, 10); }
+        to.min = e.target.value || today;
+      }
+    });
+    function goDates(box) {
+      var from = $('[data-hd-from]', box).value, to = $('[data-hd-to]', box).value, err = $('[data-hd-err]', box);
+      var sel = $('[data-hc-dest]', body), q = state.q || query(), hotel = box.dataset.hotel || (!sel || !sel.value ? q.hotel : ''), dest = sel ? sel.value : q.destination;
+      var fail = function (m) { err.textContent = m; err.hidden = false; };
+      if (!from || !to || to <= from) return fail(L.needDates);
+      if (!dest && !hotel) return fail(L.pickDest);
+      var p = new URLSearchParams({ from: from, to: to, room_count: 1, adults: Math.max(1, +$('[data-hd-ad]', box).value || 2) });
+      var ages = $$('[data-hd-age]', box).map(function (x) { return x.value; });
+      if (ages.length) p.set('ages', ages.join(','));
+      if (hotel) { p.set('hotel', hotel); p.set('hn', box.dataset.hname || ''); } else p.set('destination', dest);
+      location.href = location.pathname + '?' + p.toString();
+    }
+
+    /* ---------- results with prices (dates chosen) ---------- */
     function layout() {
-      var q = state.q, f = state.filter, cur = state.res.currency;
+      var q = state.q, f = state.filter;
       var boards = {}; state.list.forEach(function (h) { (h.boards || []).forEach(function (b) { boards[b] = (boards[b] || 0) + 1; }); });
       var names = { RO: 'Room only', BB: 'BB', HB: 'HB', FB: 'FB', AI: 'All inclusive' };
       var boardNames = window.STA_BOARDS || { RO: tr({ mk: 'Само ноќевање', en: 'Room only' }), BB: tr({ mk: 'Ноќевање со појадок', en: 'Bed & breakfast' }), HB: tr({ mk: 'Полупансион', en: 'Half board' }), FB: tr({ mk: 'Полн пансион', en: 'Full board' }), AI: 'All inclusive' };
       var starCount = {}; state.list.forEach(function (h) { if (h.stars) starCount[h.stars] = (starCount[h.stars] || 0) + 1; });
-      var side = '<aside class="sta-ht-side"><button type="button" class="sta-ht-close-side" data-ht-side-close aria-label="' + esc(L.close) + '">×</button>'
-        + '<div class="sta-ff"><h4>' + esc(L.name) + '</h4><input type="search" data-ht-f="name" value="' + esc(f.name) + '"></div>'
+      var side = datesBox(q, { dest: !q.hotel })
+        + '<div class="sta-ff"><label class="sta-ff-search">' + esc(L.name) + '<input type="search" data-ht-f="name" value="' + esc(f.name) + '"></label></div>'
         + (state.hi > state.lo ? '<div class="sta-ff"><h4>' + esc(L.price) + ' <output data-ht-price-out></output></h4><div class="sta-sb-range"><div class="sta-sb-range-fill" data-ht-fill></div>'
           + '<input type="range" min="' + state.lo + '" max="' + state.hi + '" step="1" value="' + (f.min || state.lo) + '" data-ht-lo><input type="range" min="' + state.lo + '" max="' + state.hi + '" step="1" value="' + (f.max || state.hi) + '" data-ht-hi></div></div>' : '')
         + '<div class="sta-ff"><h4>' + esc(L.stars) + '</h4>' + [5, 4, 3, 2, 1].filter(function (s) { return starCount[s]; }).map(function (s) {
@@ -73,18 +177,18 @@
         + '<div class="sta-ff"><h4>' + esc(L.board) + '</h4>' + ['RO', 'BB', 'HB', 'FB', 'AI'].filter(function (b) { return boards[b]; }).map(function (b) {
           return '<label class="sta-ff-opt"><input type="checkbox" data-ht-board value="' + b + '"' + (f.boards.indexOf(b) > -1 ? ' checked' : '') + '> <span>' + esc(boardNames[b] || names[b]) + '</span><small>' + boards[b] + '</small></label>';
         }).join('') + '</div>'
-        + '<div class="sta-ff"><label class="sta-ff-opt"><input type="checkbox" data-ht-free' + (f.free ? ' checked' : '') + '> <span>' + esc(L.onlyFree) + '</span></label></div>'
-        + '</aside>';
-      body.innerHTML = '<div class="sta-ht-head"><div><b data-ht-count></b><span class="sta-muted"> · ' + esc(who(q)) + '</span></div>'
-        + '<div class="sta-ht-tools"><button type="button" class="sta-ht-filters-btn" data-ht-side-open>' + esc(L.filters) + '</button><label>' + esc(L.sort) + ' <select data-ht-sort>'
+        + '<div class="sta-ff"><label class="sta-ff-opt"><input type="checkbox" data-ht-free' + (f.free ? ' checked' : '') + '> <span>' + esc(L.onlyFree) + '</span></label></div>';
+      var sort = '<label>' + esc(L.sort) + ' <select data-ht-sort>'
         + [['rec', L.sortRec], ['low', L.sortLow], ['high', L.sortHigh], ['stars', L.sortStars]].map(function (o) { return '<option value="' + o[0] + '"' + (f.sort === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('')
-        + '</select></label></div></div><div class="sta-ht-wrap">' + side + '<div class="sta-ht-main"><div class="sta-ht-list" data-ht-list></div><div class="sta-ht-more" data-ht-more></div></div></div>';
-      var side2 = $('.sta-ht-side', body);
-      side2.addEventListener('input', onFilter); side2.addEventListener('change', onFilter);
+        + '</select></label>';
+      shell(side, '', sort);
+      $('[data-hf-note]', body).textContent = ' · ' + who(q);
+      var side2 = $('.sta-finder-side', body);
+      side2.addEventListener('input', function (e) { if (!e.target.closest('[data-hd]')) onFilter(); });
+      side2.addEventListener('change', function (e) { if (!e.target.closest('[data-hd]')) onFilter(); });
       $('[data-ht-sort]', body).addEventListener('change', function (e) { f.sort = e.target.value; state.shown = perPage; list(); });
-      $('[data-ht-side-open]', body).addEventListener('click', function () { body.classList.add('is-side'); });
-      $('[data-ht-side-close]', body).addEventListener('click', function () { body.classList.remove('is-side'); });
       priceOut();
+      watchMore(function () { state.shown += perPage; list(true); });
     }
     function priceOut() {
       var lo = $('[data-ht-lo]', body), hi = $('[data-ht-hi]', body); if (!lo) return;
@@ -115,57 +219,29 @@
       var by = { rec: function (a, b) { return (b.featured - a.featured) || (a.price - b.price); }, low: function (a, b) { return a.price - b.price; }, high: function (a, b) { return b.price - a.price; }, stars: function (a, b) { return (b.stars || 0) - (a.stars || 0) || a.price - b.price; } };
       return out.sort(by[f.sort] || by.rec);
     }
-    function card(h) {
-      var q = state.q;
-      return '<article class="sta-ht-card' + (h.featured ? ' is-featured' : '') + '">'
-        + '<a class="sta-ht-img" href="#" data-ht-open="' + esc(h.id) + '">' + (h.image ? '<img src="' + esc(h.image) + '" alt="" loading="lazy">' : '<span class="sta-ht-noimg"></span>') + '</a>'
-        + '<div class="sta-ht-info"><h3><a href="#" data-ht-open="' + esc(h.id) + '">' + esc(h.name) + '</a> ' + stars(h.stars) + '</h3>'
-        + (h.place ? '<p class="sta-ht-place">' + esc(h.place) + '</p>' : '')
-        + (h.facilities && h.facilities.length ? '<ul class="sta-ht-fac">' + h.facilities.slice(0, 4).map(function (x) { return '<li>' + esc(tr(x)) + '</li>'; }).join('') + '</ul>' : '')
-        + '<p class="sta-ht-board">' + esc(tr(h.board)) + '</p>'
-        + (h.refundable ? '<p class="sta-ht-ok">✓ ' + esc(L.freeCancel) + '</p>' : '')
-        + (h.left ? '<p class="sta-ht-left">' + esc(fmt(L.left, h.left)) + '</p>' : '')
-        + '</div><div class="sta-ht-price"><small>' + esc(plural(q.nights, L.night1, L.nights)) + ', ' + esc(who(q).split(' · ').slice(1).join(', ')) + '</small>'
-        + '<b>' + money(h.price, h.currency) + '</b><button type="button" class="sta-btn" data-ht-open="' + esc(h.id) + '">' + esc(L.seeRooms) + '</button></div></article>';
-    }
     function list() {
-      var items = filtered(), box = $('[data-ht-list]', body);
-      $('[data-ht-count]', body).textContent = plural(items.length, L.hotel1, L.hotels);
-      box.innerHTML = items.length ? items.slice(0, state.shown).map(card).join('') : '<div class="sta-ht-empty">' + esc(L.noneFilter) + '</div>';
-      var more = $('[data-ht-more]', body);
-      more.innerHTML = items.length > state.shown ? '<button type="button" class="sta-btn sta-btn-ghost" data-ht-more-btn>' + esc(L.more) + ' (' + (items.length - state.shown) + ')</button>' : '';
+      var items = filtered(), box = $('[data-hf-list]', body);
+      $('[data-hf-count]', body).textContent = plural(items.length, L.hotel1, L.hotels);
+      box.innerHTML = items.length ? items.slice(0, state.shown).map(function (h) { return stdCard(h, true); }).join('') : '<div class="sta-ht-empty">' + esc(L.noneFilter) + '</div>';
+      $('[data-hf-more]', body).hidden = items.length <= state.shown;
     }
-    body.addEventListener('click', function (e) {
-      var o = e.target.closest('[data-ht-open]');
-      if (o) { e.preventDefault(); open(o.dataset.htOpen); return; }
-      if (e.target.closest('[data-ht-more-btn]')) { state.shown += perPage; list(); return; }
-      if (e.target.closest('[data-ht-back]')) { e.preventDefault(); history.back(); }
-    });
 
     /* ---------- all hotels without dates (no prices) ---------- */
     var cat = null, catTimer = null;
     function catalog(q) {
-      cat = { dest: q.destination || '', stars: state.filter.stars.slice(), name: '', page: 1, pages: 1, total: 0, items: [] };
-      var dests = H.destinations || [], byCountry = {};
-      dests.forEach(function (d) { (byCountry[d.country || ''] = byCountry[d.country || ''] || []).push(d); });
-      var opts = '<option value="">' + esc(L.allDest) + '</option>' + Object.keys(byCountry).map(function (c) {
-        var o = byCountry[c].map(function (d) { return '<option value="' + esc(d.id) + '"' + (d.id === cat.dest ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join('');
-        return c ? '<optgroup label="' + esc(c) + '">' + o + '</optgroup>' : o;
-      }).join('');
-      var side = '<aside class="sta-ht-side"><button type="button" class="sta-ht-close-side" data-ht-side-close aria-label="' + esc(L.close) + '">×</button>'
-        + (dests.length ? '<div class="sta-ff"><h4>' + esc(L.destination) + '</h4><select data-hc-dest>' + opts + '</select></div>' : '')
-        + '<div class="sta-ff"><h4>' + esc(L.name) + '</h4><input type="search" data-hc-name></div>'
+      state.q = q;
+      cat = { dest: q.destination || '', stars: state.filter.stars.slice(), name: '', page: 1, pages: 1, total: 0, items: [], loading: false };
+      var side = datesBox(q, { dest: true })
+        + '<div class="sta-ff"><label class="sta-ff-search">' + esc(L.name) + '<input type="search" data-hc-name></label></div>'
         + '<div class="sta-ff"><h4>' + esc(L.stars) + '</h4>' + [5, 4, 3, 2].map(function (n) {
           return '<label class="sta-ff-opt"><input type="checkbox" data-hc-star value="' + n + '"' + (cat.stars.indexOf(n) > -1 ? ' checked' : '') + '> <span>' + new Array(n + 1).join('★') + '</span></label>';
-        }).join('') + '</div></aside>';
-      body.innerHTML = '<div class="sta-ht-head"><div><b data-hc-count></b><span class="sta-muted"> · ' + esc(L.catalogNote) + '</span></div>'
-        + '<div class="sta-ht-tools"><button type="button" class="sta-ht-filters-btn" data-ht-side-open>' + esc(L.filters) + '</button></div></div>'
-        + '<div class="sta-ht-wrap">' + side + '<div class="sta-ht-main"><div class="sta-ht-list" data-hc-list></div><div class="sta-ht-more" data-hc-more></div></div></div>';
-      var sd = $('.sta-ht-side', body);
-      sd.addEventListener('change', function (e) { if (!e.target.matches('[data-hc-name]')) catFilter(); });
+        }).join('') + '</div>';
+      shell(side, '', '');
+      $('[data-hf-note]', body).textContent = ' · ' + L.catalogNote;
+      var sd = $('.sta-finder-side', body);
+      sd.addEventListener('change', function (e) { if (e.target.matches('[data-hc-dest], [data-hc-star]')) catFilter(); });
       $('[data-hc-name]', body).addEventListener('input', function () { clearTimeout(catTimer); catTimer = setTimeout(catFilter, 350); });
-      $('[data-ht-side-open]', body).addEventListener('click', function () { body.classList.add('is-side'); });
-      $('[data-ht-side-close]', body).addEventListener('click', function () { body.classList.remove('is-side'); });
+      watchMore(function () { if (!cat.loading && cat.page < cat.pages) { cat.page++; catLoad(); } });
       catLoad();
     }
     function catFilter() {
@@ -175,64 +251,61 @@
       cat.page = 1; cat.items = []; catLoad();
     }
     function catLoad() {
-      var box = $('[data-hc-list]', body), more = $('[data-hc-more]', body);
+      var box = $('[data-hf-list]', body), more = $('[data-hf-more]', body);
       if (cat.page === 1) box.innerHTML = '<div class="sta-ht-loading"><span class="sta-spin"></span>' + esc(L.loading) + '</div>';
-      else more.innerHTML = '<span class="sta-spin"></span>';
+      cat.loading = true;
       var p = new URLSearchParams({ page: cat.page, per_page: perPage });
       if (cat.dest) p.set('destination', cat.dest);
       if (cat.name) p.set('q', cat.name);
       if (cat.stars.length) p.set('stars', cat.stars.join(','));
       var mine = cat;
       api('hotels/catalog?' + p).then(function (r) {
-        if (mine !== cat || !$('[data-hc-list]', body)) return;
-        if (!r.ok) { box.innerHTML = '<div class="sta-ht-empty is-error">' + K.errors(r.body) + '</div>'; more.innerHTML = ''; return; }
-        var d = r.body.data; cat.items = cat.items.concat(d.hotels || []); cat.pages = d.pages; cat.total = d.total;
-        $('[data-hc-count]', body).textContent = plural(d.total, L.hotel1, L.hotels);
-        box.innerHTML = cat.items.length ? cat.items.map(catCard).join('') : '<div class="sta-ht-empty">' + esc(L.noneFilter)
-          + (cat.dest || cat.name || cat.stars.length ? ' <button type="button" class="sta-btn sta-btn-sm" data-hc-all>' + esc(L.showAll) + '</button>' : '') + '</div>';
-        more.innerHTML = cat.page < cat.pages ? '<button type="button" class="sta-btn sta-btn-ghost" data-hc-more-btn>' + esc(L.more) + ' (' + (cat.total - cat.items.length) + ')</button>' : '';
+        if (mine !== cat || !$('[data-hf-list]', body)) return;
+        cat.loading = false;
+        if (!r.ok) { box.innerHTML = '<div class="sta-ht-empty is-error">' + K.errors(r.body) + '</div>'; more.hidden = true; return; }
+        var d = r.body.data, fresh = d.hotels || [];
+        cat.pages = d.pages; cat.total = d.total;
+        $('[data-hf-count]', body).textContent = plural(d.total, L.hotel1, L.hotels);
+        if (cat.page === 1) box.innerHTML = '';
+        if (!cat.items.length && !fresh.length) {
+          box.innerHTML = '<div class="sta-ht-empty">' + esc(L.noneFilter)
+            + (cat.dest || cat.name || cat.stars.length ? ' <button type="button" class="sta-btn sta-btn-sm" data-hc-all>' + esc(L.showAll) + '</button>' : '') + '</div>';
+        } else {
+          box.insertAdjacentHTML('beforeend', fresh.map(function (h) { return stdCard(h, false); }).join(''));
+        }
+        cat.items = cat.items.concat(fresh);
+        more.hidden = cat.page >= cat.pages;
       });
     }
-    function catCard(h) {
-      return '<article class="sta-ht-card' + (h.featured ? ' is-featured' : '') + '">'
-        + '<a class="sta-ht-img" href="#" data-ht-open="' + esc(h.id) + '">' + (h.image ? '<img src="' + esc(h.image) + '" alt="" loading="lazy">' : '<span class="sta-ht-noimg"></span>') + '</a>'
-        + '<div class="sta-ht-info"><h3><a href="#" data-ht-open="' + esc(h.id) + '">' + esc(h.name) + '</a> ' + stars(h.stars) + '</h3>'
-        + (h.place ? '<p class="sta-ht-place">' + esc(h.place) + '</p>' : '')
-        + (h.facilities && h.facilities.length ? '<ul class="sta-ht-fac">' + h.facilities.slice(0, 4).map(function (x) { return '<li>' + esc(tr(x)) + '</li>'; }).join('') + '</ul>' : '')
-        + '</div><div class="sta-ht-price"><small>' + esc(L.pricesFor) + '</small>'
-        + '<button type="button" class="sta-btn" data-hc-dates="' + esc(h.id) + '">' + esc(L.checkPrices) + '</button>'
-        + '<button type="button" class="sta-btn sta-btn-ghost sta-btn-sm" data-ht-open="' + esc(h.id) + '">' + esc(L.details) + '</button></div></article>';
-    }
-    // "Check prices": the hotel goes into the search above and the calendar opens
+    // hotel page without dates: "Check prices" shows the dates box right there
     function pickDates(id, name) {
-      var form = $('[data-sb-hotels]', root);
-      if (!form) { open(id); return; }
-      var dq = $('[data-sb-q]', form), hh = $('[data-sb-h="hotel"]', form), hd = $('[data-sb-h="destination"]', form);
-      if (dq) dq.value = name || '';
-      if (hh) hh.value = id;
-      if (hd) hd.value = '';
-      var hn = $('input[name="hn"]', form) || form.appendChild(Object.assign(document.createElement('input'), { type: 'hidden', name: 'hn' }));
-      hn.value = name || '';
-      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      var from = $('[data-sb-from]', form);
-      if (from && from.value) { (form.requestSubmit ? form.requestSubmit() : form.submit()); return; }
-      setTimeout(function () { var b = $('.sta-sb-dates [data-sb-open]', form); if (b) b.click(); }, 350);
+      var sum = $('.sta-ht-sum', body);
+      var q = state.q || query();
+      if (sum) {
+        sum.innerHTML = datesBox({ from: q.from, to: q.to, adults: q.adults, ages: q.ages }, { hotel: id, name: name });
+        sum.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var f = $('[data-hd-from]', sum); if (f) f.focus();
+      }
     }
     body.addEventListener('click', function (e) {
+      var go = e.target.closest('[data-hd-go]');
+      if (go) { goDates(go.closest('[data-hd]')); return; }
+      // cards: open the hotel page
+      var a = e.target.closest('a[href^="#h="]');
+      if (a) { e.preventDefault(); open(decodeURIComponent(a.getAttribute('href').slice(3))); return; }
+      var o = e.target.closest('[data-ht-open]');
+      if (o) { e.preventDefault(); open(o.dataset.htOpen); return; }
+      if (e.target.closest('[data-ht-back]')) { e.preventDefault(); history.back(); return; }
       // no hotel for this destination / filters: all hotels again
       if (e.target.closest('[data-hc-all]')) {
         var sel = $('[data-hc-dest]', body), nm = $('[data-hc-name]', body);
         if (sel) sel.value = '';
         if (nm) nm.value = '';
         $$('[data-hc-star]:checked', body).forEach(function (c) { c.checked = false; });
-        var f = $('[data-sb-hotels]', root);
-        if (f) { $$('[data-sb-h]', f).forEach(function (h) { h.value = ''; }); var dq = $('[data-sb-q]', f); if (dq) dq.value = ''; }
         if (history.replaceState) { var u = new URL(location.href); u.searchParams.delete('destination'); u.searchParams.delete('hotel'); history.replaceState(null, '', u); }
         catFilter();
         return;
       }
-      var m = e.target.closest('[data-hc-more-btn]');
-      if (m) { cat.page++; catLoad(); return; }
       var d = e.target.closest('[data-hc-dates]');
       if (d) {
         var id = d.dataset.hcDates, h = (cat && cat.items || []).filter(function (x) { return x.id === id; })[0] || state.hotel || {};

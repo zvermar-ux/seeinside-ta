@@ -180,7 +180,7 @@ class STA_Items
 
     /* ======================== normalising ======================== */
 
-    protected static function base(): array
+    public static function base(): array
     {
         return [
             'key' => '', 'kind' => 'post', 'type' => '', 'id' => 0, 'title' => '', 'url' => '', 'image' => '', 'eyebrow' => '', 'subtitle' => '',

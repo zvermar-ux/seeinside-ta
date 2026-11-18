@@ -3403,3 +3403,12 @@ msgstr "Тогаш сите листи користат еден темплеј�
 
 msgid "Show all hotels"
 msgstr "Прикажи ги сите хотели"
+
+msgid "Show free hotels with prices"
+msgstr "Прикажи слободни хотели со цени"
+
+msgid "Choose the check-in and check-out dates."
+msgstr "Изберете датум на пријавување и одјавување."
+
+msgid "Choose a destination (or open a hotel)."
+msgstr "Изберете дестинација (или отворете хотел)."

@@ -43,15 +43,27 @@ class STA_Hotels
     public static function enqueue(): void
     {
         wp_enqueue_style('sta');
+        if (class_exists('STA_Listings')) {
+            STA_Listings::enqueue();   // the cards look like the apartment cards
+        }
         wp_enqueue_script('sta');
         wp_enqueue_script('sta-hotels', STA_URL.'assets/js/hotels.js', ['sta'], STA_VERSION, ['strategy' => 'defer', 'in_footer' => true]);
         $privacy = get_privacy_policy_url();
         wp_localize_script('sta-hotels', 'STA_HOTELS', [
             'consent' => sprintf(__('I agree that my data is used to process this request (%s).', 'seeinside-travel'), $privacy ? '<a href="'.esc_url($privacy).'" target="_blank">'.esc_html__('privacy policy', 'seeinside-travel').'</a>' : esc_html__('privacy policy', 'seeinside-travel')),
             'destinations' => self::destinations(),
+            // the apartment card (same design) with placeholders – the hotels are filled in by hotels.js
+            'card' => self::card_prototype(),
+            'priceToken' => sta_money(98765, 'EUR'),
             'i18n' => [
                 'allDest' => __('All destinations', 'seeinside-travel'),
                 'showAll' => __('Show all hotels', 'seeinside-travel'),
+                'yourDates' => __('Your dates', 'seeinside-travel'),
+                'adultsL' => __('Adults', 'seeinside-travel'),
+                'childrenL' => __('Children', 'seeinside-travel'),
+                'showFree' => __('Show free hotels with prices', 'seeinside-travel'),
+                'needDates' => __('Choose the check-in and check-out dates.', 'seeinside-travel'),
+                'pickDest' => __('Choose a destination (or open a hotel).', 'seeinside-travel'),
                 'destination' => __('Destination', 'seeinside-travel'),
                 'catalogNote' => __('choose dates to see prices', 'seeinside-travel'),
                 'pricesFor' => __('Prices for your dates', 'seeinside-travel'),
@@ -134,17 +146,32 @@ class STA_Hotels
         ]);
     }
 
+    /** A card exactly like the apartment cards, with __T__ (name), __P__ (place), __U__ (link), __I__ (photo), 5 stars, price 98765 */
+    protected static function card_prototype(): string
+    {
+        if (! class_exists('STA_Cards') || ! class_exists('STA_Items')) {
+            return '';
+        }
+        $it = array_merge(STA_Items::base(), [
+            'key' => 'hotel-__ID__', 'kind' => 'post', 'type' => 'accommodation', 'title' => '__T__', 'url' => 'https://sta.invalid/__U__',
+            'image' => 'https://sta.invalid/__I__.jpg', 'place' => '__P__', 'stars' => 5, 'price' => 98765, 'currency' => 'EUR',
+        ]);
+
+        return STA_Cards::render($it, null, 'accommodation');
+    }
+
     /** [sta_hotels] – search on top, results with filters, hotel page and booking (all on one page) */
     public static function shortcode($atts = []): string
     {
-        $a = shortcode_atts(['search' => '1', 'per_page' => 20], $atts, 'sta_hotels');
+        // the dates are chosen in the filter column ("Your dates"), like the apartments; search="1" adds the old search bar on top
+        $a = shortcode_atts(['search' => '0', 'per_page' => 18, 'columns' => 3], $atts, 'sta_hotels');
         if (! self::enabled()) {
             return current_user_can('edit_posts')
                 ? '<div class="sta sta-empty">'.esc_html__('Hotel search: add a hotel booking system (Hotelbeds) in the app under Booking systems (API), import destinations and hotels, then "Sync all" here.', 'seeinside-travel').'</div>'
                 : '';
         }
         self::enqueue();
-        $h = '<div class="sta sta-hotels" data-sta-hotels data-per-page="'.(int) $a['per_page'].'">';
+        $h = '<div class="sta sta-hotels" data-sta-hotels data-per-page="'.(int) $a['per_page'].'" data-columns="'.max(1, (int) $a['columns']).'">';
         if ($a['search']) {
             $h .= '<div class="sta-hotels-search">'.STA_Search_Box::shortcode(['tabs' => 'hotels', 'compact' => '1']).'</div>';
         }

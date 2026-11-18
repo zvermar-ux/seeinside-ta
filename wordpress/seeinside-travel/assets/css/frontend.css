@@ -503,7 +503,7 @@ body.sta-has-cta .sta-chat { bottom: 92px; }
 .sta-finder.is-loading .sta-finder-main { opacity: .5; pointer-events: none; transition: opacity .2s; }
 .sta-finder-toggle { display: none; }
 @media (max-width: 900px) {
-  .sta-finder-wrap { grid-template-columns: 1fr; }
+  .sta-finder-wrap { grid-template-columns: minmax(0, 1fr); }
   .sta-finder .sta-finder-toggle { display: inline-flex; align-items: center; gap: .4rem; margin: 0 0 12px; padding: .55rem 1rem; border: 1px solid var(--sta-line); border-radius: 999px; background: #fff; color: var(--sta-ink); font: inherit; font-weight: 600; cursor: pointer; }
   .sta-finder-side { display: none; position: static; max-height: none; }
   .sta-finder.is-open .sta-finder-side { display: block; }
@@ -749,6 +749,13 @@ input.sta-sb-q { color: var(--sta-primary) !important; font-size: 1.02rem !impor
 .sta-hotels { max-width: 1240px; margin: 0 auto; }
 /* inside the list design (header + list) the hotels use the full width like the other lists */
 .sta-term-sec .sta-hotels { max-width: none; }
+/* hotels in the apartment look: "Your dates" box, children's ages, error line, card without a price yet */
+.sta-ht-finder .sta-ff-dates select { width: 100%; }
+.sta-ff-ages { flex-wrap: wrap; }
+.sta-ff-ages:empty { display: none; }
+.sta-ff-err { margin: .4rem 0 0; color: #dc2626; font-size: .85rem; }
+.sta-c-price.is-ask small { letter-spacing: .04em; text-transform: none; font-size: .82rem; }
+.sta-ht-sum .sta-ff-dates { padding: 0; border: 0; }
 .sta-hotels-search { margin: 0 0 1.6rem; }
 .sta-sbox--compact .sta-sbox-form { box-shadow: 0 4px 18px rgba(15, 23, 42, .1); border: 1px solid var(--sta-line); border-radius: 10px; --sb-h: 76px; }
 .sta-sbox--compact .sta-sb-go { min-width: 160px; }

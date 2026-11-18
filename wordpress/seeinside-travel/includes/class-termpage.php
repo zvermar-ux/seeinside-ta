@@ -156,7 +156,7 @@ class STA_Term_Page
         $type = $a['page_type'];
         $body = match ($type) {
             'accommodation' => STA_Finder::shortcode(['columns' => $a['columns']]),
-            'hotels' => STA_Hotels::shortcode([]),
+            'hotels' => STA_Hotels::shortcode(['columns' => $a['columns']]),
             'event' => STA_Offer_Finder::shortcode(['type' => 'event', 'columns' => $a['columns']]),
             default => STA_Offer_Finder::shortcode(['type' => 'tour', 'columns' => $a['columns']]),
         };
