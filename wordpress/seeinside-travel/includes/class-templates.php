@@ -385,7 +385,30 @@ class STA_Templates
         update_option('sta_unify_backup', $backup, false);
         $made[] = __('pages of destinations, places, groups and types', 'seeinside-travel');
 
-        // 2. the listing pages: an exact copy of the same design, showing their list
+        // 2. the archives of tours, events and accommodation (/aranzmani/, /nastani/… when the address is the archive)
+        foreach (['sta_tour:archive' => 'tour', 'sta_event:archive' => 'event', 'sta_hotel:archive' => 'accommodation'] as $key => $type) {
+            $id = (int) ($known[$key] ?? 0);
+            if (! $id || ! get_post_status($id)) {
+                continue;
+            }
+            $backup['archives'][$id] ??= get_post_meta($id, '_elementor_data', true);
+            $copy = self::renew_ids($data);
+            $h = &self::find_widget($copy, 'sta-term-header');
+            if ($h !== null) {
+                $h['settings'] = array_merge((array) $h['settings'], ['page_type' => $type]);
+            }
+            unset($h);
+            $l = &self::find_widget($copy, 'sta-term-offers');
+            if ($l !== null) {
+                $l['settings'] = array_merge((array) $l['settings'], ['page_type' => $type, 'show_titles' => '']);
+            }
+            unset($l);
+            self::save_data($id, $copy);
+            $made[] = get_the_title($id);
+        }
+        update_option('sta_unify_backup', $backup, false);
+
+        // 3. the listing pages: an exact copy of the same design, showing their list
         foreach (self::LIST_PAGES as $slug => $type) {
             if ($type === 'hotels' && ! STA_Hotels::enabled()) {
                 continue;
@@ -468,6 +491,12 @@ class STA_Templates
         // the term templates get their own conditions back
         $backup = get_option('sta_unify_backup', []);
         $known = get_option('sta_elementor_templates', []);
+        foreach ((array) ($backup['archives'] ?? []) as $id => $old) {
+            if ($old) {
+                update_post_meta((int) $id, '_elementor_data', wp_slash(is_string($old) ? $old : wp_json_encode($old)));
+                delete_post_meta((int) $id, '_elementor_css');
+            }
+        }
         if (! empty($backup['conditions'])) {
             foreach ($backup['conditions'] as $id => $cond) {
                 update_post_meta((int) $id, '_elementor_conditions', $cond ?: []);
@@ -475,7 +504,6 @@ class STA_Templates
             if (! empty($known['tax:sta_hotel_type'])) {
                 update_post_meta((int) $known['tax:sta_hotel_type'], '_elementor_conditions', ['include/archive/sta_hotel_type']);
             }
-            delete_option('sta_unify_backup');
             if (class_exists('\ElementorPro\Modules\ThemeBuilder\Module')) {
                 try {
                     \ElementorPro\Modules\ThemeBuilder\Module::instance()->get_conditions_manager()->get_cache()->regenerate();
@@ -483,6 +511,8 @@ class STA_Templates
                 }
             }
         }
+
+        delete_option('sta_unify_backup');
 
         return $n;
     }

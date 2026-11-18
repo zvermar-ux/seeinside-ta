@@ -127,7 +127,11 @@ class STA_Term_Page
         if (! $img) {
             $img = $type === 'hotels' ? (string) ((get_option('sta_meta', [])['hotels']['cover'] ?? '') ?: '') : self::sample_image($type);
         }
-        $title = $a['title'] ?: ($pid ? get_the_title($pid) : (self::page_kinds()[$type] ?? ''));
+        $qo = get_queried_object();
+        if ($qo instanceof WP_Post_Type) {
+            $pid = 0;   // the archive of tours / events (its address can be /aranzmani/)
+        }
+        $title = $a['title'] ?: ($pid ? get_the_title($pid) : ($qo instanceof WP_Post_Type ? $qo->labels->name : (self::page_kinds()[$type] ?? '')));
         if ($type === 'hotels') {
             $n = array_sum(array_map(fn ($d) => (int) ($d['hotels'] ?? 0), STA_Hotels::destinations()));
         } else {
