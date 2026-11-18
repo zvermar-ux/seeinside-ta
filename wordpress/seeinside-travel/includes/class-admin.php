@@ -178,6 +178,12 @@ class STA_Admin
             echo '<p>'.esc_html__('Single pages use the automatic layout. On pages use the blocks "SeeInside Travel" (Gutenberg) or the shortcodes from the Help tab – they work in every builder.', 'seeinside-travel').'</p>';
         }
         echo '<p>'.self::button('pages', __('Create pages (tours, hotels, events, visas, last minute, charters, flights, booking check)', 'seeinside-travel')).'</p>';
+        if ($builder === 'elementor_pro') {
+            // one look for every list: destinations, places, groups, types, categories + Organized tours, Hotels, Apartments, Events
+            echo '<p>'.self::button('unify', __('Unified design of all lists', 'seeinside-travel'), 'button button-primary', __('The design of the page "Accommodation type" (header and list) is copied to the pages of destinations, places, groups, tour types, event categories and to the pages Organized tours, Hotels, Apartments and Events. Photos chosen on each page stay. Continue?', 'seeinside-travel'))
+                .' '.self::button('restore_pages', __('Undo on the 4 pages', 'seeinside-travel'), 'button-link', __('The pages Organized tours, Hotels, Apartments and Events go back to how they were. Continue?', 'seeinside-travel')).'<br><span class="description">'
+                .esc_html__('Design it once in Elementor on the template "Page: Accommodation types – SeeInside" (Templates → Theme Builder → Archive), then click here. Other pages are not changed.', 'seeinside-travel').'</span></p>';
+        }
         echo '<p>'.self::button('menu', __('Create main menu (groups & destinations)', 'seeinside-travel'), 'button', __('The menu "SeeInside – main menu" is rebuilt from the groups, destinations and types. Continue?', 'seeinside-travel')).' <span class="description">'
             .esc_html__('Organized tours → groups, Accommodation → types and destinations, Events, Visas, Last minute, Flights, Contact. Run it again after adding new groups or destinations.', 'seeinside-travel').'</span></p></div>';
 
@@ -353,6 +359,15 @@ class STA_Admin
                 STA_Templates::create_pages();
                 $r = STA_Site::build_menu();
                 self::back('display', isset($r['error']) ? $r['error'] : sprintf(__('Menu "%1$s" ready (%2$d items). Check it in Appearance → Menus.', 'seeinside-travel'), $r['name'], $r['items']), ! isset($r['error']));
+                // no break
+            case 'unify':
+                STA_Templates::create_pages();
+                $r = STA_Templates::unify_design();
+                self::back('display', isset($r['error']) ? $r['error'] : sprintf(__('Same design on: %s', 'seeinside-travel'), $r['made'] ? implode(', ', $r['made']) : '—'), ! isset($r['error']));
+                // no break
+            case 'restore_pages':
+                $n = STA_Templates::restore_list_pages();
+                self::back('display', sprintf(__('Pages restored: %d', 'seeinside-travel'), $n));
                 // no break
             case 'pages':
                 $r = STA_Templates::create_pages();

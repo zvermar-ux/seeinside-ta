@@ -258,6 +258,158 @@ class STA_Templates
         return ['made' => $made];
     }
 
+    /* ======================== one design for every list ======================== */
+
+    /** Settings that belong to one page (what it shows, its photo, titles) – never copied between pages */
+    protected const OWN_SETTINGS = ['preview_tax', 'page_type', 'page_title', 'page_label', 'bg_image', 'bg_mode', 'types', 'children',
+        'title_accommodation', 'title_tour', 'title_event', 'title_children', '__globals__'];
+
+    /** The four listing pages and what they show */
+    public const LIST_PAGES = ['aranzmani' => 'tour', 'hoteli' => 'hotels', 'apartmani' => 'accommodation', 'nastani' => 'event'];
+
+    /** First widget of a type in Elementor data (by reference) */
+    protected static function &find_widget(array &$els, string $type)
+    {
+        $none = null;
+        foreach ($els as &$el) {
+            if (($el['elType'] ?? '') === 'widget' && ($el['widgetType'] ?? '') === $type) {
+                return $el;
+            }
+            if (! empty($el['elements'])) {
+                $hit = &self::find_widget($el['elements'], $type);
+                if ($hit !== null) {
+                    return $hit;
+                }
+                unset($hit);
+            }
+        }
+
+        return $none;
+    }
+
+    protected static function data(int $id): array
+    {
+        $raw = get_post_meta($id, '_elementor_data', true);
+        $data = is_array($raw) ? $raw : json_decode((string) $raw, true);
+
+        return is_array($data) ? $data : [];
+    }
+
+    protected static function save_data(int $id, array $data): void
+    {
+        update_post_meta($id, '_elementor_data', wp_slash(wp_json_encode($data)));
+        delete_post_meta($id, '_elementor_css');
+    }
+
+    /** Design settings of a widget (everything but what belongs to one page) */
+    protected static function design(?array $widget): array
+    {
+        return $widget ? array_diff_key((array) ($widget['settings'] ?? []), array_flip(self::OWN_SETTINGS)) : [];
+    }
+
+    /**
+     * The look of the accommodation-type page (header + offers, as designed in Elementor) is copied to the pages
+     * of every destination, place, group, tour type, event category, and to the pages Organized tours, Hotels,
+     * Apartments and Events. Each page keeps its own photo and what it shows.
+     */
+    public static function unify_design(string $from = 'tax:sta_hotel_type'): array
+    {
+        if (! defined('ELEMENTOR_VERSION')) {
+            return ['error' => __('Elementor is not active.', 'seeinside-travel')];
+        }
+        self::create_elementor_templates(false);
+        $known = get_option('sta_elementor_templates', []);
+        $ref = (int) ($known[$from] ?? 0);
+        $refData = $ref ? self::data($ref) : [];
+        $H = self::design(self::find_widget($refData, 'sta-term-header'));
+        $O = self::design(self::find_widget($refData, 'sta-term-offers'));
+        $headSection = (array) ($refData[0]['settings'] ?? ['layout' => 'full_width', 'stretch_section' => 'section-stretched']);
+        $made = [];
+
+        // pages of destinations, places, groups, types, categories
+        foreach ($known as $key => $id) {
+            if (! str_starts_with($key, 'tax:') || $key === $from || ! get_post_status($id)) {
+                continue;
+            }
+            $data = self::data((int) $id);
+            $h = &self::find_widget($data, 'sta-term-header');
+            if ($h !== null) {
+                $h['settings'] = array_merge($H, array_intersect_key((array) $h['settings'], array_flip(self::OWN_SETTINGS)));
+            }
+            unset($h);
+            $o = &self::find_widget($data, 'sta-term-offers');
+            if ($o !== null) {
+                $o['settings'] = array_merge($O, array_intersect_key((array) $o['settings'], array_flip(self::OWN_SETTINGS)));
+            }
+            unset($o);
+            self::save_data((int) $id, $data);
+            $made[] = get_the_title($id);
+        }
+
+        // the listing pages: header + list, the same look
+        $pages = get_option('sta_pages', []);
+        foreach (self::LIST_PAGES as $slug => $type) {
+            $pid = (int) ($pages[$slug] ?? 0);
+            if (! $pid || ! in_array(get_post_status($pid), ['publish', 'draft', 'private'], true)) {
+                continue;
+            }
+            if ($type === 'hotels' && ! STA_Hotels::enabled()) {
+                continue;
+            }
+            $old = self::data($pid);
+            $oldHead = self::find_widget($old, 'sta-term-header');
+            $oldList = self::find_widget($old, 'sta-term-offers');
+            // backup of the page as it was (once)
+            if (! get_post_meta($pid, '_sta_backup_content', true)) {
+                update_post_meta($pid, '_sta_backup_content', ['content' => get_post_field('post_content', $pid), 'elementor' => get_post_meta($pid, '_elementor_data', true), 'template' => get_post_meta($pid, '_wp_page_template', true)]);
+            }
+            $headOwn = $oldHead ? array_intersect_key((array) $oldHead['settings'], array_flip(['bg_image', 'bg_mode', 'page_title', 'page_label'])) : [];
+            $listOwn = $oldList ? array_intersect_key((array) $oldList['settings'], array_flip(['title_tour', 'title_accommodation', 'title_event'])) : [];
+            $layout = [
+                self::section([['size' => 100, 'widgets' => [self::widget('sta-term-header', array_merge($H, ['page_type' => $type], $headOwn))]]], $headSection),
+                self::section([['size' => 100, 'widgets' => [self::widget('sta-term-offers', array_merge($O, ['page_type' => $type, 'show_titles' => ''], $listOwn))]]]),
+            ];
+            wp_update_post(['ID' => $pid, 'post_content' => '[sta_term_header page_type="'.$type.'"]'."\n".'[sta_term_offers page_type="'.$type.'" titles=""]']);
+            update_post_meta($pid, '_elementor_edit_mode', 'builder');
+            update_post_meta($pid, '_elementor_template_type', 'wp-page');
+            update_post_meta($pid, '_elementor_version', ELEMENTOR_VERSION);
+            update_post_meta($pid, '_wp_page_template', 'elementor_header_footer');   // no theme title, full width like the archive pages
+            self::save_data($pid, $layout);
+            $made[] = get_the_title($pid);
+        }
+        if (class_exists('\Elementor\Plugin')) {
+            \Elementor\Plugin::$instance->files_manager->clear_cache();
+        }
+        sta_log('unified design: '.implode(', ', $made));
+
+        return ['made' => $made];
+    }
+
+    /** Back to how a listing page was before the unified design */
+    public static function restore_list_pages(): int
+    {
+        $n = 0;
+        foreach (array_keys(self::LIST_PAGES) as $slug) {
+            $pid = (int) (get_option('sta_pages', [])[$slug] ?? 0);
+            $b = $pid ? get_post_meta($pid, '_sta_backup_content', true) : null;
+            if (! is_array($b)) {
+                continue;
+            }
+            wp_update_post(['ID' => $pid, 'post_content' => $b['content'] ?? '']);
+            if (! empty($b['elementor'])) {
+                update_post_meta($pid, '_elementor_data', wp_slash(is_string($b['elementor']) ? $b['elementor'] : wp_json_encode($b['elementor'])));
+            } else {
+                delete_post_meta($pid, '_elementor_data');
+                delete_post_meta($pid, '_elementor_edit_mode');
+            }
+            update_post_meta($pid, '_wp_page_template', $b['template'] ?: 'default');
+            delete_post_meta($pid, '_sta_backup_content');
+            $n++;
+        }
+
+        return $n;
+    }
+
     /* ======================== pages ======================== */
 
     /** Ready pages with listings (shortcodes work in every builder / editor) */

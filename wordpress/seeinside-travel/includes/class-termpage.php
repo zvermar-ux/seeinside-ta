@@ -46,7 +46,12 @@ class STA_Term_Page
 
     public static function header($atts = []): string
     {
-        $a = shortcode_atts(['taxonomy' => '', 'term' => '', 'preview_tax' => '', 'height' => 340, 'kind' => '1', 'crumbs' => '1', 'count' => '1', 'desc' => '1', 'image' => '', 'image_mode' => 'fallback'], $atts, 'sta_term_header');
+        $a = shortcode_atts(['taxonomy' => '', 'term' => '', 'preview_tax' => '', 'height' => 340, 'kind' => '1', 'crumbs' => '1', 'count' => '1', 'desc' => '1', 'image' => '', 'image_mode' => 'fallback',
+            'page_type' => '', 'title' => '', 'label' => ''], $atts, 'sta_term_header');
+        // listing pages (tours, hotels, apartments, events): the same header with the page title
+        if ($a['page_type'] && ! (get_queried_object() instanceof WP_Term)) {
+            return self::page_header($a);
+        }
         $t = self::term($a);
         if (! $t) {
             return '';
@@ -79,6 +84,56 @@ class STA_Term_Page
             .($a['count'] ? '<span class="sta-term-count">'.esc_html(sprintf(_n('%d offer', '%d offers', self::count($t), 'seeinside-travel'), self::count($t))).'</span>' : '')
             .'</div></header>'
             .($desc && $a['desc'] ? '<div class="sta sta-term-desc sta-prose">'.wp_kses_post($desc).'</div>' : '');
+    }
+
+    /** Labels of the listing pages: badge and what is counted */
+    protected static function page_kinds(): array
+    {
+        return [
+            'tour' => __('Travel offer', 'seeinside-travel'), 'accommodation' => __('Accommodation', 'seeinside-travel'),
+            'event' => __('Events', 'seeinside-travel'), 'hotels' => __('Hotels', 'seeinside-travel'),
+        ];
+    }
+
+    /** Header of a listing page: same look as the destination / type pages */
+    protected static function page_header(array $a): string
+    {
+        wp_enqueue_style('sta');
+        $type = $a['page_type'];
+        $pid = (int) get_queried_object_id();
+        $img = $a['image_mode'] === 'always' && $a['image'] ? $a['image'] : ((string) get_the_post_thumbnail_url($pid ?: null, 'full') ?: $a['image']);
+        $title = $a['title'] ?: ($pid ? get_the_title($pid) : (self::page_kinds()[$type] ?? ''));
+        if ($type === 'hotels') {
+            $n = array_sum(array_map(fn ($d) => (int) ($d['hotels'] ?? 0), STA_Hotels::destinations()));
+        } else {
+            $pt = STA_Schema::TYPES[$type] ?? null;
+            $n = $pt ? (int) (wp_count_posts($pt)->publish ?? 0) : 0;
+        }
+        $desc = $pid ? (string) get_post_field('post_excerpt', $pid) : '';
+
+        return '<header class="sta sta-term-head'.($img ? ' has-img' : '').'" style="--th-h:'.max(160, (int) $a['height']).'px'.($img ? ';background-image:url(\''.esc_url($img).'\')' : '').'">'
+            .'<div class="sta-term-head-in">'
+            .($a['kind'] ? '<span class="sta-term-kind">'.esc_html($a['label'] ?: (self::page_kinds()[$type] ?? '')).'</span>' : '')
+            .'<h1>'.esc_html($title).'</h1>'
+            .($a['count'] && $n ? '<span class="sta-term-count">'.esc_html(sprintf(_n('%d offer', '%d offers', $n, 'seeinside-travel'), $n)).'</span>' : '')
+            .'</div></header>'
+            .($desc && $a['desc'] ? '<div class="sta sta-term-desc sta-prose">'.wp_kses_post(wpautop($desc)).'</div>' : '');
+    }
+
+    /** List of a listing page: tours / events / apartments with the filters, hotels with the hotel search */
+    protected static function page_offers(array $a): string
+    {
+        $head = fn (string $text) => $a['titles'] && $text !== '' ? '<h2 class="sta-h">'.esc_html($text).'</h2>' : '';
+        $type = $a['page_type'];
+        $body = match ($type) {
+            'accommodation' => STA_Finder::shortcode(['columns' => $a['columns']]),
+            'hotels' => STA_Hotels::shortcode([]),
+            'event' => STA_Offer_Finder::shortcode(['type' => 'event', 'columns' => $a['columns']]),
+            default => STA_Offer_Finder::shortcode(['type' => 'tour', 'columns' => $a['columns']]),
+        };
+        $title = ['tour' => $a['title_tour'], 'accommodation' => $a['title_accommodation'], 'event' => $a['title_event']][$type] ?? '';
+
+        return '<section class="sta sta-term-sec">'.$head((string) $title).$body.'</section>';
     }
 
     /** Offers on this term and its children (the term count does not include children) */
@@ -119,7 +174,10 @@ class STA_Term_Page
     public static function offers($atts = []): string
     {
         $a = shortcode_atts(['taxonomy' => '', 'term' => '', 'preview_tax' => '', 'types' => 'tour,accommodation,event', 'children' => '1', 'columns' => 3, 'limit' => 12,
-            'titles' => '1', 'title_accommodation' => '', 'title_tour' => '', 'title_event' => '', 'title_children' => ''], $atts, 'sta_term_offers');
+            'titles' => '1', 'title_accommodation' => '', 'title_tour' => '', 'title_event' => '', 'title_children' => '', 'page_type' => ''], $atts, 'sta_term_offers');
+        if ($a['page_type'] && ! (get_queried_object() instanceof WP_Term)) {
+            return self::page_offers($a);
+        }
         // section title (or none)
         $head = fn (string $text) => $a['titles'] ? '<h2 class="sta-h">'.esc_html($text).'</h2>' : '';
         $t = self::term($a);
@@ -156,6 +214,15 @@ class STA_Term_Page
                     'sta_destination' => ['destination' => $slug], 'sta_place' => ['place' => $slug], 'sta_hotel_type' => ['type' => $slug], 'sta_group' => ['group' => $slug], default => [],
                 };
                 $h .= '<section class="sta sta-term-sec">'.$head($titles[$type]).STA_Finder::shortcode($preset + ['columns' => $a['columns']]).'</section>';
+                continue;
+            }
+            if ($type === 'tour' || $type === 'event') {
+                // tours / events of this destination, place, group or type – with the same filter column
+                $kindTax = $type === 'event' ? 'sta_event_category' : 'sta_tour_type';
+                $preset = match ($t->taxonomy) {
+                    'sta_destination' => ['destination' => $slug], 'sta_place' => ['place' => $slug], 'sta_group' => ['group' => $slug], $kindTax => ['kind' => $slug], default => [],
+                };
+                $h .= '<section class="sta sta-term-sec">'.$head($titles[$type]).STA_Offer_Finder::shortcode($preset + ['type' => $type, 'columns' => $a['columns']]).'</section>';
                 continue;
             }
             if (! $attr) {

@@ -460,7 +460,10 @@ class STA_Widget_Term_Header extends STA_Simple_Widget
     public function get_icon(): string { return 'eicon-header'; }
     protected function extra_controls(): void
     {
-        $this->add_control('preview_tax', ['label' => __('Preview in the editor with', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'sta_destination', 'options' => sta_term_page_taxonomies()]);
+        $this->add_control('page_type', ['label' => __('This page shows', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => '', 'options' => ['' => __('Destination / place / group / type of this archive', 'seeinside-travel'), 'tour' => __('All organized tours', 'seeinside-travel'), 'accommodation' => __('All apartments', 'seeinside-travel'), 'hotels' => __('Hotels (booking system)', 'seeinside-travel'), 'event' => __('All events', 'seeinside-travel')]]);
+        $this->add_control('preview_tax', ['label' => __('Preview in the editor with', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'sta_destination', 'options' => sta_term_page_taxonomies(), 'condition' => ['page_type' => '']]);
+        $this->add_control('page_title', ['label' => __('Title', 'seeinside-travel'), 'type' => Controls_Manager::TEXT, 'placeholder' => __('The page title', 'seeinside-travel'), 'condition' => ['page_type!' => '']]);
+        $this->add_control('page_label', ['label' => __('Badge text', 'seeinside-travel'), 'type' => Controls_Manager::TEXT, 'condition' => ['page_type!' => '']]);
         $this->add_control('height', ['label' => __('Height', 'seeinside-travel'), 'type' => Controls_Manager::NUMBER, 'default' => 340]);
         // background photo: the one of the destination/place/group from the app, or this one
         $this->add_control('bg_image', ['label' => __('Background photo', 'seeinside-travel'), 'type' => Controls_Manager::MEDIA, 'separator' => 'before']);
@@ -469,7 +472,7 @@ class STA_Widget_Term_Header extends STA_Simple_Widget
             'always' => __('Always (instead of the photo from the app)', 'seeinside-travel'),
         ]]);
     }
-    protected function html(array $s): string { return STA_Term_Page::header(['preview_tax' => $s['preview_tax'] ?? '', 'height' => $s['height'] ?? 340, 'image' => $s['bg_image']['url'] ?? '', 'image_mode' => $s['bg_mode'] ?? 'fallback', 'kind' => ($s['show_kind'] ?? 'yes') === 'yes' ? '1' : '', 'crumbs' => ($s['show_crumbs'] ?? 'yes') === 'yes' ? '1' : '', 'count' => ($s['show_count'] ?? 'yes') === 'yes' ? '1' : '', 'desc' => ($s['show_desc'] ?? 'yes') === 'yes' ? '1' : '']); }
+    protected function html(array $s): string { return STA_Term_Page::header(['page_type' => $s['page_type'] ?? '', 'title' => $s['page_title'] ?? '', 'label' => $s['page_label'] ?? '', 'preview_tax' => $s['preview_tax'] ?? '', 'height' => $s['height'] ?? 340, 'image' => $s['bg_image']['url'] ?? '', 'image_mode' => $s['bg_mode'] ?? 'fallback', 'kind' => ($s['show_kind'] ?? 'yes') === 'yes' ? '1' : '', 'crumbs' => ($s['show_crumbs'] ?? 'yes') === 'yes' ? '1' : '', 'count' => ($s['show_count'] ?? 'yes') === 'yes' ? '1' : '', 'desc' => ($s['show_desc'] ?? 'yes') === 'yes' ? '1' : '']); }
 
     protected function style_controls(): void
     {
@@ -535,8 +538,9 @@ class STA_Widget_Term_Offers extends STA_Simple_Widget
     public function get_icon(): string { return 'eicon-posts-grid'; }
     protected function extra_controls(): void
     {
-        $this->add_control('preview_tax', ['label' => __('Preview in the editor with', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'sta_destination', 'options' => sta_term_page_taxonomies()]);
-        $this->add_control('types', ['label' => __('Show', 'seeinside-travel'), 'type' => Controls_Manager::SELECT2, 'multiple' => true, 'default' => ['tour', 'accommodation', 'event'], 'options' => [
+        $this->add_control('page_type', ['label' => __('This page shows', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => '', 'options' => ['' => __('Destination / place / group / type of this archive', 'seeinside-travel'), 'tour' => __('All organized tours', 'seeinside-travel'), 'accommodation' => __('All apartments', 'seeinside-travel'), 'hotels' => __('Hotels (booking system)', 'seeinside-travel'), 'event' => __('All events', 'seeinside-travel')]]);
+        $this->add_control('preview_tax', ['label' => __('Preview in the editor with', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'sta_destination', 'options' => sta_term_page_taxonomies(), 'condition' => ['page_type' => '']]);
+        $this->add_control('types', ['label' => __('Show', 'seeinside-travel'), 'condition' => ['page_type' => ''], 'type' => Controls_Manager::SELECT2, 'multiple' => true, 'default' => ['tour', 'accommodation', 'event'], 'options' => [
             'tour' => __('Organized tours', 'seeinside-travel'), 'accommodation' => __('Accommodation (with filters)', 'seeinside-travel'), 'event' => __('Events', 'seeinside-travel'),
         ]]);
         $this->add_control('children', ['label' => __('Sub-destinations / places as tiles', 'seeinside-travel'), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes']);
@@ -556,7 +560,7 @@ class STA_Widget_Term_Offers extends STA_Simple_Widget
     }
     protected function html(array $s): string
     {
-        return STA_Term_Page::offers(['preview_tax' => $s['preview_tax'] ?? '', 'types' => implode(',', (array) ($s['types'] ?: ['tour', 'accommodation', 'event'])), 'children' => ($s['children'] ?? '') === 'yes' ? '1' : '', 'columns' => $s['columns'] ?? 3,
+        return STA_Term_Page::offers(['page_type' => $s['page_type'] ?? '', 'preview_tax' => $s['preview_tax'] ?? '', 'types' => implode(',', (array) ($s['types'] ?: ['tour', 'accommodation', 'event'])), 'children' => ($s['children'] ?? '') === 'yes' ? '1' : '', 'columns' => $s['columns'] ?? 3,
             'titles' => ($s['show_titles'] ?? 'yes') === 'yes' ? '1' : '', 'title_accommodation' => $s['title_accommodation'] ?? '', 'title_tour' => $s['title_tour'] ?? '', 'title_event' => $s['title_event'] ?? '', 'title_children' => $s['title_children'] ?? '']);
     }
 

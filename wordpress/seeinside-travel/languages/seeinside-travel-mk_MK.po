@@ -3306,3 +3306,79 @@ msgstr "Фонт на насловите"
 
 msgid "Labels under the cards"
 msgstr "Ознаки под картичките"
+
+msgid "%s days"
+msgstr "%s дена"
+
+msgid "All apartments"
+msgstr "Сите апартмани"
+
+msgid "All events"
+msgstr "Сите настани"
+
+msgid "All organized tours"
+msgstr "Сите организирани тури"
+
+msgid "Design it once in Elementor on the template \"Page: Accommodation types – SeeInside\" (Templates → Theme Builder → Archive), then click here. Other pages are not changed."
+msgstr "Дизајнирај еднаш во Elementor на темплејтот „Страница: Типови на сместување – SeeInside“ (Templates → Theme Builder → Archive), па кликни тука. Другите страници не се менуваат."
+
+msgid "Destination / place / group / type of this archive"
+msgstr "Дестинација / место / група / тип на оваа архива"
+
+msgid "Hotels (booking system)"
+msgstr "Хотели (резервациски систем)"
+
+msgid "Month"
+msgstr "Месец"
+
+msgid "Month of departure"
+msgstr "Месец на поаѓање"
+
+msgid "Nearest date"
+msgstr "Најблизок датум"
+
+msgid "Pages restored: %d"
+msgstr "Вратени страници: %d"
+
+msgid "Same design on: %s"
+msgstr "Ист дизајн на: %s"
+
+msgid "The design of the page \"Accommodation type\" (header and list) is copied to the pages of destinations, places, groups, tour types, event categories and to the pages Organized tours, Hotels, Apartments and Events. Photos chosen on each page stay. Continue?"
+msgstr "Дизајнот на страницата „Тип на сместување“ (наслов и листа) се копира на страниците на дестинации, места, групи, типови на тури, категории на настани и на страниците Организирани тури, Хотели, Апартмани и Настани. Сликите избрани на секоја страница остануваат. Продолжи?"
+
+msgid "The page title"
+msgstr "Насловот на страницата"
+
+msgid "The pages Organized tours, Hotels, Apartments and Events go back to how they were. Continue?"
+msgstr "Страниците Организирани тури, Хотели, Апартмани и Настани се враќаат како што беа. Продолжи?"
+
+msgid "This page shows"
+msgstr "Оваа страница прикажува"
+
+msgid "Travel offer"
+msgstr "Туристичка понуда"
+
+msgid "Type of tour"
+msgstr "Тип на тура"
+
+msgid "Undo on the 4 pages"
+msgstr "Врати ги 4-те страници"
+
+msgid "Unified design of all lists"
+msgstr "Унифициран дизајн на сите листи"
+
+msgid "e.g. Istanbul"
+msgstr "на пр. Истанбул"
+
+msgid "e.g. concert"
+msgstr "на пр. концерт"
+
+msgid "%d tour"
+msgid_plural "%d tours"
+msgstr[0] "%d аранжман"
+msgstr[1] "%d аранжмани"
+
+msgid "%d event"
+msgid_plural "%d events"
+msgstr[0] "%d настан"
+msgstr[1] "%d настани"
