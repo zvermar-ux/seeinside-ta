@@ -119,6 +119,9 @@ class STA_Term_Page
     /** Header of a listing page: same look as the destination / type pages */
     protected static function page_header(array $a): string
     {
+        if ($a['page_type'] === 'hotels') {
+            return '';   // the hotels page has no header: the list starts at the top
+        }
         wp_enqueue_style('sta');
         $type = $a['page_type'];
         $pid = (int) get_queried_object_id();

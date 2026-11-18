@@ -444,6 +444,14 @@ class STA_Templates
                     'template' => get_post_meta($pid, '_wp_page_template', true), 'mode' => get_post_meta($pid, '_elementor_edit_mode', true)]);
             }
             $copy = self::full_width(self::renew_ids($data));
+            if ($type === 'hotels') {
+                // the hotels page has no header: only the sections without it
+                $copy = array_values(array_filter($copy, function ($sec) {
+                    $probe = [$sec];
+
+                    return self::find_widget($probe, 'sta-term-header') === null;
+                }));
+            }
             $h = &self::find_widget($copy, 'sta-term-header');
             if ($h !== null) {
                 // the photo chosen on this page stays

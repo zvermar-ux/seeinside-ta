@@ -135,6 +135,14 @@
         + '<p class="sta-ff-err" data-hd-err hidden></p>'
         + '<button type="button" class="sta-btn sta-btn-block" data-hd-go>' + esc(opt.hotel ? L.checkPrices : L.showFree) + '</button></div>';
     }
+    // Hotelbeds has not every photo in every size: xl → bigger → standard → no photo
+    body.addEventListener('error', function (e) {
+      var img = e.target;
+      if (!img || img.tagName !== 'IMG' || img.src.indexOf('hotelbeds.com/giata/') < 0) return;
+      if (img.src.indexOf('/giata/xl/') > -1) { img.src = img.src.replace('/giata/xl/', '/giata/bigger/'); return; }
+      if (img.src.indexOf('/giata/bigger/') > -1) { img.src = img.src.replace('/giata/bigger/', '/giata/'); return; }
+      var ph = document.createElement('span'); ph.className = 'sta-c-noimg'; img.replaceWith(ph);
+    }, true);
     body.addEventListener('input', function (e) {
       if (e.target.matches('[data-hd-ch]')) {
         var box = e.target.closest('[data-hd]'), n = Math.max(0, Math.min(4, +e.target.value || 0));
