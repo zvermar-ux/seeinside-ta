@@ -355,10 +355,34 @@ class McsService
             return ['ok' => true, 'message' => __('Already in the old system: :r', ['r' => $b->legacy_ref])];
         }
         try {
-            $params = self::bookParams($b, $c);
-            $ref = self::client($c)->book($params);
+            // the old system books only "one of the results of a search": first with the price it gives for these guests,
+            // then with the price of the booked room asked with all its beds (the search gives the cheapest room that fits)
+            $tried = [];
+            $ref = '';
+            foreach (['guests', 'room'] as $mode) {
+                try {
+                    $params = self::bookParams($b, $c, $mode);
+                } catch (Throwable $e) {
+                    $tried[] = $mode.': '.$e->getMessage();
+
+                    continue;
+                }
+                $key = $params['price'].'|'.($params['accommodationid'] ?? $params['roomid'] ?? '');
+                if (isset($tried[$key])) {
+                    continue;   // the same offer again
+                }
+                $ref = self::client($c)->book($params);
+                $tried[$key] = sprintf('%s · %s %s→%s · %s %s · %s %s · %s',
+                    $params['booktype'].' '.$params['id'], ($params['accommodationid'] ?? null) ? 'accommodationid '.$params['accommodationid'] : 'roomid '.($params['roomid'] ?? ''),
+                    $params['checkin'], $params['checkout'], $params['adults'], __('adults'), $params['price'], $params['currency'], $ref ?: '—');
+                if ($ref !== '' && strcasecmp($ref, 'NotAvailable') !== 0) {
+                    break;
+                }
+            }
             if ($ref === '' || strcasecmp($ref, 'NotAvailable') === 0) {
-                $b->forceFill(['legacy_status' => 'not_available', 'legacy_error' => __('The old system answered "NotAvailable" – no free place for these dates and price.'), 'legacy_sent_at' => now()])->saveQuietly();
+                $b->forceFill(['legacy_status' => 'not_available', 'legacy_sent_at' => now(),
+                    'legacy_error' => __('The old system answered "NotAvailable".').' '.__('Tried:').' '.implode(' | ', $tried)])->saveQuietly();
+                Log::warning('MCS booking NotAvailable', ['booking' => $b->reference, 'tried' => array_values($tried)]);
 
                 return ['ok' => false, 'message' => $b->legacy_error];
             }
@@ -375,7 +399,7 @@ class McsService
     }
 
     /** Search the exact offer again (the price must be the one of the search), then the BookRequest fields */
-    protected static function bookParams(Booking $b, SupplierConnection $c): array
+    protected static function bookParams(Booking $b, SupplierConnection $c, string $mode = 'room'): array
     {
         $item = $b->bookable()->withoutGlobalScopes()->first();
         $ages = array_values(array_map('intval', array_slice((array) $b->children_ages, 0, max(0, (int) $b->children))));
@@ -396,10 +420,17 @@ class McsService
                 // villa sold in fixed terms (a "package" in the old system): the term starts on the check-in day
                 // the old system prices the cheapest room that fits the guests: the booked room is asked with all its beds,
                 // so the price (with the discount of the old system) is the one of this room
-                $ask = $roomCode && ($g = self::roomGuests($p, (string) $roomCode)['adults']) >= $adults + count($ages) ? ['adults' => $g] : ['adults' => $adults, 'children_ages' => $ages];
+                $ask = $mode === 'room' && $roomCode && ($g = self::roomGuests($p, (string) $roomCode)['adults']) >= $adults + count($ages) ? ['adults' => $g] : ['adults' => $adults, 'children_ages' => $ages];
                 $rows = $api->packageSearch(['checkin' => $b->date_from->toDateString(), 'package' => $code, 'room' => $roomCode] + $ask + (self::where($p) ?: ['country' => $item->country]));
                 $rows = array_values(array_filter($rows, [McsClient::class, 'offer']));
                 $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? '') === (string) $code));
+                // a day that is not the start of a term: the old system answers with the next term – not the booked one
+                if ($rows && ! collect($rows)->contains(fn ($r) => ($r['checkin'] ?? '') === $b->date_from->toDateString())) {
+                    throw new RuntimeException(__('The old system has no term from :d (it offers :o).', ['d' => $b->date_from->format('d.m.Y'), 'o' => Carbon::parse($rows[0]['checkin'])->format('d.m.Y').'–'.Carbon::parse($rows[0]['checkout'])->format('d.m.Y')]));
+                }
+                if (! $rows) {
+                    throw new RuntimeException(__('The old system gives no offer for :d with these guests.', ['d' => $b->date_from->format('d.m.Y')]));
+                }
                 // the answer has no room (accommodationid empty) although this room was asked: it is the answer for this room
                 if ($roomCode && $rows && collect($rows)->every(fn ($r) => blank($r['accommodationid'] ?? null))) {
                     $rows = [['accommodationid' => $roomCode] + $rows[0]];

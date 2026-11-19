@@ -2140,5 +2140,9 @@
     "Written by hand": "Рачно напишана",
     "notification": "известување",
     "switched off – sent only in this test": "исклучено – пратено само во овој тест",
-    "to the agency": "до агенцијата"
+    "to the agency": "до агенцијата",
+    "The old system answered \"NotAvailable\".": "Старата апликација одговори „NotAvailable“.",
+    "Tried:": "Пробано:",
+    "The old system has no term from :d (it offers :o).": "Старата апликација нема термин од :d (нуди :o).",
+    "The old system gives no offer for :d with these guests.": "Старата апликација не дава понуда за :d за овие гости."
 }
