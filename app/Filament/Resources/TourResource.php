@@ -175,10 +175,11 @@ class TourResource extends Resource
                     Forms\Components\Section::make(__('Departure dates'))->description(__('Leave the price empty to use the base price.'))->schema([
                         Forms\Components\Repeater::make('departures')->hiddenLabel()->relationship()->defaultItems(0)
                             ->reorderable(false)->collapsible()->cloneable()
-                            ->itemLabel(fn (array $state) => trim(($state['start_date'] ?? '').' → '.($state['end_date'] ?? ''), ' →') ?: null)
+                            ->itemLabel(fn (array $state) => (trim(($state['start_date'] ?? '').' → '.($state['end_date'] ?? ''), ' →') ?: null).(! empty($state['supplier_synced_at']) ? '  ·  '.__('Source').': Aries' : ''))
                             ->addActionLabel(__('Add departure date'))
                             ->columns(6)
                             ->schema([
+                                Forms\Components\Hidden::make('supplier_synced_at')->dehydrated(false),
                                 Forms\Components\DatePicker::make('start_date')->label(__('Departure'))->native(false)->displayFormat('d.m.Y')->required(),
                                 Forms\Components\DatePicker::make('end_date')->label(__('Return'))->native(false)->displayFormat('d.m.Y')->afterOrEqual('start_date'),
                                 Forms\Components\TextInput::make('seats_total')->label(__('Seats'))->numeric(),

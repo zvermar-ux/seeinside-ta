@@ -580,6 +580,8 @@ class McsService
                 $dep = TourDeparture::query()->firstOrNew(['tour_id' => $t->id, 'start_date' => $checkin]);
                 $dep->end_date = $min['checkout'] ?? $dep->end_date;
                 $dep->price_adult = round((float) $min['price'] / 2 * $k, 2);
+                $dep->supplier_price = round((float) $min['price'] / 2, 2);
+                $dep->supplier_synced_at = now();
                 if (in_array($dep->status instanceof DepartureStatus ? $dep->status->value : $dep->status, [null, '', 'sold_out'], true)) {
                     $dep->status = DepartureStatus::Available;
                 }
@@ -635,6 +637,7 @@ class McsService
                     } elseif (! $term->is_active) {
                         $term->forceFill(['is_active' => true])->save();
                     }
+                    $term->forceFill(['supplier_synced_at' => now()])->saveQuietly();
                     $seenTerms[] = $term->id;
                     $byRoom = $termRows->groupBy(fn ($r) => (string) ($r['accommodationid'] ?? ''));
                     foreach ($rooms as $room) {
@@ -642,6 +645,7 @@ class McsService
                         $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $room->id]);
                         if ($hit) {
                             $tp->price = round((float) $hit['price'] * $k, 2);
+                            $tp->supplier_price = (float) $hit['price'];
                             $tp->stop_sale = false;
                             $out['term_prices']++;
                         } else {
@@ -651,7 +655,8 @@ class McsService
                             $tp->stop_sale = true;   // this room is full in the old system for this term
                             $out['stop_sale']++;
                         }
-                        $tp->save();
+                        $tp->supplier_synced_at = now();
+                    $tp->save();
                     }
                 }
             }
@@ -693,11 +698,13 @@ class McsService
                     continue;
                 }
                 $rows = collect($rows)->filter(fn ($r) => (string) ($r['id'] ?? '') === (string) $code)->groupBy(fn ($r) => (string) ($r['roomid'] ?? ''));
+                $term->forceFill(['supplier_synced_at' => now()])->saveQuietly();
                 foreach ($rooms as $room) {
                     $hit = $rows->get((string) $room->provider_code)?->sortBy(fn ($r) => (float) $r['price'])->first();
                     $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $room->id]);
                     if ($hit) {
                         $tp->price = round((float) $hit['price'] * $k, 2);
+                        $tp->supplier_price = (float) $hit['price'];
                         $tp->stop_sale = false;
                         $out['term_prices']++;
                     } else {
@@ -707,6 +714,7 @@ class McsService
                         $tp->stop_sale = true;
                         $out['stop_sale']++;
                     }
+                    $tp->supplier_synced_at = now();
                     $tp->save();
                 }
             }

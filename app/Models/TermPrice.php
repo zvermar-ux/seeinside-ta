@@ -11,7 +11,7 @@ class TermPrice extends Model
 
     protected function casts(): array
     {
-        return ['price' => 'decimal:2', 'cost_price' => 'decimal:2', 'stop_sale' => 'boolean'];
+        return ['price' => 'decimal:2', 'cost_price' => 'decimal:2', 'stop_sale' => 'boolean', 'supplier_price' => 'decimal:2', 'supplier_synced_at' => 'datetime'];
     }
 
     protected static function booted(): void

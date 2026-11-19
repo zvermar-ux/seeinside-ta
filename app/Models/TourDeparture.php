@@ -20,6 +20,8 @@ class TourDeparture extends Model
             'price_adult' => 'decimal:2',
             'price_child' => 'decimal:2',
             'last_minute_price' => 'decimal:2',
+            'supplier_price' => 'decimal:2',
+            'supplier_synced_at' => 'datetime',
         ];
     }
 

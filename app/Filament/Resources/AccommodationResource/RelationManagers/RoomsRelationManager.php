@@ -113,6 +113,19 @@ class RoomsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('name')->label(__('Room'))->weight('semibold')
                     ->state(fn (AccommodationRoom $r) => $r->tr('name'))
                     ->description(fn (AccommodationRoom $r) => $r->beds),
+                // link to the room of the old Aries system
+                Tables\Columns\TextColumn::make('aries')->label('Aries Room-Id')->badge()
+                    ->visible(fn (RelationManager $livewire) => \App\Filament\Resources\AccommodationResource::isMcs($livewire->getOwnerRecord()->supplier_connection_id))
+                    ->state(function (AccommodationRoom $r, RelationManager $livewire) {
+                        if (blank($r->provider_code)) {
+                            return __('Not linked');
+                        }
+                        $p = \App\Services\Mcs\McsService::accommodationProduct($livewire->getOwnerRecord());
+
+                        return $p ? ($p->roomOptions()[(string) $r->provider_code] ?? $r->provider_code) : $r->provider_code;
+                    })
+                    ->color(fn (AccommodationRoom $r) => blank($r->provider_code) ? 'danger' : 'success')
+                    ->icon(fn (AccommodationRoom $r) => blank($r->provider_code) ? 'heroicon-m-x-circle' : 'heroicon-m-link'),
                 Tables\Columns\TextColumn::make('room_type')->label(__('Room type'))->badge()->color('gray'),
                 Tables\Columns\TextColumn::make('board')->label(__('Board'))->badge()->color('info'),
                 Tables\Columns\TextColumn::make('unit_numbers')->label(__('Numbers'))->badge()->color('gray')->limitList(6)->placeholder('—'),

@@ -74,6 +74,12 @@ class StayTermsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('date_to')->label(__('Check-out'))->date('D d.m.Y'),
                 Tables\Columns\TextColumn::make('nights')->label(__('Nights'))->state(fn (StayTerm $r) => $r->nights())->alignCenter(),
                 Tables\Columns\TextColumn::make('label')->label(__('Name'))->placeholder('—')->toggleable(),
+                // taken from the old Aries system (dates and room prices) or entered here
+                Tables\Columns\TextColumn::make('source')->label(__('Source'))->badge()
+                    ->state(fn (StayTerm $r) => $r->supplier_synced_at ? 'Aries · '.$r->supplier_synced_at->format('d.m. H:i') : __('Entered here'))
+                    ->color(fn (StayTerm $r) => $r->supplier_synced_at ? 'success' : 'gray')
+                    ->icon(fn (StayTerm $r) => $r->supplier_synced_at ? 'heroicon-m-arrow-down-tray' : 'heroicon-m-pencil-square')
+                    ->tooltip(fn (StayTerm $r) => $r->supplier_synced_at ? __(':n of :t room prices from Aries', ['n' => $r->prices->whereNotNull('supplier_synced_at')->count(), 't' => $r->prices->count()]) : null),
                 Tables\Columns\TextColumn::make('prices_info')->label(__('Prices'))
                     ->state(function (StayTerm $r) use ($acc) {
                         $p = $r->prices->whereNotNull('price')->where('stop_sale', false)->pluck('price')->map(fn ($v) => (float) $v);

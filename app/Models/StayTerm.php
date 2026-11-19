@@ -13,7 +13,7 @@ class StayTerm extends Model
 
     protected function casts(): array
     {
-        return ['date_from' => 'date', 'date_to' => 'date', 'is_active' => 'boolean'];
+        return ['date_from' => 'date', 'date_to' => 'date', 'is_active' => 'boolean', 'supplier_synced_at' => 'datetime'];
     }
 
     protected static function booted(): void
