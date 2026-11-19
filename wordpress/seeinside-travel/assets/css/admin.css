@@ -88,8 +88,8 @@
 .sta-pick-res.is-loading { opacity: .5; }
 .sta-pick-hit { display: flex; align-items: center; gap: 8px; text-align: left; border: 1px solid #dcdcde; background: #fff; border-radius: 6px; padding: 5px; cursor: pointer; }
 .sta-pick-hit:hover { border-color: #2271b1; }
-.sta-pick-hit img, .sta-pick-noimg { width: 46px; height: 36px; object-fit: cover; border-radius: 4px; background: #f0f0f1; flex: none; }
-.sta-pick-hit span { display: grid; min-width: 0; flex: 1; }
+.sta-pick-hit img, .sta-pick-hit .sta-pick-noimg { display: block; width: 46px; height: 36px; object-fit: cover; border-radius: 4px; background: #f0f0f1; flex: none; }
+.sta-pick-hit .sta-pick-txt { display: grid; min-width: 0; flex: 1; }
 .sta-pick-hit b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sta-pick-hit small { color: #646970; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sta-pick-hit em { font-style: normal; color: #2271b1; font-size: 12px; white-space: nowrap; }

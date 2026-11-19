@@ -52,7 +52,7 @@ jQuery(function ($) {
 
   /* offers picked by hand: search, add, drag to order, remove */
   $('[data-sta-pick]').each(function () {
-    var $p = $(this), $list = $p.find('.sta-pick-list'), $res = $p.find('[data-sta-pick-res]'), $q = $p.find('[data-sta-pick-q]'), api = $p.data('source') === 'api_hotel', t = null, xhr = null;
+    var found = [], $p = $(this), $list = $p.find('.sta-pick-list'), $res = $p.find('[data-sta-pick-res]'), $q = $p.find('[data-sta-pick-q]'), api = $p.data('source') === 'api_hotel', t = null, xhr = null;
     $list.sortable({ handle: '.dashicons-menu', axis: 'y', update: refresh });
     function has(id) { return $list.children('li[data-id="' + id + '"]').length > 0; }
     function esc(s) { return $('<div>').text(s == null ? '' : String(s)).html(); }
@@ -72,18 +72,19 @@ jQuery(function ($) {
       $res.addClass('is-loading');
       fetch(C.ajax, { method: 'POST', body: fd, credentials: 'same-origin', signal: xhr.signal }).then(function (r) { return r.json(); }).then(function (r) {
         var items = (r && r.success && r.data.items) || [];
-        $res.html(items.length ? items.map(function (it) {
-          return '<button type="button" class="sta-pick-hit' + (has(it.id) ? ' is-in' : '') + '" data-it="' + esc(JSON.stringify(it)) + '">'
-            + (it.image ? '<img src="' + esc(it.image) + '" alt="" loading="lazy">' : '<span class="sta-pick-noimg"></span>')
-            + '<span><b>' + esc(it.name) + '</b><small>' + esc(it.meta || '') + '</small></span><em>' + esc(has(it.id) ? C.added : '+ ' + C.add) + '</em></button>';
+        found = items;
+        $res.html(items.length ? items.map(function (it, i) {
+          return '<button type="button" class="sta-pick-hit' + (has(it.id) ? ' is-in' : '') + '" data-i="' + i + '">'
+            + (it.image ? '<img src="' + esc(it.image) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : '<i class="sta-pick-noimg"></i>')
+            + '<span class="sta-pick-txt"><b>' + esc(it.name) + '</b><small>' + esc(it.meta || '') + '</small></span><em>' + esc(has(it.id) ? C.added : '+ ' + C.add) + '</em></button>';
         }).join('') + (r.data && r.data.total > items.length ? '<p class="description">' + items.length + ' / ' + r.data.total + '</p>' : '') : '<p class="description">' + esc(r && r.data && r.data.message || C.nothing) + '</p>');
       }).catch(function () {}).then(function () { $res.removeClass('is-loading'); });
     }
     $q.on('input', function () { clearTimeout(t); t = setTimeout(search, 300); }).on('focus', function () { if (!$res.children().length) search(); })
       .on('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
     $res.on('click', '.sta-pick-hit', function () {
-      var it = $(this).data('it'); if (typeof it === 'string') it = JSON.parse(it);
-      if (has(it.id)) return;
+      var it = found[+this.getAttribute('data-i')];
+      if (!it || has(it.id)) return;
       $list.append(li(it)); $(this).addClass('is-in').find('em').text(C.added); refresh();
     });
     $list.on('click', '.sta-pick-x', function () { $(this).closest('li').remove(); refresh(); search(); });
