@@ -914,9 +914,30 @@ class McsService
         }
 
         $valid = count(array_filter($rows, [McsClient::class, 'offer']));
+        // which days around it the old system really offers: the 6 days after it and the same weekday for 16 weeks
+        $scan = [];
+        if ($kind === 'package') {
+            $d0 = Carbon::parse($date);
+            $days = collect(range(1, 6))->map(fn ($i) => $d0->copy()->addDays($i))->merge(collect(range(1, 16))->map(fn ($i) => $d0->copy()->addWeeks($i)));
+            $qs = $days->mapWithKeys(fn ($d) => [$d->toDateString() => ['checkin' => $d->toDateString(), 'package' => $code, 'adults' => 2] + $where])->all();
+            foreach ($api->packageSearchMany($qs, max(1, (int) ($c->settings['concurrency'] ?? 1))) as $day => $rr) {
+                if ($rr instanceof Throwable) {
+                    $scan[Carbon::parse($day)->format('d.m.Y')] = 'error: '.mb_substr($rr->getMessage(), 0, 80);
+
+                    continue;
+                }
+                $ok = array_values(array_filter($rr, [McsClient::class, 'offer']));
+                $scan[Carbon::parse($day)->format('d.m.Y')] = $ok
+                    ? implode(', ', array_map(fn ($r) => $r['price'].' ('.Carbon::parse($r['checkin'])->format('d.m').'–'.Carbon::parse($r['checkout'])->format('d.m').')', $ok))
+                    : (count($rr) ? 'no offer ('.count($rr).' empty rows)' : 'nothing');
+            }
+            ksort($scan);
+            uksort($scan, fn ($a, $b) => Carbon::createFromFormat('d.m.Y', $a) <=> Carbon::createFromFormat('d.m.Y', $b));
+        }
 
         return ['offers_with_price' => $valid,
             'note' => $valid ? null : __('The old system has no offer for this Id on this date (empty rows dated 1970-01-01). Choose the first day of a term that is free in the old system.'),
+            'scan' => $scan,
             'per_room' => $perRoom, 'by_guests' => $byGuests, 'per_room_prices_differ' => count(array_unique($prices)) > 1,
             'rows' => $rows, 'where' => $where, 'product' => $p?->only(['kind', 'code', 'name', 'country', 'region', 'city', 'rooms'])];
     }

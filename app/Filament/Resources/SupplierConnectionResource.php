@@ -223,7 +223,7 @@ class SupplierConnectionResource extends Resource
                         $res = ['seconds' => round(microtime(true) - $t0, 1)] + $res;
                         $json = json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                         Notification::make()->title(__(':n offers', ['n' => $res['offers_with_price'] ?? count($res['rows'])]).' · '.$res['seconds'].' s')->{($res['offers_with_price'] ?? count($res['rows'])) ? 'success' : 'warning'}()->persistent()
-                            ->body(new \Illuminate\Support\HtmlString('<pre style="font-size:.7rem;max-height:22rem;overflow:auto;white-space:pre-wrap">'.e(mb_substr($json, 0, 6000)).'</pre>'))->send();
+                            ->body(new \Illuminate\Support\HtmlString('<pre style="font-size:.7rem;max-height:22rem;overflow:auto;white-space:pre-wrap">'.e(mb_substr($json, 0, 15000)).'</pre>'))->send();
                     }),
                 Tables\Actions\Action::make('mcsReport')->label(__('Report'))->icon('heroicon-o-document-magnifying-glass')->color('gray')
                     ->visible(fn (SupplierConnection $r) => $r->provider === SupplierProvider::Mcs && ! empty($r->settings['last_sync_result']))
