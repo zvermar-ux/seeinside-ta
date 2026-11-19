@@ -377,8 +377,13 @@ class McsService
             $roomCode = $b->room?->provider_code;
             if ($kind === 'package') {
                 // villa sold in fixed terms (a "package" in the old system): the term starts on the check-in day
-                $rows = $api->packageSearch(['checkin' => $b->date_from->toDateString(), 'package' => $code, 'adults' => $adults, 'children_ages' => $ages] + (self::where($p) ?: ['country' => $item->country]));
+                $rows = $api->packageSearch(['checkin' => $b->date_from->toDateString(), 'package' => $code, 'room' => $roomCode, 'adults' => $adults, 'children_ages' => $ages] + (self::where($p) ?: ['country' => $item->country]));
                 $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? '') === (string) $code));
+                // the answer has no room (accommodationid empty) although this room was asked: it is the answer for this room
+                if ($roomCode && $rows && collect($rows)->every(fn ($r) => blank($r['accommodationid'] ?? null))) {
+                    $rows = [['accommodationid' => $roomCode] + $rows[0]];
+                    $rows[0]['accommodationid'] = $roomCode;
+                }
                 $row = self::pick($rows, 'accommodationid', $roomCode, __('the room (Rooms → room in the old Aries system)'));
                 $params = ['booktype' => 'package', 'id' => $code, 'accommodationid' => $row['accommodationid']];
             } else {
@@ -613,6 +618,7 @@ class McsService
 
                 continue;
             }
+            $byDate = self::perRoom($api, $c, $code, $byDate, $rooms, $out);
             TermPrice::$quiet = true;
             $seenTerms = [];
             foreach ($byDate as $checkin => $rows) {
@@ -761,6 +767,53 @@ class McsService
         }
     }
 
+    /**
+     * The package search of the old system can answer without the room (accommodationid empty, one row per room,
+     * the same price). Then every linked room is asked on its own for each term, so each room gets its own price.
+     */
+    protected static function perRoom(McsClient $api, SupplierConnection $c, string $code, array $byDate, Collection $rooms, array &$out): array
+    {
+        $known = fn ($rows) => collect($rows)->contains(fn ($r) => filled($r['accommodationid'] ?? null));
+        if (collect($byDate)->every(fn ($rows) => $known($rows))) {
+            return $byDate;
+        }
+        $p = self::product($c, 'package', $code);
+        $where = self::where($p) ?: ['country' => $p?->country];
+        $queries = [];
+        foreach ($byDate as $checkin => $rows) {
+            if ($known($rows)) {
+                continue;
+            }
+            foreach ($rooms as $room) {
+                $queries[$checkin.'|'.$room->provider_code] = ['checkin' => $checkin, 'package' => $code, 'room' => (string) $room->provider_code, 'adults' => 2] + $where;
+            }
+        }
+        $prices = [];
+        foreach ($api->packageSearchMany($queries, max(1, (int) ($c->settings['concurrency'] ?? 1))) as $key => $rows) {
+            $out['calls']++;
+            [$checkin, $room] = explode('|', $key, 2);
+            if ($rows instanceof Throwable || ! $rows) {
+                continue;   // this room is not free in this term
+            }
+            $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? $code) === (string) $code));
+            // the answer for this room: its own row, or (when the API still gives no room) the first one
+            $mine = array_values(array_filter($rows, fn ($r) => (string) ($r['accommodationid'] ?? '') === $room)) ?: $rows;
+            if ($mine) {
+                $byDate[$checkin] = array_values(array_filter($byDate[$checkin], fn ($r) => filled($r['accommodationid'] ?? null)));
+                $prices[$checkin][$room] = (float) $mine[0]['price'];
+                $byDate[$checkin][] = ['id' => $code, 'accommodationid' => $room] + $mine[0];
+                $byDate[$checkin][count($byDate[$checkin]) - 1]['accommodationid'] = $room;
+            }
+        }
+        // the old system ignored the room: the same price for every room → say so
+        $same = collect($prices)->filter(fn ($p) => count($p) > 1 && count(array_unique($p)) === 1)->count();
+        if ($same && $same === collect($prices)->filter(fn ($p) => count($p) > 1)->count()) {
+            $out['notes'][] = ($p?->name ?? '#'.$code).': '.__('the old system gives the same price for every room (it does not answer per room) – ask MCS to fill "accommodationid" in PackageSearch.');
+        }
+
+        return $byDate;
+    }
+
     /** Raw answer of a search, to see what the old system gives for one Id and date */
     public static function probe(SupplierConnection $c, string $kind, string $code, string $date, int $nights = 7): array
     {
@@ -771,6 +824,22 @@ class McsService
             ? $api->packageSearch(['checkin' => $date, 'package' => $code, 'adults' => 2] + $where)
             : $api->hotelSearch(['checkin' => $date, 'nights' => $nights, 'hotel' => $code, 'adults' => 2] + $where);
 
-        return ['product' => $p?->only(['kind', 'code', 'name', 'country', 'region', 'city', 'rooms']), 'where' => $where, 'rows' => $rows];
+        $perRoom = [];
+        if ($kind === 'package') {
+            // each room on its own: does the old system give a price per room?
+            foreach ((array) ($p?->rooms ?? []) as $room) {
+                try {
+                    $rr = $api->packageSearch(['checkin' => $date, 'package' => $code, 'room' => (string) $room['code'], 'adults' => 2] + $where);
+                    $perRoom[] = ['room' => $room['code'].' · '.$room['room'], 'offers' => count($rr), 'prices' => array_values(array_unique(array_map(fn ($r) => $r['price'] ?? null, $rr))),
+                        'accommodationid' => array_values(array_unique(array_map(fn ($r) => $r['accommodationid'] ?? null, $rr)))];
+                } catch (Throwable $e) {
+                    $perRoom[] = ['room' => $room['code'], 'error' => $e->getMessage()];
+                }
+            }
+        }
+        $prices = array_filter(array_map(fn ($x) => $x['prices'][0] ?? null, $perRoom), fn ($v) => $v !== null);
+
+        return ['per_room' => $perRoom, 'per_room_prices_differ' => count(array_unique($prices)) > 1,
+            'rows' => $rows, 'where' => $where, 'product' => $p?->only(['kind', 'code', 'name', 'country', 'region', 'city', 'rooms'])];
     }
 }

@@ -2004,5 +2004,6 @@
     "Searches": "Пребарувања",
     "offers found: :o": "најдени понуди: :o",
     ":d dates (no longer offered: :s)": ":d термини (повеќе ги нема: :s)",
-    ":n new terms, :t room prices, stop sale: :x": ":n нови термини, :t цени на соби, стоп продажба: :x"
+    ":n new terms, :t room prices, stop sale: :x": ":n нови термини, :t цени на соби, стоп продажба: :x",
+    "the old system gives the same price for every room (it does not answer per room) – ask MCS to fill \"accommodationid\" in PackageSearch.": "старата апликација дава иста цена за сите соби (не одговара по соба) – побарајте од MCS да го пополнува „accommodationid“ во PackageSearch."
 }

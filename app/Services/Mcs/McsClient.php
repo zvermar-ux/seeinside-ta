@@ -216,7 +216,9 @@ class McsClient
         $ages = array_values(array_map('intval', (array) ($q['children_ages'] ?? [])));
         $p = ['checkin' => $q['checkin'], 'adults' => max(1, (int) ($q['adults'] ?? 2))] + array_filter([
             'country' => $q['country'] ?? null, 'region' => $q['region'] ?? null, 'city' => $q['city'] ?? null,
-        ]);
+            // one room of a package (the answer has no room otherwise): sent under the names the API may know
+            'accommodationid' => $q['room'] ?? null, 'accommodation' => $q['room'] ?? null, 'roomid' => $q['room'] ?? null,
+        ], fn ($v) => $v !== null && $v !== '');
         if ($ages) {
             $p['childs'] = count($ages);
             foreach ($ages as $i => $a) {
