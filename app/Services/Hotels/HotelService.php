@@ -244,10 +244,17 @@ class HotelService
             'country' => strtoupper(trim((string) ($f['country'] ?? ''))), 'dest' => trim((string) ($f['destination'] ?? '')), 'zone' => trim((string) ($f['zone'] ?? '')),
             'stars' => array_map('intval', $csv($f['stars'] ?? [])), 'type' => $csv($f['type'] ?? []), 'board' => array_map('strtoupper', $csv($f['board'] ?? [])),
             'feature' => $csv($f['feature'] ?? []), 'q' => trim((string) ($f['q'] ?? '')),
-            'page' => max(1, (int) ($f['page'] ?? 1)), 'per' => max(6, min(48, (int) ($f['per_page'] ?? 24))),
+            'page' => max(1, (int) ($f['page'] ?? 1)), 'per' => max(1, min(100, (int) ($f['per_page'] ?? 24))),
+            'ids' => $csv($f['ids'] ?? []),
         ];
         $rows = self::index($agencyId);
         $hits = array_values(array_filter($rows, fn ($r) => self::passes($r, $f)));
+        // only chosen hotels (lists on the website), in the chosen order
+        if ($f['ids']) {
+            $pos = array_flip($f['ids']);
+            $hits = array_values(array_filter($hits, fn ($r) => isset($pos[$r['id']])));
+            usort($hits, fn ($a, $b) => $pos[$a['id']] <=> $pos[$b['id']]);
+        }
         $count = function (string $skip, string $key) use ($rows, $f) {
             $n = [];
             foreach ($rows as $r) {

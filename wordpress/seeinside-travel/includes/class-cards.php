@@ -60,6 +60,7 @@ class STA_Cards
             'last_minute' => ['image', 'flag', 'badges', 'eyebrow', 'title', 'subtitle', 'stars', 'rating', 'dates', 'duration', 'transport', 'place', 'board', 'seats', 'excerpt', 'price', 'button'],
             'charter' => ['image', 'flag', 'eyebrow', 'title', 'subtitle', 'dates', 'transport', 'seats', 'excerpt', 'price', 'button'],
             'slide' => ['image', 'eyebrow', 'title', 'excerpt', 'button'],
+            'api_hotel' => ['image', 'flag', 'badges', 'eyebrow', 'title', 'stars', 'place', 'amenities', 'button'],
         ];
 
         return $map[$source] ?? $term;
@@ -100,6 +101,7 @@ class STA_Cards
             'visa' => ['ratio' => '16/9', 'elements' => self::els(['image', 'flag', 'eyebrow', 'title', 'subtitle', 'price', 'button'], $all), 'button_text' => ['mk' => 'Аплицирај', 'en' => 'Apply']],
             'custom' => ['elements' => self::els(['image', 'badges', 'eyebrow', 'title', 'subtitle', 'price', 'button'], $all)],
             'charter' => ['ratio' => '16/9', 'elements' => self::els(['flag', 'eyebrow', 'title', 'subtitle', 'dates', 'seats', 'price', 'button'], $all), 'button_text' => ['mk' => 'Резервирај', 'en' => 'Book']],
+            'api_hotel' => ['elements' => self::els(['image', 'badges', 'stars', 'title', 'place', 'amenities', 'button'], $all), 'button_text' => ['mk' => 'Провери цени', 'en' => 'Check prices']],
             'slide' => ['skin' => 'overlay', 'ratio' => '3/4', 'elements' => self::els(['image', 'eyebrow', 'title', 'excerpt', 'button'], $all)],
             'destination', 'group' => ['skin' => 'overlay', 'ratio' => '2/3', 'radius' => 22, 'button_text' => ['mk' => 'Види сите', 'en' => 'View all'],
                 'count_label' => ['mk' => 'понуди', 'en' => 'listings'], 'elements' => self::els(['image', 'title', 'count', 'button'], $all)],

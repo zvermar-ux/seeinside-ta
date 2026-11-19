@@ -69,6 +69,10 @@ class STA_Listings
             'eyebrow' => ['mk' => '', 'en' => ''], 'title' => ['mk' => '', 'en' => ''], 'highlight' => ['mk' => '', 'en' => ''],
             'subtitle' => ['mk' => '', 'en' => ''], 'link_text' => ['mk' => '', 'en' => ''], 'link_url' => '', 'heading_align' => in_array($layout, ['arc', 'coverflow'], true) ? 'center' : 'left',
             'own_design' => false, 'design' => [],
+            // only these (picked by hand, in this order): post ids, or hotel ids of the booking systems
+            'pick' => [], 'pick_names' => [],
+            // hotels of the booking systems: country / destination / area / stars / features
+            'api' => ['country' => '', 'destination' => '', 'zone' => '', 'stars' => [], 'features' => []],
         ];
     }
 
@@ -170,6 +174,31 @@ class STA_Listings
         $c['link_url'] = esc_url_raw((string) ($in['link_url'] ?? $d['link_url']));
         $c['heading_align'] = ($in['heading_align'] ?? $d['heading_align']) === 'center' ? 'center' : 'left';
         $c['design'] = $c['own_design'] ? STA_Cards::sanitize($source, is_array($in['design'] ?? null) ? $in['design'] : (array) $d['design']) : [];
+        // picked by hand
+        $pick = array_key_exists('pick', $in) ? (is_array($in['pick']) ? $in['pick'] : explode(',', (string) $in['pick'])) : (array) $d['pick'];
+        if (STA_Items::kind($source) === 'api') {
+            $pick = array_values(array_unique(array_filter(array_map(fn ($v) => preg_replace('/[^0-9A-Za-z:\-_]/', '', (string) $v), $pick))));
+        } elseif (STA_Items::kind($source) === 'post') {
+            $pick = array_values(array_unique(array_filter(array_map('intval', $pick))));
+        } else {
+            $pick = [];
+        }
+        $c['pick'] = array_slice($pick, 0, 100);
+        $names = (array) ($in['pick_names'] ?? $d['pick_names']);
+        $c['pick_names'] = [];
+        foreach ($c['pick'] as $id) {
+            if (isset($names[$id])) {
+                $c['pick_names'][$id] = sanitize_text_field((string) $names[$id]);
+            }
+        }
+        $api = is_array($in['api'] ?? null) ? $in['api'] : (array) $d['api'];
+        $c['api'] = [
+            'country' => strtoupper(substr(preg_replace('/[^A-Za-z]/', '', (string) ($api['country'] ?? '')), 0, 3)),
+            'destination' => preg_replace('/[^0-9A-Za-z:\-_]/', '', (string) ($api['destination'] ?? '')),
+            'zone' => sanitize_text_field((string) ($api['zone'] ?? '')),
+            'stars' => array_values(array_filter(array_map('intval', (array) ($api['stars'] ?? [])))),
+            'features' => array_values(array_intersect(array_map('sanitize_key', (array) ($api['features'] ?? [])), array_keys(STA_Hotels::features()))),
+        ];
 
         return $c;
     }
@@ -188,9 +217,13 @@ class STA_Listings
             $terms[$c['filter_tax']] = [$filterTerm];
         }
 
+        $pick = (array) ($c['pick'] ?? []);
+
         return STA_Items::load($c['source'], [
-            'limit' => $c['limit'], 'page' => $page, 'orderby' => $c['orderby'], 'terms' => $terms, 'featured' => $c['featured'],
-            'last_minute' => $c['last_minute'], 'parent' => $c['parent'], 'hide_empty' => $c['hide_empty'], 'search' => $search,
+            // picked by hand: all of them, in the chosen order
+            'limit' => $pick ? max($c['limit'], count($pick)) : $c['limit'], 'page' => $page, 'orderby' => $c['orderby'], 'terms' => $pick ? [] : $terms,
+            'featured' => $pick ? false : $c['featured'], 'last_minute' => $pick ? false : $c['last_minute'], 'parent' => $c['parent'], 'hide_empty' => $c['hide_empty'], 'search' => $search,
+            'ids' => $pick, 'api' => (array) ($c['api'] ?? []),
         ]);
     }
 
@@ -428,7 +461,7 @@ class STA_Listings
             }
         }
         $source = $atts['source'] ?? $atts['type'] ?? ($base['source'] ?? 'tour');
-        $source = ['hotel' => 'accommodation', 'hotels' => 'accommodation', 'tours' => 'tour', 'events' => 'event', 'visas' => 'visa', 'charters' => 'charter', 'destinations' => 'destination', 'groups' => 'group', 'lastminute' => 'last_minute', 'offers' => 'custom', 'other' => 'custom'][$source] ?? $source;
+        $source = ['hotel' => 'accommodation', 'hotels' => 'accommodation', 'api' => 'api_hotel', 'hotels_api' => 'api_hotel', 'tours' => 'tour', 'events' => 'event', 'visas' => 'visa', 'charters' => 'charter', 'destinations' => 'destination', 'groups' => 'group', 'lastminute' => 'last_minute', 'offers' => 'custom', 'other' => 'custom'][$source] ?? $source;
         $in = ['source' => $source] + array_intersect_key($atts, array_flip(['layout', 'limit', 'columns', 'columns_tablet', 'columns_mobile', 'gap', 'autoplay', 'loop', 'arrows', 'dots', 'orderby', 'pagination', 'featured', 'last_minute', 'parent', 'filter_tax']));
         foreach (['title', 'eyebrow', 'subtitle', 'link_text', 'highlight'] as $k) {
             if (isset($atts[$k])) {
@@ -445,6 +478,25 @@ class STA_Listings
             }
         }
         $in['terms'] = $terms;
+        // ids="12,15" – only these offers (for Hotels API the hotel ids, e.g. "3-12345")
+        if (! empty($atts['ids'])) {
+            $in['pick'] = explode(',', $atts['ids']);
+        }
+        // Hotels API: hotel_country="GR" hotel_destination="3:HAL" hotel_zone="Kassandra" stars="4,5" features="spa,pool"
+        if ($source === 'api_hotel') {
+            $api = (array) ($base['api'] ?? []);
+            foreach (['hotel_country' => 'country', 'hotel_destination' => 'destination', 'hotel_zone' => 'zone'] as $k => $f) {
+                if (isset($atts[$k])) {
+                    $api[$f] = $atts[$k];
+                }
+            }
+            foreach (['stars', 'features'] as $k) {
+                if (isset($atts[$k])) {
+                    $api[$k] = explode(',', $atts[$k]);
+                }
+            }
+            $in['api'] = $api;
+        }
         if ($base && ! isset($atts['source']) && ! isset($atts['type'])) {
             $in['source'] = $base['source'];
         }

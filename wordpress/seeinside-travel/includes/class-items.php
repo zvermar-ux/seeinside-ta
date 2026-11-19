@@ -15,6 +15,7 @@ class STA_Items
         return [
             'tour' => [__('Organized tours', 'seeinside-travel'), 'post', 'sta_tour'],
             'accommodation' => [__('Apartments', 'seeinside-travel'), 'post', 'sta_hotel'],
+            'api_hotel' => [__('Hotels (API)', 'seeinside-travel'), 'api', ''],
             'event' => [__('Events', 'seeinside-travel'), 'post', 'sta_event'],
             'visa' => [__('Visas', 'seeinside-travel'), 'post', 'sta_visa'],
             'custom' => [__('Other offers', 'seeinside-travel'), 'post', 'sta_offer'],
@@ -82,6 +83,8 @@ class STA_Items
                 return self::paged(array_map([self::class, 'from_charter'], $all), $limit, $page);
             case 'slide':
                 return self::paged(array_map([self::class, 'from_slide'], (array) get_option('sta_slider', [])), $limit, $page);
+            case 'api':
+                return self::load_api($q, $limit, $page);
         }
 
         $args = [
@@ -125,6 +128,66 @@ class STA_Items
             'total' => (int) $wq->found_posts,
             'pages' => (int) $wq->max_num_pages,
         ];
+    }
+
+    /**
+     * Hotels of the booking systems (Hotelbeds…) from SeeInside: by country / destination / area / stars / features,
+     * or only the chosen ones (ids, in that order). Cached 10 minutes.
+     */
+    protected static function load_api(array $q, int $limit, int $page): array
+    {
+        $f = (array) ($q['api'] ?? []);
+        $ids = array_values(array_filter(array_map('strval', (array) ($q['ids'] ?? []))));
+        $params = array_filter([
+            'country' => $ids ? '' : (string) ($f['country'] ?? ''),
+            'destination' => $ids ? '' : (string) ($f['destination'] ?? ''),
+            'zone' => $ids ? '' : (string) ($f['zone'] ?? ''),
+            'stars' => $ids ? '' : implode(',', array_map('intval', (array) ($f['stars'] ?? []))),
+            'feature' => $ids ? '' : implode(',', array_map('sanitize_key', (array) ($f['features'] ?? []))),
+            'q' => (string) ($q['search'] ?? ''),
+            'ids' => implode(',', $ids),
+            'page' => $page, 'per_page' => $limit,
+        ], fn ($v) => $v !== '' && $v !== null);
+        $key = 'sta_apih_'.md5(wp_json_encode($params).sta_lang());
+        $data = get_transient($key);
+        if (! is_array($data)) {
+            [$code, $body] = STA_Api::get('hotels/catalog', $params, 20);
+            if ($code !== 200 || ! isset($body['data'])) {
+                return ['items' => [], 'total' => 0, 'pages' => 0];
+            }
+            $data = (array) $body['data'];
+            set_transient($key, $data, 10 * MINUTE_IN_SECONDS);
+        }
+        $items = array_map([self::class, 'from_api_hotel'], (array) ($data['hotels'] ?? []));
+        if (($q['orderby'] ?? '') === 'random' && ! $ids) {
+            shuffle($items);
+        } elseif (($q['orderby'] ?? '') === 'title' && ! $ids) {
+            usort($items, fn ($a, $b) => strcoll($a['title'], $b['title']));
+        }
+
+        return ['items' => $items, 'total' => (int) ($data['total'] ?? count($items)), 'pages' => (int) ($data['pages'] ?? 1)];
+    }
+
+    /** A hotel of a booking system as a card (no price without dates – the button opens it to choose the dates) */
+    public static function from_api_hotel(array $h): array
+    {
+        $it = self::base();
+        $it['key'] = 'api:'.($h['id'] ?? '');
+        $it['kind'] = 'api';
+        $it['type'] = 'api_hotel';
+        $it['title'] = (string) ($h['name'] ?? '');
+        $it['url'] = add_query_arg('h', rawurlencode((string) ($h['id'] ?? '')), STA_Hotels::page_url());
+        $it['image'] = (string) ($h['image'] ?? '');
+        $it['stars'] = (int) ($h['stars'] ?? 0);
+        $it['place'] = (string) ($h['place'] ?? '');
+        $it['country_code'] = strtolower((string) ($h['country'] ?? ''));
+        $it['eyebrow'] = trim((string) ($h['zone'] ?? ''));
+        $feat = STA_Hotels::features();
+        $it['amenities'] = array_values(array_filter(array_map(fn ($k) => isset($feat[$k]) ? sta_t($feat[$k]) : null, array_slice((array) ($h['features'] ?? []), 0, 4))));
+        $it['featured'] = ! empty($h['featured']);
+        $it['currency'] = get_option('sta_meta', [])['agency']['currency'] ?? 'EUR';
+
+        return apply_filters('sta_item', $it, null, $h);
     }
 
     protected static function paged(array $all, int $limit, int $page): array

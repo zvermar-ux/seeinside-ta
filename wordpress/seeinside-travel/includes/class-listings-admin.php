@@ -15,6 +15,7 @@ class STA_Listings_Admin
         add_action('admin_post_sta_card_save', [self::class, 'save_card']);
         add_action('admin_post_sta_archives_save', [self::class, 'save_archives']);
         add_action('wp_ajax_sta_lc_preview', [self::class, 'preview']);
+        add_action('wp_ajax_sta_lc_pick', [self::class, 'pick_search']);
     }
 
     protected static function url(array $args = []): string
@@ -62,7 +63,7 @@ class STA_Listings_Admin
         wp_enqueue_style('sta-admin', STA_URL.'assets/css/admin.css', [], STA_VERSION);
         wp_enqueue_script('jquery-ui-sortable');
         wp_enqueue_script('sta-lc-admin', STA_URL.'assets/js/listings-admin.js', ['jquery', 'jquery-ui-sortable'], STA_VERSION, true);
-        wp_localize_script('sta-lc-admin', 'STA_LC', ['ajax' => admin_url('admin-ajax.php'), 'nonce' => wp_create_nonce('sta_lc_preview'), 'copied' => __('Copied', 'seeinside-travel'), 'confirmDelete' => __('Delete this list?', 'seeinside-travel'), 'leave' => __('Unsaved changes will be lost. Continue?', 'seeinside-travel')]);
+        wp_localize_script('sta-lc-admin', 'STA_LC', ['ajax' => admin_url('admin-ajax.php'), 'nonce' => wp_create_nonce('sta_lc_preview'), 'copied' => __('Copied', 'seeinside-travel'), 'confirmDelete' => __('Delete this list?', 'seeinside-travel'), 'leave' => __('Unsaved changes will be lost. Continue?', 'seeinside-travel'), 'pickNonce' => wp_create_nonce('sta_lc_pick'), 'nothing' => __('Nothing found.', 'seeinside-travel'), 'add' => __('Add', 'seeinside-travel'), 'added' => __('Added', 'seeinside-travel')]);
         $bunny = 'https://fonts.bunny.net/css?family=marck-script:400&display=swap';
         wp_enqueue_style('sta-lc-font', $bunny, [], null);
 
@@ -166,9 +167,11 @@ class STA_Listings_Admin
         // content
         echo '<details class="sta-card" open><summary><h2>'.esc_html__('What to show', 'seeinside-travel').'</h2></summary><table class="form-table">';
         echo self::row(__('Number', 'seeinside-travel'), self::num('list[limit]', $c['limit'], 1, 100));
-        $orders = $kind === 'term'
+        $orders = $kind === 'api'
+            ? ['date' => __('Recommended', 'seeinside-travel'), 'title' => __('Name', 'seeinside-travel'), 'random' => __('Random', 'seeinside-travel')]
+            : ($kind === 'term'
             ? ['date' => __('Name', 'seeinside-travel'), 'count' => __('Most offers', 'seeinside-travel'), 'random' => __('Random', 'seeinside-travel')]
-            : ['date' => __('Newest', 'seeinside-travel'), 'departure' => __('Next date', 'seeinside-travel'), 'price' => __('Lowest price', 'seeinside-travel'), 'title' => __('Name', 'seeinside-travel'), 'random' => __('Random', 'seeinside-travel')];
+            : ['date' => __('Newest', 'seeinside-travel'), 'departure' => __('Next date', 'seeinside-travel'), 'price' => __('Lowest price', 'seeinside-travel'), 'title' => __('Name', 'seeinside-travel'), 'random' => __('Random', 'seeinside-travel')]);
         echo self::row(__('Order', 'seeinside-travel'), self::select('list[orderby]', $c['orderby'], $orders));
         if ($kind === 'post') {
             echo self::row(__('Only', 'seeinside-travel'), self::check('list[featured]', $c['featured'], __('featured offers', 'seeinside-travel')).'<br>'.($src !== 'last_minute' ? self::check('list[last_minute]', $c['last_minute'], __('last minute offers', 'seeinside-travel')) : ''));
@@ -194,6 +197,13 @@ class STA_Listings_Admin
                 echo self::row(__('Which', 'seeinside-travel'), self::select('list[parent]', $c['parent'], $parents));
             }
             echo self::row(__('Empty ones', 'seeinside-travel'), self::check('list[hide_empty]', $c['hide_empty'], __('Hide categories without offers', 'seeinside-travel')));
+        } elseif ($kind === 'api') {
+            echo self::api_filters($c);
+        }
+        if ($kind === 'post' || $kind === 'api') {
+            echo self::row(__('Only these', 'seeinside-travel'), self::picker($c), $kind === 'api'
+                ? __('Search and add the hotels to show (e.g. 10 spa hotels). When some are added, only they are shown, in this order (drag to change it); the filters above then only help the search.', 'seeinside-travel')
+                : __('Search and add offers by name. When some are added, only they are shown, in this order (drag to change it).', 'seeinside-travel'));
         }
         echo '</table></details>';
 
@@ -222,6 +232,117 @@ class STA_Listings_Admin
         echo '<p class="sta-lc-bar"><button class="button button-primary button-hero">'.esc_html__('Save list', 'seeinside-travel').'</button></p></form>';
         echo '<div class="sta-lc-preview-wrap"><div class="sta-lc-preview-head"><b>'.esc_html__('Preview', 'seeinside-travel').'</b><span class="sta-lc-sizes"><button type="button" data-w="100%" class="is-on">'.esc_html__('Computer', 'seeinside-travel').'</button><button type="button" data-w="820px">'.esc_html__('Tablet', 'seeinside-travel').'</button><button type="button" data-w="390px">'.esc_html__('Phone', 'seeinside-travel').'</button></span></div><div class="sta-lc-preview" id="sta-lc-preview">'.STA_Listings::render($c).'</div></div>';
         echo '</div>';
+    }
+
+    /** Hotels of the booking systems: country → destination → area, stars, features */
+    protected static function api_filters(array $c): string
+    {
+        $a = (array) $c['api'];
+        $dests = STA_Hotels::destinations();
+        $countries = ['' => __('All countries', 'seeinside-travel')];
+        $byCountry = [];
+        foreach ($dests as $d) {
+            $cc = (string) ($d['country_code'] ?? '');
+            if ($cc !== '') {
+                $countries[$cc] = (string) ($d['country'] ?? $cc);
+            }
+            $byCountry[(string) ($d['country'] ?? $cc)][] = $d;
+        }
+        asort($countries);
+        $dsel = '<select name="list[api][destination]"><option value="">'.esc_html__('All destinations', 'seeinside-travel').'</option>';
+        $zones = [];
+        foreach ($byCountry as $country => $list) {
+            $dsel .= '<optgroup label="'.esc_attr($country).'">';
+            foreach ($list as $d) {
+                $dsel .= '<option value="'.esc_attr($d['id']).'"'.selected($a['destination'], (string) $d['id'], false).'>'.esc_html($d['name']).(! empty($d['hotels']) ? ' ('.(int) $d['hotels'].')' : '').'</option>';
+                if ((string) $d['id'] === $a['destination']) {
+                    $zones = array_column((array) ($d['zones'] ?? []), 'name');
+                }
+            }
+            $dsel .= '</optgroup>';
+        }
+        $dsel .= '</select>';
+        $zone = '<input type="text" class="regular-text" name="list[api][zone]" value="'.esc_attr($a['zone']).'" list="sta-lc-zones" placeholder="'.esc_attr__('e.g. Kassandra', 'seeinside-travel').'"><datalist id="sta-lc-zones">'
+            .implode('', array_map(fn ($z) => '<option value="'.esc_attr($z).'">', $zones)).'</datalist>';
+        $stars = '';
+        foreach ([5, 4, 3, 2, 1] as $n) {
+            $stars .= '<label class="sta-check"><input type="checkbox" name="list[api][stars][]" value="'.$n.'"'.checked(in_array($n, $a['stars'], true), true, false).'> '.str_repeat('★', $n).'</label> ';
+        }
+        $feats = '';
+        foreach (STA_Hotels::features() as $k => $l) {
+            $feats .= '<label class="sta-check"><input type="checkbox" name="list[api][features][]" value="'.esc_attr($k).'"'.checked(in_array($k, $a['features'], true), true, false).'> '.esc_html(sta_t($l)).'</label>';
+        }
+        $none = $dests ? '' : '<p class="description" style="color:#b45309">'.esc_html__('No hotels from booking systems yet (SeeInside → Booking systems → import the hotels).', 'seeinside-travel').'</p>';
+
+        return self::row(__('Country', 'seeinside-travel'), self::select('list[api][country]', $a['country'], $countries).$none)
+            .self::row(__('Destination', 'seeinside-travel'), $dsel)
+            .self::row(__('Area', 'seeinside-travel'), $zone, __('Empty = the whole destination.', 'seeinside-travel'))
+            .self::row(__('Stars', 'seeinside-travel'), $stars, __('None ticked = all.', 'seeinside-travel'))
+            .self::row(__('Must have', 'seeinside-travel'), '<div class="sta-boxes">'.$feats.'</div>', __('E.g. "Spa & sauna" for a wellness list.', 'seeinside-travel'));
+    }
+
+    /** Offers picked by hand (search, add, drag to order) */
+    protected static function picker(array $c): string
+    {
+        $isApi = STA_Items::kind($c['source']) === 'api';
+        $li = '';
+        foreach ((array) $c['pick'] as $id) {
+            $name = $isApi ? ($c['pick_names'][$id] ?? $id) : (get_the_title((int) $id) ?: '#'.$id);
+            $li .= self::pick_li((string) $id, (string) $name, $isApi);
+        }
+
+        return '<div class="sta-pick" data-sta-pick data-source="'.esc_attr($c['source']).'"><input type="hidden" name="list[pick_set]" value="1">'
+            .'<ol class="sta-pick-list">'.$li.'</ol>'
+            .'<div class="sta-pick-find"><input type="search" class="regular-text" data-sta-pick-q placeholder="'.esc_attr($isApi ? __('Hotel name… (the destination above narrows the search)', 'seeinside-travel') : __('Name of the offer…', 'seeinside-travel')).'" autocomplete="off">'
+            .' <button type="button" class="button" data-sta-pick-clear>'.esc_html__('Remove all', 'seeinside-travel').'</button></div>'
+            .'<div class="sta-pick-res" data-sta-pick-res></div></div>';
+    }
+
+    public static function pick_li(string $id, string $name, bool $api): string
+    {
+        return '<li data-id="'.esc_attr($id).'"><span class="dashicons dashicons-menu"></span> <b>'.esc_html($name).'</b> <small>'.esc_html($api ? $id : '#'.$id).'</small>'
+            .'<button type="button" class="sta-pick-x" aria-label="×">×</button>'
+            .'<input type="hidden" name="list[pick][]" value="'.esc_attr($id).'">'.($api ? '<input type="hidden" name="list[pick_names]['.esc_attr($id).']" value="'.esc_attr($name).'">' : '').'</li>';
+    }
+
+    /** Search for the picker: offers of a type, or hotels of the booking systems */
+    public static function pick_search(): void
+    {
+        if (! current_user_can('manage_options')) {
+            wp_send_json_error('403', 403);
+        }
+        check_ajax_referer('sta_lc_pick');
+        $source = sanitize_key($_POST['source'] ?? 'tour');
+        $q = sanitize_text_field(wp_unslash((string) ($_POST['q'] ?? '')));
+        $out = [];
+        if (STA_Items::kind($source) === 'api') {
+            $params = array_filter([
+                'q' => $q, 'per_page' => 30,
+                'country' => strtoupper(preg_replace('/[^A-Za-z]/', '', (string) ($_POST['country'] ?? ''))),
+                'destination' => preg_replace('/[^0-9A-Za-z:\-_]/', '', (string) ($_POST['destination'] ?? '')),
+                'zone' => sanitize_text_field(wp_unslash((string) ($_POST['zone'] ?? ''))),
+                'stars' => implode(',', array_map('intval', (array) ($_POST['stars'] ?? []))),
+                'feature' => implode(',', array_map('sanitize_key', (array) ($_POST['features'] ?? []))),
+            ], fn ($v) => $v !== '' && $v !== null);
+            [$code, $body] = STA_Api::get('hotels/catalog', $params, 20);
+            if ($code !== 200) {
+                wp_send_json_error(['message' => __('SeeInside did not answer.', 'seeinside-travel')]);
+            }
+            foreach ((array) ($body['data']['hotels'] ?? []) as $h) {
+                $out[] = ['id' => (string) $h['id'], 'name' => (string) $h['name'], 'meta' => trim(str_repeat('★', (int) ($h['stars'] ?? 0)).' '.($h['place'] ?? '')), 'image' => (string) ($h['image'] ?? '')];
+            }
+            $total = (int) ($body['data']['total'] ?? count($out));
+        } else {
+            $args = ['post_type' => STA_Items::post_types($source) ?: ['sta_tour'], 'post_status' => 'publish', 'numberposts' => 30, 'orderby' => 'title', 'order' => 'ASC'];
+            if ($q !== '') {
+                $args['s'] = $q;
+            }
+            foreach (get_posts($args) as $p) {
+                $out[] = ['id' => (string) $p->ID, 'name' => get_the_title($p), 'meta' => get_post_type_object($p->post_type)->labels->singular_name ?? '', 'image' => (string) get_the_post_thumbnail_url($p, 'thumbnail')];
+            }
+            $total = count($out);
+        }
+        wp_send_json_success(['items' => $out, 'total' => $total]);
     }
 
     /** Card design fields (used on the cards tab and inside a list) */
@@ -337,6 +458,9 @@ class STA_Listings_Admin
         self::guard('sta_list_save');
         $in = wp_unslash((array) ($_POST['list'] ?? []));
         $base = ! empty($in['id']) ? STA_Listings::get((int) $in['id']) : null;
+        if (! empty($in['pick_set']) && ! isset($in['pick'])) {
+            $in['pick'] = [];   // every picked offer removed
+        }
         $c = STA_Listings::sanitize($in, $base);
         if (! isset($in['terms'])) {
             $c['terms'] = [];
@@ -405,6 +529,9 @@ class STA_Listings_Admin
         $in = wp_unslash((array) ($_POST['list'] ?? []));
         if (! isset($in['terms'])) {
             $in['terms'] = [];
+        }
+        if (! empty($in['pick_set']) && ! isset($in['pick'])) {
+            $in['pick'] = [];
         }
         $c = STA_Listings::sanitize($in);
         if ($c['own_design']) {

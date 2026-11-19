@@ -50,6 +50,48 @@ jQuery(function ($) {
   $form.on('submit', function () { dirty = false; $form.find('input[type=color][data-empty]').each(function () { $(this).attr('type', 'hidden').val(''); }); });
   window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 
+  /* offers picked by hand: search, add, drag to order, remove */
+  $('[data-sta-pick]').each(function () {
+    var $p = $(this), $list = $p.find('.sta-pick-list'), $res = $p.find('[data-sta-pick-res]'), $q = $p.find('[data-sta-pick-q]'), api = $p.data('source') === 'api_hotel', t = null, xhr = null;
+    $list.sortable({ handle: '.dashicons-menu', axis: 'y', update: refresh });
+    function has(id) { return $list.children('li[data-id="' + id + '"]').length > 0; }
+    function esc(s) { return $('<div>').text(s == null ? '' : String(s)).html(); }
+    function li(it) {
+      return '<li data-id="' + esc(it.id) + '"><span class="dashicons dashicons-menu"></span> <b>' + esc(it.name) + '</b> <small>' + esc(api ? it.id : '#' + it.id) + '</small>'
+        + '<button type="button" class="sta-pick-x" aria-label="×">×</button><input type="hidden" name="list[pick][]" value="' + esc(it.id) + '">'
+        + (api ? '<input type="hidden" name="list[pick_names][' + esc(it.id) + ']" value="' + esc(it.name) + '">' : '') + '</li>';
+    }
+    function search() {
+      var fd = new FormData(); fd.set('action', 'sta_lc_pick'); fd.set('_ajax_nonce', C.pickNonce); fd.set('source', $p.data('source')); fd.set('q', $q.val());
+      if (api) {
+        ['country', 'destination', 'zone'].forEach(function (k) { var v = $form.find('[name="list[api][' + k + ']"]').val(); if (v) fd.set(k, v); });
+        $form.find('[name="list[api][stars][]"]:checked').each(function () { fd.append('stars[]', this.value); });
+        $form.find('[name="list[api][features][]"]:checked').each(function () { fd.append('features[]', this.value); });
+      }
+      if (xhr) xhr.abort(); xhr = new AbortController();
+      $res.addClass('is-loading');
+      fetch(C.ajax, { method: 'POST', body: fd, credentials: 'same-origin', signal: xhr.signal }).then(function (r) { return r.json(); }).then(function (r) {
+        var items = (r && r.success && r.data.items) || [];
+        $res.html(items.length ? items.map(function (it) {
+          return '<button type="button" class="sta-pick-hit' + (has(it.id) ? ' is-in' : '') + '" data-it="' + esc(JSON.stringify(it)) + '">'
+            + (it.image ? '<img src="' + esc(it.image) + '" alt="" loading="lazy">' : '<span class="sta-pick-noimg"></span>')
+            + '<span><b>' + esc(it.name) + '</b><small>' + esc(it.meta || '') + '</small></span><em>' + esc(has(it.id) ? C.added : '+ ' + C.add) + '</em></button>';
+        }).join('') + (r.data && r.data.total > items.length ? '<p class="description">' + items.length + ' / ' + r.data.total + '</p>' : '') : '<p class="description">' + esc(r && r.data && r.data.message || C.nothing) + '</p>');
+      }).catch(function () {}).then(function () { $res.removeClass('is-loading'); });
+    }
+    $q.on('input', function () { clearTimeout(t); t = setTimeout(search, 300); }).on('focus', function () { if (!$res.children().length) search(); })
+      .on('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
+    $res.on('click', '.sta-pick-hit', function () {
+      var it = $(this).data('it'); if (typeof it === 'string') it = JSON.parse(it);
+      if (has(it.id)) return;
+      $list.append(li(it)); $(this).addClass('is-in').find('em').text(C.added); refresh();
+    });
+    $list.on('click', '.sta-pick-x', function () { $(this).closest('li').remove(); refresh(); search(); });
+    $p.find('[data-sta-pick-clear]').on('click', function () { $list.empty(); refresh(); search(); });
+    // other filters above: new results
+    $form.on('change', '[name^="list[api]"]', function () { if ($res.children().length) search(); });
+  });
+
   $('.sta-lc-sizes button').on('click', function () {
     $(this).addClass('is-on').siblings().removeClass('is-on');
     $('#sta-lc-preview').css('max-width', $(this).data('w'));

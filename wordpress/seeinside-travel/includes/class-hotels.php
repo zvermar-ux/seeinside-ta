@@ -26,6 +26,12 @@ class STA_Hotels
         return (array) (get_option('sta_meta', [])['hotels']['destinations'] ?? []);
     }
 
+    /** Hotel features of the booking systems (filters) */
+    public static function features(): array
+    {
+        return ['pool' => ['mk' => 'Базен', 'en' => 'Swimming pool'], 'beach' => ['mk' => 'Плажа', 'en' => 'Beach'], 'wifi' => ['mk' => 'Wi-Fi', 'en' => 'Wi-Fi'], 'parking' => ['mk' => 'Паркинг', 'en' => 'Parking'], 'ac' => ['mk' => 'Клима уред', 'en' => 'Air conditioning'], 'restaurant' => ['mk' => 'Ресторан', 'en' => 'Restaurant'], 'spa' => ['mk' => 'Спа и сауна', 'en' => 'Spa & sauna'], 'gym' => ['mk' => 'Фитнес', 'en' => 'Gym'], 'kids' => ['mk' => 'За деца', 'en' => 'For children'], 'pets' => ['mk' => 'Дозволени миленици', 'en' => 'Pets allowed'], 'access' => ['mk' => 'Пристап за лица со попреченост', 'en' => 'Accessible']];
+    }
+
     /** Page with the hotel results */
     public static function page_url(): string
     {
@@ -58,7 +64,7 @@ class STA_Hotels
             'priceToken' => sta_money(98765, 'EUR'),
             // names of the filters of the results (the same as the app gives without dates)
             'types' => ['hotel' => ['mk' => 'Хотел', 'en' => 'Hotel'], 'aparthotel' => ['mk' => 'Апартхотел', 'en' => 'Aparthotel'], 'apartment' => ['mk' => 'Апартмани', 'en' => 'Apartments'], 'resort' => ['mk' => 'Ресорт', 'en' => 'Resort'], 'villa' => ['mk' => 'Вила', 'en' => 'Villa'], 'hostel' => ['mk' => 'Хостел', 'en' => 'Hostel'], 'guesthouse' => ['mk' => 'Пансион / B&B', 'en' => 'Guest house / B&B'], 'other' => ['mk' => 'Друго', 'en' => 'Other']],
-            'features' => ['pool' => ['mk' => 'Базен', 'en' => 'Swimming pool'], 'beach' => ['mk' => 'Плажа', 'en' => 'Beach'], 'wifi' => ['mk' => 'Wi-Fi', 'en' => 'Wi-Fi'], 'parking' => ['mk' => 'Паркинг', 'en' => 'Parking'], 'ac' => ['mk' => 'Клима уред', 'en' => 'Air conditioning'], 'restaurant' => ['mk' => 'Ресторан', 'en' => 'Restaurant'], 'spa' => ['mk' => 'Спа и сауна', 'en' => 'Spa & sauna'], 'gym' => ['mk' => 'Фитнес', 'en' => 'Gym'], 'kids' => ['mk' => 'За деца', 'en' => 'For children'], 'pets' => ['mk' => 'Дозволени миленици', 'en' => 'Pets allowed'], 'access' => ['mk' => 'Пристап за лица со попреченост', 'en' => 'Accessible']],
+            'features' => self::features(),
             'i18n' => [
                 'allDest' => __('All destinations', 'seeinside-travel'),
                 'showAll' => __('Show all hotels', 'seeinside-travel'),

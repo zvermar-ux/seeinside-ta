@@ -40,7 +40,8 @@ class HotelController extends Controller
             'stars' => 'nullable',
             'q' => 'nullable|string|max:80',
             'page' => 'nullable|integer|min:1|max:500',
-            'per_page' => 'nullable|integer|min:6|max:48',
+            'per_page' => 'nullable|integer|min:1|max:100',
+            'ids' => 'nullable|string|max:3000',   // chosen hotels (lists on the website)
         ]);
 
         return response()->json(['data' => HotelService::catalog($this->agencyId($request), $f)]);

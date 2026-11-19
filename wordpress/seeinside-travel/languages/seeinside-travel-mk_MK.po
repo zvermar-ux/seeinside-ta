@@ -3466,3 +3466,54 @@ msgstr "Резервацијата е примена – се отвора пл�
 
 msgid "Book and pay"
 msgstr "Резервирај и плати"
+
+msgid "Hotels (API)"
+msgstr "Хотели (API)"
+
+msgid "Only these"
+msgstr "Само овие"
+
+msgid "Search and add the hotels to show (e.g. 10 spa hotels). When some are added, only they are shown, in this order (drag to change it); the filters above then only help the search."
+msgstr "Пребарајте и додајте ги хотелите што да се прикажат (на пр. 10 спа хотели). Кога има додадени, се прикажуваат само тие, по овој редослед (повлечете за да го смените); филтрите горе тогаш само помагаат при пребарувањето."
+
+msgid "Search and add offers by name. When some are added, only they are shown, in this order (drag to change it)."
+msgstr "Пребарајте и додајте понуди по име. Кога има додадени, се прикажуваат само тие, по овој редослед (повлечете за да го смените)."
+
+msgid "e.g. Kassandra"
+msgstr "на пр. Касандра"
+
+msgid "No hotels from booking systems yet (SeeInside → Booking systems → import the hotels)."
+msgstr "Уште нема хотели од резервациски системи (SeeInside → Резервациски системи → увези ги хотелите)."
+
+msgid "Area"
+msgstr "Област"
+
+msgid "Empty = the whole destination."
+msgstr "Празно = целата дестинација."
+
+msgid "Must have"
+msgstr "Мора да има"
+
+msgid "E.g. \"Spa & sauna\" for a wellness list."
+msgstr "На пр. „Спа и сауна“ за велнес листа."
+
+msgid "Hotel name… (the destination above narrows the search)"
+msgstr "Име на хотел… (дестинацијата горе го стеснува пребарувањето)"
+
+msgid "Name of the offer…"
+msgstr "Име на понудата…"
+
+msgid "Remove all"
+msgstr "Отстрани ги сите"
+
+msgid "SeeInside did not answer."
+msgstr "SeeInside не одговори."
+
+msgid "Nothing found."
+msgstr "Ништо не е пронајдено."
+
+msgid "Add"
+msgstr "Додај"
+
+msgid "Added"
+msgstr "Додадено"

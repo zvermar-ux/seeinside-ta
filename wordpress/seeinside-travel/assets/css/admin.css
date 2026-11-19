@@ -74,3 +74,24 @@
 .sta-lc-types a { padding: 6px 12px; border: 1px solid #c3c4c7; border-radius: 999px; background: #fff; text-decoration: none; color: #1d2327; }
 .sta-lc-types a.is-on { background: #2271b1; border-color: #2271b1; color: #fff; }
 .sta-lc-form .sta-grid2 { grid-template-columns: 1fr; }
+
+/* Lists: offers picked by hand */
+.sta-pick { max-width: 720px; }
+.sta-pick-list { margin: 0 0 8px; padding: 0; list-style: none; counter-reset: pk; }
+.sta-pick-list li { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #dcdcde; border-radius: 6px; padding: 6px 8px; margin: 0 0 4px; counter-increment: pk; }
+.sta-pick-list li::before { content: counter(pk) "."; color: #646970; min-width: 20px; font-size: 12px; }
+.sta-pick-list li .dashicons-menu { cursor: move; color: #8c8f94; }
+.sta-pick-list li small { color: #646970; margin-left: auto; }
+.sta-pick-x { border: 0; background: none; color: #b32d2e; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.sta-pick-find { display: flex; gap: 6px; align-items: center; }
+.sta-pick-res { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px; margin-top: 8px; max-height: 360px; overflow: auto; }
+.sta-pick-res.is-loading { opacity: .5; }
+.sta-pick-hit { display: flex; align-items: center; gap: 8px; text-align: left; border: 1px solid #dcdcde; background: #fff; border-radius: 6px; padding: 5px; cursor: pointer; }
+.sta-pick-hit:hover { border-color: #2271b1; }
+.sta-pick-hit img, .sta-pick-noimg { width: 46px; height: 36px; object-fit: cover; border-radius: 4px; background: #f0f0f1; flex: none; }
+.sta-pick-hit span { display: grid; min-width: 0; flex: 1; }
+.sta-pick-hit b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sta-pick-hit small { color: #646970; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sta-pick-hit em { font-style: normal; color: #2271b1; font-size: 12px; white-space: nowrap; }
+.sta-pick-hit.is-in { opacity: .55; cursor: default; }
+.sta-pick-hit.is-in em { color: #008a20; }
