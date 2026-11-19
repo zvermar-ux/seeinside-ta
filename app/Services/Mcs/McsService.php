@@ -553,7 +553,8 @@ class McsService
             $chunks = array_chunk($queries, $concurrency * 5, true);
             foreach ($chunks as $i => $chunk) {
                 self::progress($c, __('searches :a of :b', ['a' => min(count($queries), ($i + 1) * $concurrency * 5), 'b' => count($queries)]));
-                foreach ($api->packageSearchMany($chunk, $concurrency, $timeout) as $k => $rows) {
+                // $qi, not $k: $k is the price factor of the connection (it was overwritten here → prices × thousands)
+                foreach ($api->packageSearchMany($chunk, $concurrency, $timeout) as $qi => $rows) {
                     $out['calls']++;
                     if ($rows instanceof Throwable) {
                         $out['errors'][$rows->getMessage()] = true;
@@ -564,7 +565,7 @@ class McsService
                     $failedInRow = 0;
                     foreach (array_filter($rows, [McsClient::class, 'offer']) as $r) {
                         $out['results']++;
-                        $found[(string) ($r['id'] ?? $chunk[$k]['package'])][(string) ($r['checkin'] ?? $chunk[$k]['checkin'])][] = $r;
+                        $found[(string) ($r['id'] ?? $chunk[$qi]['package'])][(string) ($r['checkin'] ?? $chunk[$qi]['checkin'])][] = $r;
                     }
                 }
                 // the old server does not answer at all: stop instead of waiting for hours

@@ -56,6 +56,13 @@ trait HasPromotions
         return filled($this->first_minute_discount) && (! $this->first_minute_until || $this->first_minute_until->endOfDay()->isFuture());
     }
 
+    /** Prices synced from the old Aries system (MCS) */
+    public function fromAries(): bool
+    {
+        return (bool) ($this->getAttribute('sync_supplier_prices') ?? false) && filled($this->getAttribute('provider_code'))
+            && filled($this->getAttribute('supplier_connection_id'));
+    }
+
     /** Apply the active promotion to a regular price */
     public function promoPrice(?float $regular): ?float
     {
@@ -71,7 +78,10 @@ trait HasPromotions
             }
         }
         if ($tier = $this->currentEarlyBookingTier()) {
-            return round($regular * (1 - $tier['percent'] / 100), 2);
+            $p = $regular * (1 - $tier['percent'] / 100);
+
+            // prices taken from the old Aries system: whole euros, rounded up like there (419 − 20% = 335,20 → 336)
+            return $this->fromAries() ? (float) ceil(round($p, 4)) : round($p, 2);
         }
         if ($this->isFirstMinuteActive()) {
             return $this->first_minute_discount_type === 'percent'
