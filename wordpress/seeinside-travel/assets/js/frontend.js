@@ -706,9 +706,19 @@
     }, 250); }
     form.addEventListener('change', function (e) { if (e.target.name === 'f_dest' && form.f_place) form.f_place.value = ''; if (['f_from', 'f_to', 'f_ad', 'f_ch', 'f_q'].indexOf(e.target.name) < 0) go(); });
     form.addEventListener('submit', function (e) { e.preventDefault(); go(); });
+    // "Clear all filters": every field empty and the page without filters (also when it is the same address)
+    var clr = $('[data-sta-ff-clear]', form);
+    if (clr) clr.addEventListener('click', function (e) {
+      e.preventDefault(); clearTimeout(timer);
+      $$('input, select', form).forEach(function (x) { if (x.type === 'checkbox' || x.type === 'radio') x.checked = x.value === '' || (x.name === 'f_beach' && x.value === '0'); else if (x.type !== 'hidden' && x.type !== 'range') x.value = ''; });
+      box.classList.add('is-loading');
+      location.replace(clr.href);
+    });
     if (form.f_q) form.f_q.addEventListener('search', function () { if (!form.f_q.value && new URLSearchParams(location.search).get('f_q')) go(); });
     var pr = $('[data-sta-price]', form), out = $('[data-sta-price-out]', form);
-    if (pr && out) pr.addEventListener('input', function () { pr.dataset.dirty = 1; out.textContent = pr.value; });
+    function fill() { if (pr) pr.style.setProperty('--fill', ((pr.value - pr.min) / ((pr.max - pr.min) || 1) * 100) + '%'); }
+    fill();
+    if (pr && out) pr.addEventListener('input', function () { pr.dataset.dirty = 1; out.textContent = pr.value; fill(); });
     var sort = $('[data-sta-finder-sort]', box);
     if (sort) sort.addEventListener('change', function () { form.f_sort.value = sort.value; go(); });
     var tg = $('[data-sta-finder-toggle]', box);

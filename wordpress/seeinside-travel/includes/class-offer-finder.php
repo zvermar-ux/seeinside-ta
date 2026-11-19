@@ -86,6 +86,18 @@ class STA_Offer_Finder
         return $cache[$type] = $rows;
     }
 
+    /** Some filter is chosen in the address (f_…) */
+    public static function active(): bool
+    {
+        foreach (array_keys($_GET) as $k) {   // phpcs:ignore WordPress.Security.NonceVerification
+            if (str_starts_with((string) $k, 'f_') && ! in_array($k, ['f_page', 'f_sort'], true) && $_GET[$k] !== '' && $_GET[$k] !== []) {   // phpcs:ignore
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     protected static function filters(array $atts, string $type): array
     {
         $slug = fn ($v) => $v === '' ? '' : sanitize_title(rawurldecode((string) $v));
@@ -104,8 +116,14 @@ class STA_Offer_Finder
 
     protected static function match(array $r, array $f, string $skip = ''): bool
     {
-        if ($f['q'] !== '' && stripos(remove_accents($r['title']), remove_accents($f['q'])) === false) {
-            return false;
+        if ($f['q'] !== '') {
+            // Cyrillic = Latin (Истанбул = Istanbul), all words
+            $hay = STA_Finder::norm($r['title']);
+            foreach (explode(' ', STA_Finder::norm($f['q'])) as $w) {
+                if ($w !== '' && ! str_contains($hay, $w)) {
+                    return false;
+                }
+            }
         }
         if ($skip !== 'dest' && $f['dest'] && ! in_array($f['dest'], $r['dests'], true)) {
             return false;
@@ -202,9 +220,12 @@ class STA_Offer_Finder
     protected static function sidebar(string $type, array $f, array $rows, callable $count): string
     {
         $action = strtok(remove_query_arg(['f_page']), '?');
-        $h = '<form method="get" action="'.esc_url($action).'" data-sta-finder-form>';
+        // autocomplete off: the browser must not bring back old ticks when the page is opened again (e.g. "Clear all filters")
+        $h = '<form method="get" action="'.esc_url($action).'" data-sta-finder-form autocomplete="off">';
         $h .= '<input type="hidden" name="f_sort" value="'.esc_attr($f['sort']).'">';
-        $h .= '<div class="sta-ff"><label class="sta-ff-search">'.esc_html__('Name', 'seeinside-travel').'<input type="search" name="f_q" value="'.esc_attr($f['q']).'" placeholder="'.esc_attr($type === 'event' ? __('e.g. concert', 'seeinside-travel') : __('e.g. Istanbul', 'seeinside-travel')).'"></label></div>';
+        $h .= '<div class="sta-ff sta-ff-q"><label class="sta-ff-search" for="sta-ofq-'.esc_attr($type).'">'.esc_html__('Search', 'seeinside-travel').'</label><div class="sta-ff-qbox">'
+            .'<input type="search" id="sta-ofq-'.esc_attr($type).'" name="f_q" value="'.esc_attr($f['q']).'" placeholder="'.esc_attr($type === 'event' ? __('e.g. concert', 'seeinside-travel') : __('e.g. Istanbul', 'seeinside-travel')).'" autocomplete="off">'
+            .'<button type="submit" aria-label="'.esc_attr__('Search', 'seeinside-travel').'">'.sta_icon('search').'</button></div></div>';
 
         // destination (with the parents: Greece → Halkidiki)
         $dests = get_terms(['taxonomy' => 'sta_destination', 'hide_empty' => true, 'object_ids' => array_keys($rows) ?: [0]]);
@@ -309,7 +330,9 @@ class STA_Offer_Finder
             $h .= '<div class="sta-ff"><h4>'.esc_html__('Price up to', 'seeinside-travel').' <output data-sta-price-out>'.($f['price'] ? (int) $f['price'] : $max).'</output></h4>'
                 .'<input type="range" name="f_price" min="'.(int) floor(min($prices)).'" max="'.$max.'" step="5" value="'.($f['price'] ? (int) $f['price'] : $max).'" data-sta-price></div>';
         }
-        $h .= '<a class="sta-ff-clear" href="'.esc_url($action).'">'.esc_html__('Clear all filters', 'seeinside-travel').'</a>';
+        if (self::active()) {
+            $h .= '<a class="sta-ff-clear" href="'.esc_url($action).'" data-sta-ff-clear>'.esc_html__('Clear all filters', 'seeinside-travel').'</a>';
+        }
 
         return $h.'</form>';
     }

@@ -263,7 +263,7 @@ class STA_Finder
     protected static function sidebar(array $f, array $rows, callable $count): string
     {
         $action = strtok(remove_query_arg(['f_page']), '?');
-        $h = '<form class="sta-finder-form" method="get" action="'.esc_url($action).'" data-sta-finder-form>';
+        $h = '<form class="sta-finder-form" method="get" action="'.esc_url($action).'" data-sta-finder-form autocomplete="off">';
         $h .= '<input type="hidden" name="f_sort" value="'.esc_attr($f['sort']).'">';
         // search by name or place – first, with a magnifier
         $h .= '<div class="sta-ff sta-ff-q"><label class="sta-ff-search" for="sta-fq">'.esc_html__('Search', 'seeinside-travel').'</label><div class="sta-ff-qbox">'
@@ -336,7 +336,9 @@ class STA_Finder
             usort($opts, fn ($a, $b) => $b[2] <=> $a[2]);
             $h .= self::checks(__('Amenities', 'seeinside-travel'), 'f_amen', array_slice($opts, 0, 14), $f['amen']);
         }
-        $h .= '<a class="sta-ff-clear" href="'.esc_url($action).'">'.esc_html__('Clear all filters', 'seeinside-travel').'</a>';
+        if (STA_Offer_Finder::active()) {
+            $h .= '<a class="sta-ff-clear" href="'.esc_url($action).'" data-sta-ff-clear>'.esc_html__('Clear all filters', 'seeinside-travel').'</a>';
+        }
 
         return $h.'</form>';
     }

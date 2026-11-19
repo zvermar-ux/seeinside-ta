@@ -910,3 +910,11 @@ button.sta-sb-btn b { max-width: 100%; }
 .sta-pay-cards { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; max-width: 46%; }
 .sta-pay-cards i { font-style: normal; font-size: .66rem; font-weight: 800; letter-spacing: .02em; border: 1px solid var(--sta-line); border-radius: 4px; padding: 2px 5px; color: #1e3a8a; background: #fff; }
 .sta-pay-lock { font-size: .8rem; color: var(--sta-muted); margin: 2px 0 6px; }
+
+/* single price slider in the filters (the track was invisible) */
+.sta-ff > input[type=range] { height: 22px !important; background: transparent !important; cursor: pointer; }
+.sta-ff > input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 99px; background: linear-gradient(var(--sta-primary), var(--sta-primary)) 0 / var(--fill, 100%) 100% no-repeat, #e2e8f0; }
+.sta-ff > input[type=range]::-moz-range-track { height: 6px; border-radius: 99px; background: #e2e8f0; }
+.sta-ff > input[type=range]::-moz-range-progress { height: 6px; border-radius: 99px; background: var(--sta-primary); }
+.sta-ff > input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -7px; border-radius: 50%; background: #fff; border: 3px solid var(--sta-primary); box-shadow: 0 2px 6px rgba(15, 23, 42, .2); }
+.sta-ff > input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid var(--sta-primary); box-shadow: 0 2px 6px rgba(15, 23, 42, .2); }
