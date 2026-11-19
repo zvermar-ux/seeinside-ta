@@ -55,6 +55,7 @@ class STA_Frontend
                 'payGo' => __('Booking received – opening the card payment…', 'seeinside-travel'),
                 'payNow' => __('now', 'seeinside-travel'),
                 'bookAndPay' => __('Book and pay', 'seeinside-travel'),
+                'payAgencyThanks' => __('You pay at the agency – we will contact you with the confirmation and the payment details.', 'seeinside-travel'),
                 'freeNote' => __('Showing only places that are free for your dates, with the total price.', 'seeinside-travel'),
                 'hasTerm' => __('Has a term for the selected period', 'seeinside-travel'),
                 'noTerm' => __('No free places for the selected period', 'seeinside-travel'),

@@ -14,17 +14,25 @@
   }
   function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
   function t(v) { if (!v || typeof v !== 'object') return v || ''; return v[C.lang] || v.mk || v.en || ''; }
-  /* card payment: the amount paid now next to the choice, and the button says "Book and pay" */
+  /* card payment: the amount paid now (deposit / 100%) and the whole amount at the agency; the button and the note follow the choice */
   function payInfo(form, sum, cur) {
     var box = $('[data-sta-pay]', form); if (!box) return;
-    var amt = $('[data-sta-pay-amount]', box), pct = +box.dataset.percent || 100;
-    if (amt) amt.textContent = sum ? '(' + money(Math.round(sum * pct) / 100, cur || box.dataset.currency) + ')' : '';
+    var pct = +box.dataset.percent || 100, c = cur || box.dataset.currency;
+    box.dataset.sum = sum || '';
+    var now = sum ? Math.round(sum * pct) / 100 : null;
+    var amt = $('[data-sta-pay-amount]', box), tot = $('[data-sta-pay-total]', box);
+    if (amt) amt.textContent = now ? '· ' + money(now, c) + (pct < 100 ? ' (' + pct + '%)' : '') : '';
+    if (tot) tot.textContent = sum ? '· ' + money(sum, c) : '';
+    box.dataset.now = now ? money(now, c) : '';
+    payButton(form);
   }
   function payButton(form) {
     var box = $('[data-sta-pay]', form), btn = $('[type="submit"]', form); if (!box || !btn) return;
-    var card = $('[name="payment_method"]:checked', form); card = !card || card.value === 'card';
+    var sel = $('[name="payment_method"]:checked', form), card = !sel || sel.value === 'card';
     if (!btn.dataset.label) btn.dataset.label = btn.textContent;
-    btn.textContent = card ? (T.bookAndPay || btn.dataset.label) : btn.dataset.label;
+    btn.textContent = card ? (T.bookAndPay || btn.dataset.label) + (box.dataset.now ? ' ' + box.dataset.now : '') : btn.dataset.label;
+    var lock = $('[data-sta-pay-lock]', box); if (lock) lock.hidden = !card;
+    var tr = $('[data-sta-pay-trust]', form); if (tr) tr.textContent = card ? tr.dataset.card : tr.dataset.agency;
   }
   $$('[data-sta-pay]').forEach(function (box) { var f = box.closest('form'); if (!f) return; f.addEventListener('change', function (e) { if (e.target.name === 'payment_method') payButton(f); }); payButton(f); });
   /* after the booking: the bank's page opens (card) */
@@ -344,7 +352,7 @@
         if (r.ok && r.body && r.body.data) {
           var d = r.body.data;
           if (payGo(form, d)) { remember(data); return; }
-          msg(form, '<b>' + esc(T.thanks) + '</b><span class="sta-muted">' + esc(T.reference) + ':</span><span class="sta-ref">' + esc(d.reference) + '</span>' + (d.total ? esc(T.total) + ': <b>' + money(d.total, d.currency) + '</b>' : '')
+          msg(form, '<b>' + esc(T.thanks) + '</b>' + (d.payment && d.payment.method === 'agency' ? '<span class="sta-muted">' + esc(T.payAgencyThanks) + '</span>' : '') + '<span class="sta-muted">' + esc(T.reference) + ':</span><span class="sta-ref">' + esc(d.reference) + '</span>' + (d.total ? esc(T.total) + ': <b>' + money(d.total, d.currency) + '</b>' : '')
             + (d.qr_url ? '<div class="sta-qr"><img src="' + esc(d.qr_url) + '" width="132" height="132" alt="QR ' + esc(d.reference) + '"><div><b>' + esc(T.qrTitle) + '</b><small>' + esc(T.qrHint) + '</small><a href="' + esc(d.qr_url) + '" download="' + esc(d.reference) + '.png" target="_blank" rel="noopener">' + esc(T.qrSave) + '</a></div></div>' : '')
             + (d.manage_url ? '<p class="sta-manage"><a class="sta-btn" href="' + esc(d.manage_url) + '" target="_blank" rel="noopener">' + esc(T.manage) + ' →</a><small>' + esc(T.manageHint) + '</small></p>' : '')
             , true);

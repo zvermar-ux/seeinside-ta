@@ -3517,3 +3517,39 @@ msgstr "Додај"
 
 msgid "Added"
 msgstr "Додадено"
+
+msgid "Pay by card now"
+msgstr "Плати сега со картичка"
+
+msgid "How do you want to pay?"
+msgstr "Како сакате да платите?"
+
+msgid "You pay the whole amount (100%) now by card. The payment is registered on your booking at once."
+msgstr "Целиот износ (100%) го плаќате сега со картичка. Уплатата веднаш се евидентира на вашата резервација."
+
+msgid "You pay a deposit of %d%% now by card; it is registered on your booking at once. The rest is paid to the agency later."
+msgstr "Сега плаќате аванс од %d%% со картичка; уплатата веднаш се евидентира на резервацијата. Остатокот го плаќате во агенцијата подоцна."
+
+msgid "You only book now – nothing is paid online. The agency contacts you, and you pay the whole amount at the agency (cash, card or bank transfer)."
+msgstr "Сега само резервирате – ништо не се плаќа онлајн. Агенцијата ве контактира, а целиот износ го плаќате во агенцијата (готовина, картичка или уплатница)."
+
+msgid "The card is paid on the secure page of Halk Bank – the card details never reach us."
+msgstr "Картичката се плаќа на безбедната страница на Халк Банка – податоците од картичката не стигнуваат до нас."
+
+msgid "Paid by card – the booking goes on with the payment registered"
+msgstr "Плаќање со картичка – резервацијата продолжува со евидентирана уплата"
+
+msgid "No payment now – the agency contacts you about the payment"
+msgstr "Без плаќање сега – агенцијата ве контактира за плаќањето"
+
+msgid "You pay at the agency – we will contact you with the confirmation and the payment details."
+msgstr "Плаќате во агенцијата – ќе ве контактираме со потврда и детали за плаќањето."
+
+msgid "You only book now; the whole amount is paid at the agency:"
+msgstr "Сега само резервирате; целиот износ се плаќа во агенцијата:"
+
+msgid "The whole amount (100%) now by card:"
+msgstr "Целиот износ (100%) сега со картичка:"
+
+msgid "Deposit %d%% now by card, the rest at the agency:"
+msgstr "Аванс %d%% сега со картичка, остатокот во агенцијата:"

@@ -492,11 +492,11 @@
       var p = H.payment || {};
       if (!p.online) return '';
       var now = Math.round(total * (p.percent || 100)) / 100;
-      return '<fieldset class="sta-pay"><legend>' + esc(L.payTitle) + '</legend>'
+      return '<fieldset class="sta-pay"><legend>' + esc(L.payHow || L.payTitle) + '</legend>'
         + '<label class="sta-pay-opt"><input type="radio" name="payment_method" value="card" checked><span class="sta-pay-txt"><b>' + esc(p.title || L.payCard) + '</b><small>'
-        + esc(p.mode === 'full' ? L.payFull : fmt(L.payDeposit, p.percent).replace('%%', '%')) + ' (' + money(now, cur) + ')</small>' + (p.note ? '<small class="sta-muted">' + esc(p.note) + '</small>' : '') + '</span>'
+        + esc(p.mode === 'full' ? L.payFull : fmt(L.payDeposit, p.percent).replace('%%', '%')) + ' <b>' + money(now, cur) + '</b></small>' + (p.note ? '<small class="sta-muted">' + esc(p.note) + '</small>' : '') + '</span>'
         + '<span class="sta-pay-cards" aria-hidden="true"><i>VISA</i><i>Mastercard</i><i>Maestro</i></span></label>'
-        + (p.agency ? '<label class="sta-pay-opt"><input type="radio" name="payment_method" value="agency"><span class="sta-pay-txt"><b>' + esc(L.payAgency) + '</b><small>' + esc(L.payAgencyNote) + '</small></span></label>' : '')
+        + (p.agency ? '<label class="sta-pay-opt"><input type="radio" name="payment_method" value="agency"><span class="sta-pay-txt"><b>' + esc(L.payAgency) + '</b><small>' + esc(L.payAgencyNote) + ' <b>' + money(total, cur) + '</b></small></span></label>' : '')
         + '<p class="sta-pay-lock">🔒 ' + esc(L.payLock) + '</p></fieldset>';
     }
     function book(room, rate) {

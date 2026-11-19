@@ -21,6 +21,13 @@ class STA_Sync
         add_action('sta_process_queue', [self::class, 'process_queue']);
         add_action('admin_post_sta_resync', [self::class, 'resync_post']);
         add_action('init', [self::class, 'schedule']);
+        // after an update of the plugin: settings the new version needs (e.g. online payment) are fetched once
+        add_action('admin_init', function () {
+            if (get_option('sta_meta_version') !== STA_VERSION && STA_Api::configured()) {
+                update_option('sta_meta_version', STA_VERSION, false);
+                self::sync_meta();
+            }
+        });
     }
 
     public static function schedule(): void
@@ -681,6 +688,8 @@ class STA_Sync
             'enums' => $body['enums'] ?? [],
             // hotels from booking systems (Hotelbeds…): on/off and the destinations for the search
             'hotels' => $body['hotels'] ?? [],
+            // online card payment (Halk Bank): on/off and the rule of each kind of offer
+            'payment' => $body['payment'] ?? [],
         ], false);
         if (isset($body['slider'])) {
             update_option('sta_slider', $body['slider'], false);

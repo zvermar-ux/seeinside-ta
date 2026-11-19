@@ -135,6 +135,10 @@ class PaymentPolicy
         if ($method === 'agency' && $p['agency']) {
             return 'agency';
         }
+        // nothing chosen (older website form without the choice): at the agency when that is allowed
+        if ($method === null && $p['agency']) {
+            return 'agency';
+        }
         if ($method === 'agency' && ! $p['agency']) {
             throw \Illuminate\Validation\ValidationException::withMessages(['payment_method' => __('This offer is paid online with a card when booking.')]);
         }
