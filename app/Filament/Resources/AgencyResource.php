@@ -107,12 +107,12 @@ class AgencyResource extends Resource
                         ->visible(fn (Forms\Get $get) => $get('payment_provider') === 'nestpay')
                         ->schema([
                             Forms\Components\TextInput::make('payment_settings.client_id')->label('Client ID')->maxLength(40),
-                            Forms\Components\TextInput::make('payment_settings.store_key')->label('Store key')->password()->revealable()->maxLength(200),
+                            Forms\Components\TextInput::make('payment_settings.store_key')->label('Store key')->password()->revealable()->autocomplete('new-password')->maxLength(200),
                             Forms\Components\Select::make('payment_settings.tran_type')->label(__('Transaction type'))
                                 ->options(['Auth' => __('Capture (Auth)'), 'PreAuth' => __('Authorization only (PreAuth)')])->default('Auth')->selectablePlaceholder(false),
                             Forms\Components\TextInput::make('payment_settings.username')->label(__('API username'))->maxLength(80)
                                 ->helperText(__('For the status query after the payment.')),
-                            Forms\Components\TextInput::make('payment_settings.password')->label(__('API password'))->password()->revealable()->maxLength(120),
+                            Forms\Components\TextInput::make('payment_settings.password')->label(__('API password'))->password()->revealable()->autocomplete('new-password')->maxLength(120),
                             Forms\Components\Toggle::make('payment_settings.status_query')->label(__('Status query after each payment'))->default(true)->inline(false)
                                 ->helperText(__('The bank asks for it before switching the shop to live.')),
                             Forms\Components\TextInput::make('payment_settings.title')->label(__('Name of the payment on the website'))->placeholder('Плаќање со картичка')->maxLength(80),
@@ -213,6 +213,8 @@ class AgencyResource extends Resource
                     Forms\Components\TextInput::make('mail_username')->label(__('Username')),
                     Forms\Components\TextInput::make('mail_password')->label(__('Password'))
                         ->password()->revealable()
+                        // the browser must not fill in its saved password (e.g. the normal Gmail password) here
+                        ->autocomplete('new-password')->extraInputAttributes(['data-lpignore' => 'true', 'data-1p-ignore' => 'true'])
                         ->dehydrated(fn ($state) => filled($state))
                         ->helperText(__('Leave empty to keep the current password.')),
                 ])
