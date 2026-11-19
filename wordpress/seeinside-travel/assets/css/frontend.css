@@ -974,3 +974,16 @@ dialog.sta-qs::backdrop { background: rgba(15, 23, 42, .55); backdrop-filter: bl
 .sta-qs-open.is-in-header { margin: 0 6px; flex: none; vertical-align: middle; }
 .sta-qs-open.is-floating { position: fixed; left: 18px; bottom: 18px; z-index: 9990; width: 54px; height: 54px; background: var(--qs-c); color: #fff; border-radius: 50%; box-shadow: 0 8px 24px rgba(15, 23, 42, .25); }
 .sta-qs-open.is-floating .sta-ico { width: 24px; height: 24px; }
+
+/* header: at most 10 px between the buttons; the "⋯" item of the main menu */
+.header-button, .header-layout8 .header-button { gap: 10px !important; }
+.main-menu > ul, header nav > ul { flex-wrap: nowrap; }
+.sta-menu-more { position: relative; }
+.sta-menu-more > a { font-size: 1.4em; letter-spacing: .05em; line-height: 1; cursor: pointer; }
+.sta-menu-more > .sta-menu-more-sub { position: absolute; right: 0; left: auto; top: 100%; min-width: 230px; z-index: 999; background: #fff; box-shadow: 0 12px 30px rgba(15, 23, 42, .15); border-radius: 10px; padding: 8px 0; margin: 0; list-style: none; visibility: hidden; opacity: 0; transform: translateY(6px); transition: .18s; }
+.sta-menu-more:hover > .sta-menu-more-sub, .sta-menu-more.is-open > .sta-menu-more-sub { visibility: visible; opacity: 1; transform: none; }
+.sta-menu-more-sub > li { display: block !important; margin: 0 !important; padding: 0 !important; }
+.sta-menu-more-sub > li > a { display: block; padding: 9px 18px !important; white-space: nowrap; }
+.sta-menu-more-sub > li > ul.sub-menu { position: static !important; visibility: visible !important; opacity: 1 !important; transform: none !important; box-shadow: none !important; padding: 0 0 6px 14px !important; min-width: 0 !important; display: none; }
+.sta-menu-more-sub > li:hover > ul.sub-menu, .sta-menu-more-sub > li:focus-within > ul.sub-menu { display: block; }
+.sta-menu-more-sub > li > a::after, .sta-menu-more-sub > li > a::before { display: none !important; }

@@ -1132,6 +1132,40 @@
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var first = $('.sta-qs-item', res); if (first) location.href = first.href; } });
   })();
 
+  /* ---------- main menu of the theme: never two rows – what does not fit goes under "⋯" ---------- */
+  (function () {
+    var flag = $('[data-sta-menu-more]'); if (!flag) return;
+    var head = $('.elementor-location-header') || $('header');
+    if (!head) return;
+    var ul = $('.main-menu > ul', head) || $('nav .menu', head) || $('nav > ul', head);
+    if (!ul) return;
+    var items = $$(':scope > li', ul), more = document.createElement('li'), sub = document.createElement('ul');
+    more.className = 'menu-item menu-item-has-children sta-menu-more';
+    more.innerHTML = '<a href="#" aria-haspopup="true" aria-label="' + esc(flag.dataset.label || 'More') + '">⋯</a>';
+    sub.className = 'sub-menu sta-menu-more-sub';
+    more.appendChild(sub);
+    more.firstChild.addEventListener('click', function (e) { e.preventDefault(); more.classList.toggle('is-open'); });
+    document.addEventListener('click', function (e) { if (!more.contains(e.target)) more.classList.remove('is-open'); });
+    function wraps() {
+      var vis = $$(':scope > li', ul).filter(function (li) { return li.offsetParent !== null; });
+      if (!vis.length) return false;
+      var top = vis[0].offsetTop;
+      return vis.some(function (li) { return li.offsetTop > top + 4; }) || ul.scrollWidth > ul.clientWidth + 2 || (ul.parentElement && ul.getBoundingClientRect().right > ul.parentElement.getBoundingClientRect().right + 2);
+    }
+    function fit() {
+      // everything back in its place, then move the last ones under "⋯" while the row still breaks
+      items.forEach(function (li) { ul.insertBefore(li, more.parentNode === ul ? more : null); });
+      if (more.parentNode) more.remove();
+      if (ul.offsetParent === null) return;   // the theme shows the mobile menu instead
+      if (!wraps()) return;
+      ul.appendChild(more);
+      for (var i = items.length - 1; i > 0 && wraps(); i--) sub.insertBefore(items[i], sub.firstChild);
+    }
+    var t; addEventListener('resize', function () { clearTimeout(t); t = setTimeout(fit, 120); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+    addEventListener('load', fit); fit();
+  })();
+
   // shared with hotels.js (hotel results, hotel page and booking)
   window.staCore = { api: api, money: money, esc: esc, t: t, $: $, $$: $$, validate: validate, msg: msg, errors: errors, T: T, C: C };
 })();

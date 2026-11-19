@@ -3592,3 +3592,12 @@ msgstr "Исклучено – сам го ставам [sta_search_button]"
 
 msgid "Opens the quick search and the search form from any page (\"/\" or Ctrl+K too). Without a header found, it is shown as a round button at the bottom left."
 msgstr "Го отвора брзото пребарување и формата од секоја страница (и со „/“ или Ctrl+K). Ако не се најде хедер, се прикажува како тркалезно копче долу лево."
+
+msgid "Main menu on smaller screens"
+msgstr "Главно мени на помали екрани"
+
+msgid "Never break into two rows: items that do not fit go under \"⋯\" at the end (click shows them)"
+msgstr "Никогаш да не се крши во два реда: ставките што не собираат одат под „⋯“ на крајот (со клик се прикажуваат)"
+
+msgid "Also: at most 10 px between the buttons in the header."
+msgstr "Исто така: најмногу 10 px растојание меѓу копчињата во хедерот."

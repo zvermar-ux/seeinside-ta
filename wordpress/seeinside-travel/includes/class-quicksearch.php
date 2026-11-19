@@ -41,6 +41,9 @@ class STA_Quick_Search
     /** Settings → Display → "Search in the header": the magnifier is put into the theme header by itself */
     public static function auto(): void
     {
+        if (! is_admin() && (get_option('sta_settings', [])['menu_more'] ?? '1') === '1') {
+            echo '<span hidden data-sta-menu-more data-label="'.esc_attr__('More', 'seeinside-travel').'"></span>';
+        }
         if (is_admin() || (get_option('sta_settings', [])['qs_header'] ?? 'auto') === 'off' || (isset($_GET['elementor-preview']))) {   // phpcs:ignore
             return;
         }

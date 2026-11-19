@@ -198,6 +198,9 @@ class STA_Admin
         echo '<tr><th>'.esc_html__('Search in the header', 'seeinside-travel').'</th><td><label><input type="radio" name="qs_header" value="auto"'.checked($qs, 'auto', false).'> '.esc_html__('Magnifier in the site header automatically (next to the menu / Contact button)', 'seeinside-travel').'</label><br>'
             .'<label><input type="radio" name="qs_header" value="off"'.checked($qs, 'off', false).'> '.esc_html__('Off – I place [sta_search_button] myself', 'seeinside-travel').'</label>'
             .'<p class="description">'.esc_html__('Opens the quick search and the search form from any page ("/" or Ctrl+K too). Without a header found, it is shown as a round button at the bottom left.', 'seeinside-travel').'</p></td></tr>';
+        echo '<tr><th>'.esc_html__('Main menu on smaller screens', 'seeinside-travel').'</th><td><label><input type="checkbox" name="menu_more" value="1"'.checked(($s['menu_more'] ?? '1') === '1', true, false).'> '
+            .esc_html__('Never break into two rows: items that do not fit go under "⋯" at the end (click shows them)', 'seeinside-travel').'</label>'
+            .'<p class="description">'.esc_html__('Also: at most 10 px between the buttons in the header.', 'seeinside-travel').'</p></td></tr>';
         echo '<tr><th>'.esc_html__('Offers per page', 'seeinside-travel').'</th><td><input type="number" min="3" max="60" name="per_page" value="'.esc_attr($s['per_page'] ?? 12).'"></td></tr>';
         echo '<tr><th>'.esc_html__('Colours', 'seeinside-travel').'</th><td><label>'.esc_html__('Main', 'seeinside-travel').' <input type="color" name="color_primary" value="'.esc_attr($s['color_primary'] ?? '#0ea5e9').'"></label> &nbsp; <label>'.esc_html__('Accent (badges)', 'seeinside-travel').' <input type="color" name="color_accent" value="'.esc_attr($s['color_accent'] ?? '#f97316').'"></label><p class="description">'.esc_html__('Elementor widgets also have their own colour settings.', 'seeinside-travel').'</p></td></tr>';
         $gl = $s['gallery_layout'] ?? 'mosaic';
@@ -302,6 +305,7 @@ class STA_Admin
             $s['layout_mode'] = in_array($_POST['layout_mode'] ?? '', ['auto', 'off'], true) ? $_POST['layout_mode'] : 'auto';
             $s['archive_mode'] = in_array($_POST['archive_mode'] ?? '', ['auto', 'theme'], true) ? $_POST['archive_mode'] : 'auto';
             $s['qs_header'] = ($_POST['qs_header'] ?? 'auto') === 'off' ? 'off' : 'auto';
+            $s['menu_more'] = ! empty($_POST['menu_more']) ? '1' : '0';
             $s['per_page'] = max(3, min(60, (int) ($_POST['per_page'] ?? 12)));
             $s['color_primary'] = sanitize_hex_color(wp_unslash($_POST['color_primary'] ?? '')) ?: '';
             $s['color_accent'] = sanitize_hex_color(wp_unslash($_POST['color_accent'] ?? '')) ?: '';
