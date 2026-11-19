@@ -14,7 +14,7 @@ class CreateBooking extends CreateRecord
     {
         parent::fillForm();
 
-        $prefill = collect(request()->only(['bookable_type', 'bookable_id', 'accommodation_room_id', 'date_from', 'date_to']))
+        $prefill = collect(request()->only(['bookable_type', 'bookable_id', 'accommodation_room_id', 'stay_term_id', 'date_from', 'date_to']))
             ->filter(fn ($v) => filled($v) && is_scalar($v));
         if ($prefill->isEmpty() || ! array_key_exists($prefill->get('bookable_type', 'accommodation'), BookingResource::TYPES)) {
             return;

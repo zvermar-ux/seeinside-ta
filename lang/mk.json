@@ -2148,5 +2148,6 @@
     "empty answer": "празен одговор",
     "The old system gave an empty answer to the booking (no number, no \"NotAvailable\").": "Старата апликација врати празен одговор на резервацијата (ниту број, ниту „NotAvailable“).",
     "This room has just been booked for this term. Please choose another room or term.": "Оваа соба штотуку е резервирана за овој термин. Изберете друга соба или термин.",
-    "This departure has just been sold out. Please choose another date.": "Ова поаѓање штотуку е распродадено. Изберете друг датум."
+    "This departure has just been sold out. Please choose another date.": "Ова поаѓање штотуку е распродадено. Изберете друг датум.",
+    "Fixed terms: a click on any night of a term picks the whole term (the blue line = start of a term).": "Фиксни термини: клик на која било ноќ од терминот го избира целиот термин (сината линија = почеток на термин)."
 }

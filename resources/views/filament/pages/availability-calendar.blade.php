@@ -56,6 +56,8 @@
         .ta-cal-notice { padding:.65rem .9rem; border-radius:.6rem; font-size:.85rem; background:rgba(var(--warning-500),.12); color:rgb(var(--warning-700)); }
         .dark .ta-cal-notice { color:rgb(var(--warning-400)); }
         .ta-cal-ok { background:rgba(var(--success-500),.12); color:rgb(var(--success-700)); }
+        .ta-cal thead th.is-term-start, .ta-cal td.is-term-start { box-shadow:inset 2px 0 0 rgb(var(--primary-600)); }
+        .ta-cal-terms { font-size:.8rem; color:rgb(var(--gray-500)); }
         .ta-cal-list { width:100%; font-size:.85rem; }
         .ta-cal-list th { text-align:left; color:rgb(var(--gray-500)); font-weight:500; padding:.4rem .5rem; }
         .ta-cal-list td { padding:.45rem .5rem; border-top:1px solid rgba(var(--gray-200),1); }
@@ -90,7 +92,7 @@
         <span><i class="ta-cal-partial"></i>{{ __('Partly booked') }}</span>
         <span><i class="ta-cal-held"></i>{{ __('On hold (inquiry / pending)') }}</span>
         <span><i class="ta-cal-full"></i>{{ __('Booked') }}</span>
-        <span>{{ __('The number = free units that night. Click the arrival and departure night to book.') }}</span>
+        <span>{{ ! empty($terms) ? __('Fixed terms: a click on any night of a term picks the whole term (the blue line = start of a term).') : __('The number = free units that night. Click the arrival and departure night to book.') }}</span>
     </div>
 
     @if (! $accommodation)
@@ -117,9 +119,22 @@
                     rooms: @js($roomsJs),
                     dates: @js($checkoutDates),
                     today: @js($today),
-                    room: null, a: null, b: null,
+                    terms: @js($terms),
+                    room: null, a: null, b: null, term: null,
+                    termAt(i) { const d = this.dates[i]; return this.terms.find(t => d >= t.from && d < t.to) || null },
                     pick(roomId, i) {
                         if (this.dates[i] < this.today) return;
+                        // fixed terms: any night of a term picks the whole term (check-in → check-out)
+                        if (this.terms.length) {
+                            const t = this.termAt(i);
+                            if (!t || t.stop.includes(roomId)) return;
+                            this.room = roomId; this.term = t;
+                            const s = this.dates.indexOf(t.from), e = this.dates.indexOf(t.to);
+                            this.a = s < 0 ? 0 : s;
+                            this.b = (e < 0 ? this.dates.length - 1 : e) - 1;
+                            return;
+                        }
+                        this.term = null;
                         if (this.room !== roomId || this.a === null || this.b !== null || i < this.a) {
                             this.room = roomId; this.a = i; this.b = null;
                             return;
@@ -138,18 +153,23 @@
                         return Math.min(...this.rooms[this.room].free.slice(this.a, this.last + 1));
                     },
                     fmt(d) { const [y, m, dd] = d.split('-'); return dd + '.' + m + '.' + y },
+                    get fromDate() { return this.term ? this.term.from : this.dates[this.a] },
+                    get toDate() { return this.term ? this.term.to : this.dates[this.last + 1] },
+                    get termNights() { return Math.round((new Date(this.toDate) - new Date(this.fromDate)) / 864e5) },
                     url() {
-                        const p = new URLSearchParams({
+                        const q = {
                             bookable_type: 'accommodation',
                             bookable_id: @js($accommodation->id),
                             accommodation_room_id: this.room,
-                            date_from: this.dates[this.a],
-                            date_to: this.dates[this.last + 1],
-                        });
+                            date_from: this.fromDate,
+                            date_to: this.toDate,
+                        };
+                        if (this.term) q.stay_term_id = this.term.id;
+                        const p = new URLSearchParams(q);
                         return @js($bookingUrl) + '?' + p.toString();
                     },
                 }"
-                x-on:keydown.escape.window="room = null; a = null; b = null"
+                x-on:keydown.escape.window="room = null; a = null; b = null; term = null"
                 style="display:flex;flex-direction:column;gap:1rem"
             >
                 <div class="ta-cal-wrap">
@@ -159,7 +179,8 @@
                                 <th class="ta-cal-room">{{ __('Room / apartment') }}</th>
                                 @foreach ($dates as $date)
                                     @php $d = \Carbon\Carbon::parse($date)->locale($locale); @endphp
-                                    <th @class(['is-weekend' => $d->isWeekend(), 'is-today' => $date === $today])>
+                                    @php $isStart = collect($terms)->contains(fn ($t) => $t['from'] === $date); @endphp
+                                    <th @class(['is-weekend' => $d->isWeekend(), 'is-today' => $date === $today, 'is-term-start' => $isStart])>
                                         {{ $d->isoFormat('dd') }}<b>{{ $d->day }}</b>{{ $d->day === 1 || $loop->first ? $d->isoFormat('MMM') : '' }}
                                     </th>
                                 @endforeach
@@ -185,7 +206,7 @@
                                             $firstBooking = $day['bookings'][0]['id'] ?? null;
                                         @endphp
                                         <td
-                                            class="ta-cal-cell ta-cal-{{ $state }} @if ($date < $today) ta-cal-past @endif"
+                                            class="ta-cal-cell ta-cal-{{ $state }} @if ($date < $today) ta-cal-past @endif @if (collect($terms)->contains(fn ($t) => $t['from'] === $date)) is-term-start @endif"
                                             title="{{ $tip }}"
                                             x-bind:class="{ 'ta-cal-sel': sel({{ $room['id'] }}, {{ $loop->index }}) }"
                                             @if ($day['free'] > 0 && $bookingUrl)
@@ -210,16 +231,17 @@
                         <div>
                             <div><b x-text="rooms[room].name"></b></div>
                             <div class="muted">
-                                <span x-text="fmt(dates[a]) + ' → ' + fmt(dates[last + 1])"></span>
-                                · <span x-text="nights"></span> {{ __('nights') }}
-                                <template x-if="b === null"><span> · {{ __('click the last night to extend') }}</span></template>
+                                <template x-if="term"><span>{{ __('Term') }}: </span></template>
+                                <span x-text="fmt(fromDate) + ' → ' + fmt(toDate)"></span>
+                                · <span x-text="term ? termNights : nights"></span> {{ __('nights') }}
+                                <template x-if="b === null && !term"><span> · {{ __('click the last night to extend') }}</span></template>
                             </div>
                         </div>
                         <div style="display:flex;gap:.5rem;align-items:center">
                             <template x-if="minFree < 1">
                                 <span class="muted" style="color:#fca5a5">{{ __('Not free on all selected nights') }}</span>
                             </template>
-                            <x-filament::button color="gray" size="sm" x-on:click="room = null; a = null; b = null">{{ __('Cancel') }}</x-filament::button>
+                            <x-filament::button color="gray" size="sm" x-on:click="room = null; a = null; b = null; term = null">{{ __('Cancel') }}</x-filament::button>
                             <x-filament::button tag="a" icon="heroicon-m-plus" x-bind:href="url()" x-bind:style="minFree < 1 ? 'opacity:.5;pointer-events:none' : ''">
                                 {{ __('Quick booking') }}
                             </x-filament::button>

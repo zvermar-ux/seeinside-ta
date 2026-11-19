@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Filament\Resources\AccommodationResource;
 use App\Filament\Resources\BookingResource;
 use App\Models\Accommodation;
+use App\Models\StayTerm;
 use App\Services\Availability\AvailabilityService;
 use Carbon\Carbon;
 use Filament\Pages\Page;
@@ -56,10 +57,26 @@ class AvailabilityCalendar extends Page
 
     public function mount(): void
     {
-        $this->start = $this->normalizedStart()->toDateString();
+        $given = filled($this->start);
         if (! $this->accommodationId || ! Accommodation::whereKey($this->accommodationId)->exists()) {
             $this->accommodationId = Accommodation::query()->whereHas('rooms')->orderBy('name')->value('id');
         }
+        // fixed terms: the calendar opens on the first term that still has a free room
+        $this->start = ($given ? null : $this->firstFreeTerm()) ?? $this->normalizedStart()->toDateString();
+    }
+
+    /** Start of the first future term with a room that is not stop-sale (apartments sold in fixed terms) */
+    protected function firstFreeTerm(): ?string
+    {
+        $a = $this->accommodationId ? Accommodation::query()->find($this->accommodationId) : null;
+        if (! $a || ! $a->book_by_terms) {
+            return null;
+        }
+        $term = StayTerm::query()->where('accommodation_id', $a->id)->where('is_active', true)->whereDate('date_from', '>=', today())
+            ->whereHas('prices', fn ($q) => $q->where('stop_sale', false)->whereNotNull('price'))
+            ->orderBy('date_from')->first();
+
+        return $term?->date_from?->toDateString();
     }
 
     protected function normalizedStart(): Carbon
@@ -84,6 +101,9 @@ class AvailabilityCalendar extends Page
     public function updatedAccommodationId(): void
     {
         $this->accommodationId = $this->accommodationId ?: null;
+        if ($first = $this->firstFreeTerm()) {
+            $this->start = $first;
+        }
     }
 
     public function updatedStart(): void
@@ -103,7 +123,16 @@ class AvailabilityCalendar extends Page
         $canBook = BookingResource::canCreate();
         $bookingUrl = $canBook ? BookingResource::getUrl('create') : null;
 
+        // fixed terms: a click on any night picks the whole term
+        $terms = $accommodation && $accommodation->book_by_terms
+            ? StayTerm::query()->where('accommodation_id', $accommodation->id)->where('is_active', true)
+                ->whereDate('date_to', '>', $from)->whereDate('date_from', '<=', $to)->orderBy('date_from')->with('prices')->get()
+                ->map(fn ($t) => ['id' => $t->id, 'from' => $t->date_from->toDateString(), 'to' => $t->date_to->toDateString(),
+                    'stop' => $t->prices->where('stop_sale', true)->pluck('accommodation_room_id')->values()->all()])->values()->all()
+            : [];
+
         return [
+            'terms' => $terms,
             'accommodations' => $accommodations,
             'accommodation' => $accommodation,
             'data' => $data,
