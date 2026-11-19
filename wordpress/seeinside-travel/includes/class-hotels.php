@@ -66,6 +66,8 @@ class STA_Hotels
                 'typeH' => __('Type of accommodation', 'seeinside-travel'),
                 'afterDates' => __('Prices, free rooms and free cancellation: choose your dates above.', 'seeinside-travel'),
                 'yourDates' => __('Your dates', 'seeinside-travel'),
+                'searchName' => __('Search', 'seeinside-travel'),
+                'searchPh' => __('Hotel name', 'seeinside-travel'),
                 'adultsL' => __('Adults', 'seeinside-travel'),
                 'childrenL' => __('Children', 'seeinside-travel'),
                 'showFree' => __('Show free hotels with prices', 'seeinside-travel'),

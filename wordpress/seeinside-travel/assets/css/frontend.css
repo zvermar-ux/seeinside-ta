@@ -884,3 +884,16 @@ table.sta-ht-rates { width: 100%; border-collapse: collapse; margin: 0; }
 @container sbox (min-width: 1001px) { .sta-sb-flights .sta-sb-go { border-radius: 0 0 10px 0 !important; } }
 button.sta-sb-btn b { max-width: 100%; }
 .sta-sb-guests .sta-sb-lab b { font-size: .98rem; }
+
+/* finder: search on top with a magnifier, free places first */
+.sta-ff-q { padding-top: 4px; }
+.sta-ff-q .sta-ff-search { font-weight: 700; color: var(--sta-ink); font-size: .95rem; margin-bottom: .45rem; }
+.sta-ff-qbox { position: relative; display: flex; }
+.sta-ff .sta-ff-qbox input[type="search"] { margin: 0; padding-right: 46px; border-radius: 10px; min-height: 44px; }
+.sta-ff-qbox button { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 38px; height: 36px; border: 0; border-radius: 8px; background: var(--sta-primary); color: #fff; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.sta-ff-qbox button:hover { filter: brightness(.92); }
+.sta-ff-qbox button .sta-ico { width: 18px; height: 18px; }
+.sta-ff-nodates { display: block; text-align: center; margin-top: .5rem; font-size: .85rem; color: var(--sta-muted); text-decoration: underline; }
+.sta-finder-avail.is-busy { background: #f3f4f6; color: #6b7280; }
+.sta-finder-cell.is-busy .sta-card-media, .sta-finder-cell.is-busy img { filter: grayscale(.45); opacity: .85; }
+.sta-finder-cell.is-free .sta-finder-avail { border: 1px solid #a7f3d0; }

@@ -8,6 +8,9 @@
   function stars(n) { return n ? '<span class="sta-ht-stars" aria-label="' + n + '★">' + new Array(n + 1).join('★') + '</span>' : ''; }
   function fmt(s, v) { return String(s || '').replace('%s', v).replace('%d', v); }
   function dmy(iso) { if (!iso) return ''; var p = String(iso).slice(0, 10).split('-'); return p[2] + '.' + p[1] + '.' + p[0]; }
+  // Cyrillic typed in the search → Latin hotel names (нидри → nidri)
+  var CYR = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', ѓ: 'gj', е: 'e', ж: 'zh', з: 'z', ѕ: 'dz', и: 'i', ј: 'j', к: 'k', л: 'l', љ: 'lj', м: 'm', н: 'n', њ: 'nj', о: 'o', п: 'p', р: 'r', с: 's', т: 't', ќ: 'kj', у: 'u', ф: 'f', х: 'h', ц: 'c', ч: 'ch', џ: 'dz', ш: 'sh', й: 'j', ю: 'ju', я: 'ja', ы: 'i', э: 'e' };
+  function lat(v) { return String(v || '').toLowerCase().replace(/[а-яѓѕјљњќџ]/g, function (c) { return CYR[c] != null ? CYR[c] : c; }); }
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
 
   $$('[data-sta-hotels]').forEach(function (root) {
@@ -36,6 +39,11 @@
       var ch = q.ages.length * q.room_count;
       return plural(q.nights, L.night1, L.nights) + ' · ' + plural(q.room_count, L.room1, L.roomN) + ' · ' + (q.adults * q.room_count) + ' ' + L.adults + (ch ? ' · ' + ch + ' ' + L.children : '');
     }
+    // the name search on top of the filters, with a magnifier
+    function qbox(attrs) {
+      return '<div class="sta-ff sta-ff-q"><label class="sta-ff-search">' + esc(L.searchName || L.name) + '</label><div class="sta-ff-qbox"><input type="search" ' + attrs + ' placeholder="' + esc(L.searchPh || '') + '" autocomplete="off"><button type="button" data-qbox-go aria-label="' + esc(L.searchName || L.name) + '"><svg class="sta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg></button></div></div>';
+    }
+    body.addEventListener('click', function (e) { var b = e.target.closest('[data-qbox-go]'); if (b) { var i = b.parentNode.querySelector('input'); i.dispatchEvent(new Event('input', { bubbles: true })); i.focus(); } });
     function loading(text) { body.innerHTML = '<div class="sta-ht-loading"><span class="sta-spin"></span>' + esc(text) + '</div>'; }
 
     /* ---------- results ---------- */
@@ -229,7 +237,7 @@
       };
     }
     function passes(h, f, skip) {
-      if (f.name && h.name.toLowerCase().indexOf(f.name) < 0) return false;
+      if (f.name && (h.name + ' ' + (h.zone || '') + ' ' + (h.destination || '')).toLowerCase().indexOf(f.name) < 0) return false;
       if (skip !== 'price' && f.min !== null && h.price < f.min) return false;
       if (skip !== 'price' && f.max !== null && h.price > f.max) return false;
       if (skip !== 'zone' && f.zone && h.zone !== f.zone) return false;
@@ -243,8 +251,7 @@
     function layout() {
       var q = state.q, f = state.filter;
       f.dest = q.destination || ''; f.country = '';
-      var side = datesBox(q, {})
-        + '<div class="sta-ff"><label class="sta-ff-search">' + esc(L.name) + '<input type="search" data-ht-f="name" value="' + esc(f.name) + '"></label></div>'
+      var side = qbox('data-ht-f="name" value="' + esc(f.name) + '"') + datesBox(q, {})
         + (state.hi > state.lo ? '<div class="sta-ff"><h4>' + esc(L.price) + ' <output data-ht-price-out></output></h4><div class="sta-sb-range"><div class="sta-sb-range-fill" data-ht-fill></div>'
           + '<input type="range" min="' + state.lo + '" max="' + state.hi + '" step="1" value="' + (f.min || state.lo) + '" data-ht-lo><input type="range" min="' + state.lo + '" max="' + state.hi + '" step="1" value="' + (f.max || state.hi) + '" data-ht-hi></div></div>' : '')
         + '<div class="sta-ff"><label class="sta-ff-opt"><input type="checkbox" data-ht-free' + (f.free ? ' checked' : '') + '> <span>' + esc(L.onlyFree) + '</span></label></div>'
@@ -287,7 +294,7 @@
     }
     function onFilter() {
       var f = state.filter, lo = $('[data-ht-lo]', body), hi = $('[data-ht-hi]', body);
-      f.name = $('[data-ht-f="name"]', body).value.trim().toLowerCase();
+      f.name = lat($('[data-ht-f="name"]', body).value.trim());
       if (lo) { priceOut(); f.min = +lo.value > state.lo ? +lo.value : null; f.max = +hi.value < state.hi ? +hi.value : null; }
       readSel($('[data-hf-blocks]', body), f);
       f.free = !!($('[data-ht-free]', body) || {}).checked;
@@ -312,8 +319,7 @@
       state.q = q;
       var u = new URLSearchParams(location.search);
       cat = { sel: { country: (u.get('country') || '').toUpperCase(), dest: q.destination || '', zone: u.get('zone') || '', stars: state.filter.stars.slice(), type: [], board: state.filter.board.slice(), feature: [] }, name: '', page: 1, pages: 1, total: 0, items: [], loading: false };
-      var side = datesBox(q, {})
-        + '<div class="sta-ff"><label class="sta-ff-search">' + esc(L.name) + '<input type="search" data-hc-name></label></div>'
+      var side = qbox('data-hc-name') + datesBox(q, {})
         + '<div data-hf-blocks><div class="sta-ht-loading"><span class="sta-spin"></span></div></div>';
       shell(side, '', '');
       $('[data-hf-note]', body).textContent = ' · ' + L.catalogNote;
@@ -329,7 +335,7 @@
     }
     function catFilter() {
       readSel($('[data-hf-blocks]', body), cat.sel);
-      cat.name = $('[data-hc-name]', body).value.trim();
+      cat.name = lat($('[data-hc-name]', body).value.trim());
       // the address keeps the choice (back button, sharing)
       if (history.replaceState) {
         var u = new URL(location.href);

@@ -3421,3 +3421,24 @@ msgstr "Сите области"
 
 msgid "Prices, free rooms and free cancellation: choose your dates above."
 msgstr "Цени, слободни соби и бесплатно откажување: изберете ги датумите горе."
+
+msgid "Name or place, e.g. Nidri"
+msgstr "Име или место…"
+
+msgid "Remove the dates"
+msgstr "Отстрани ги датумите"
+
+msgid "All groups"
+msgstr "Сите групи"
+
+msgid "Has a term for the selected period"
+msgstr "Има термин за избраниот период"
+
+msgid "No free places for the selected period"
+msgstr "Нема слободни места за избраниот период"
+
+msgid "%1$d of %2$d free for your dates"
+msgstr "%1$d од %2$d слободни за вашите датуми"
+
+msgid "The places free for your dates are shown first, the others below."
+msgstr "Најгоре се сместувањата слободни за вашите датуми, подолу се останатите."

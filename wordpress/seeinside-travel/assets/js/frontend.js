@@ -682,6 +682,7 @@
     }, 250); }
     form.addEventListener('change', function (e) { if (e.target.name === 'f_dest' && form.f_place) form.f_place.value = ''; if (['f_from', 'f_to', 'f_ad', 'f_ch', 'f_q'].indexOf(e.target.name) < 0) go(); });
     form.addEventListener('submit', function (e) { e.preventDefault(); go(); });
+    if (form.f_q) form.f_q.addEventListener('search', function () { if (!form.f_q.value && new URLSearchParams(location.search).get('f_q')) go(); });
     var pr = $('[data-sta-price]', form), out = $('[data-sta-price-out]', form);
     if (pr && out) pr.addEventListener('input', function () { pr.dataset.dirty = 1; out.textContent = pr.value; });
     var sort = $('[data-sta-finder-sort]', box);
@@ -723,16 +724,22 @@
       var list = (res.body && res.body.data) || [];
       if (!res.ok) { if (note) note.textContent = T.error; return; }
       var free = {}; list.forEach(function (x) { free[x.slug] = x; });
-      var n = 0;
-      $$('.sta-finder-cell', box).forEach(function (cell) {
+      // nothing is hidden: the places with a term for the dates go first, the others stay below marked as full
+      var cells = $$('.sta-finder-cell', box), n = 0, items = cells.length ? cells[0].parentNode : null, busy = [];
+      cells.forEach(function (cell) {
         var f = free[cell.dataset.slug], av = $('.sta-finder-avail', cell);
-        cell.hidden = !f; if (!f) return; n++;
-        av.hidden = false;
-        av.innerHTML = '<b>' + esc(T.free) + '</b> · ' + f.nights + ' ' + esc(T.nights) + ': <strong>' + esc(money(f.total, f.currency)) + '</strong>';
+        cell.hidden = false; av.hidden = false;
+        cell.classList.toggle('is-free', !!f); cell.classList.toggle('is-busy', !f);
+        if (!f) { av.className = 'sta-finder-avail is-busy'; av.textContent = T.noTerm; busy.push(cell); return; }
+        n++;
+        av.className = 'sta-finder-avail';
+        av.innerHTML = '<b>✓ ' + esc(T.hasTerm) + '</b><br>' + f.nights + ' ' + esc(T.nights) + ': <strong>' + esc(money(f.total, f.currency)) + '</strong>';
+        items.appendChild(cell);
         $$('a[href]', cell).forEach(function (a) { try { var u = new URL(a.href); if (u.origin === location.origin) { u.searchParams.set('from', box.dataset.from); u.searchParams.set('to', box.dataset.to); u.searchParams.set('adults', box.dataset.ad); a.href = u.toString(); } } catch (e) {} });
       });
-      var c = $('[data-sta-finder-count]', box); if (c) c.textContent = n + ' ' + T.freePlaces;
-      if (note) { note.textContent = n ? T.freeNote : T.noOffers; note.classList.toggle('is-empty', !n); }
+      busy.forEach(function (cell) { items.appendChild(cell); });
+      var c = $('[data-sta-finder-count]', box); if (c) c.textContent = String(T.freeOf || '%1$d / %2$d').replace('%1$d', n).replace('%2$d', cells.length);
+      if (note) { note.textContent = n ? T.freeFirst : T.noOffers; note.classList.toggle('is-empty', !n); }
     });
   });
 
