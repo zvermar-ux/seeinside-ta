@@ -207,7 +207,7 @@ class SupplierConnectionResource extends Resource
                     ->form([
                         Forms\Components\Select::make('kind')->label(__('Type'))->options(['package' => __('Package (villa in fixed terms, tour)'), 'hotel' => __('Hotel')])->default('package')->required(),
                         Forms\Components\TextInput::make('code')->label(__('Id in the old system'))->required()->placeholder('151'),
-                        Forms\Components\DatePicker::make('date')->label(__('Check-in'))->required()->native(false)->displayFormat('d.m.Y')
+                        Forms\Components\DatePicker::make('date')->label(__('Check-in'))->required()->native(false)->displayFormat('d.m.Y')->minDate(today())->default(fn () => today()->addYear()->setMonth(7)->startOfMonth())
                             ->helperText(__('For a villa in fixed terms: the first day of a term.')),
                         Forms\Components\TextInput::make('nights')->label(__('Nights (hotel only)'))->numeric()->default(7),
                     ])
