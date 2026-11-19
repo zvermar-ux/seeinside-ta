@@ -1068,3 +1068,152 @@
   // shared with hotels.js (hotel results, hotel page and booking)
   window.staCore = { api: api, money: money, esc: esc, t: t, $: $, $$: $$, validate: validate, msg: msg, errors: errors, T: T, C: C };
 })();
+
+/* ---------- dates: type dd.mm.yyyy or pick from a calendar (month & year lists) – every date field of the site ---------- */
+(function () {
+  'use strict';
+  var C = window.STA || {}, EN = C.lang === 'en';
+  var MON = EN ? ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    : ['Јануари', 'Февруари', 'Март', 'Април', 'Мај', 'Јуни', 'Јули', 'Август', 'Септември', 'Октомври', 'Ноември', 'Декември'];
+  var DAYS = EN ? ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'] : ['По', 'Вт', 'Ср', 'Че', 'Пе', 'Са', 'Не'];
+  var L = EN ? { ph: 'dd.mm.yyyy', today: 'Today', clear: 'Clear', open: 'Calendar', bad: 'Enter the date as dd.mm.yyyy' }
+    : { ph: 'дд.мм.гггг', today: 'Денес', clear: 'Избриши', open: 'Календар', bad: 'Внесете датум како дд.мм.гггг' };
+  var proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function fromIso(s) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
+  function show(s) { var d = fromIso(s); return d ? pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() : ''; }
+  function todayIso() { return iso(new Date()); }
+  // "1.5.1980", "01/05/80", "010580", "1980-05-01" → ISO or null
+  function parse(txt, birth) {
+    txt = String(txt || '').trim(); if (!txt) return '';
+    var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(txt), d, mo, y;
+    if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+    else {
+      m = /^(\d{1,2})\D+(\d{1,2})\D+(\d{2}|\d{4})$/.exec(txt) || /^(\d{2})(\d{2})(\d{4}|\d{2})$/.exec(txt.replace(/\D/g, '').length >= 6 && !/\D/.test(txt) ? txt : '');
+      if (!m) return null;
+      d = +m[1]; mo = +m[2]; y = +m[3];
+      if (m[3].length === 2) { var cy = new Date().getFullYear() % 100; y += birth ? (y > cy ? 1900 : 2000) : 2000; }
+    }
+    var dt = new Date(y, mo - 1, d);
+    return dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === d ? iso(dt) : null;
+  }
+  var pop = null, cur = null;
+  function close() { if (pop) { pop.remove(); pop = null; document.removeEventListener('mousedown', outside, true); } cur = null; }
+  function outside(e) { if (pop && !pop.contains(e.target) && (!cur || !cur.wrap.contains(e.target))) close(); }
+
+  function enhance(inp) {
+    if (inp.dataset.staDate || inp.closest('.wp-admin, [data-sta-native-date]')) return;
+    inp.dataset.staDate = '1';
+    var birth = /birth|rodj|роден/i.test(inp.name || '') || (inp.max && inp.max <= todayIso() && !inp.min);
+    var wrap = document.createElement('span'); wrap.className = 'sta-date';
+    var txt = document.createElement('input');
+    txt.type = 'text'; txt.inputMode = 'numeric'; txt.autocomplete = birth ? 'bday' : 'off'; txt.placeholder = L.ph; txt.maxLength = 10;
+    txt.className = inp.className; txt.setAttribute('aria-label', inp.getAttribute('aria-label') || (inp.closest('label') ? inp.closest('label').textContent.trim() : ''));
+    if (inp.required) { txt.required = true; inp.required = false; }
+    if (inp.disabled) txt.disabled = true;
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'sta-date-btn'; btn.setAttribute('aria-label', L.open);
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 3v2M17 3v2M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/></svg>';
+    inp.parentNode.insertBefore(wrap, inp);
+    wrap.appendChild(txt); wrap.appendChild(btn); wrap.appendChild(inp);
+    var initial = proto.get.call(inp);
+    inp.type = 'hidden';
+    proto.set.call(inp, initial);
+    txt.value = show(initial);
+    // code that sets the date (e.g. check-out = check-in + 7) also updates what is shown
+    Object.defineProperty(inp, 'value', { configurable: true, get: function () { return proto.get.call(inp); }, set: function (v) { proto.set.call(inp, v); txt.value = show(v); txt.setCustomValidity(''); txt.classList.remove('is-invalid'); } });
+    var st = { inp: inp, txt: txt, wrap: wrap, birth: birth };
+    function commit(v) {
+      var old = proto.get.call(inp);
+      proto.set.call(inp, v); txt.value = show(v); txt.setCustomValidity(''); txt.classList.remove('is-invalid');
+      if (old !== v) { inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
+    st.commit = commit;
+    // the visible field has no name: its own events stay here (the hidden field sends input/change with the date)
+    txt.addEventListener('change', function (e) { e.stopPropagation(); });
+    txt.addEventListener('input', function (e) {
+      e.stopPropagation();
+      // dots by themselves while typing digits: 01051980 → 01.05.1980
+      var raw = txt.value, digits = raw.replace(/\D/g, '');
+      if (e.inputType === 'insertText' && /^[\d.]+$/.test(raw) && txt.selectionStart === raw.length && !/\.\d\./.test(raw)) {
+        var f = digits.slice(0, 2) + (digits.length > 2 ? '.' + digits.slice(2, 4) : '') + (digits.length > 4 ? '.' + digits.slice(4, 8) : '');
+        if (digits.length === 2 || digits.length === 4) f += '.';
+        txt.value = f;
+      }
+      var v = parse(txt.value, birth);
+      if (v && txt.value.replace(/\D/g, '').length >= 8) { if (inRange(inp, v)) commit(v); }
+      if (pop && cur === st) draw(fromIso(parse(txt.value, birth) || '') || null);
+    });
+    txt.addEventListener('blur', function () {
+      setTimeout(function () {
+        if (pop && cur === st && pop.contains(document.activeElement)) return;
+        var v = parse(txt.value, birth);
+        if (v === '') { commit(''); return; }
+        if (v && inRange(inp, v)) { commit(v); return; }
+        txt.setCustomValidity(L.bad); txt.classList.add('is-invalid'); proto.set.call(inp, '');
+      }, 150);
+    });
+    txt.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); if (e.key === 'ArrowDown' && !pop) { e.preventDefault(); open(st); } });
+    btn.addEventListener('click', function () { if (pop && cur === st) close(); else open(st); });
+  }
+  function inRange(inp, v) { return (!inp.min || v >= inp.min) && (!inp.max || v <= inp.max); }
+
+  var view;
+  function open(st) {
+    close(); cur = st;
+    var v = fromIso(proto.get.call(st.inp)) || fromIso(st.inp.min && st.inp.min > todayIso() ? st.inp.min : '');
+    if (!v) { v = new Date(); if (st.birth) v.setFullYear(v.getFullYear() - 30); }
+    pop = document.createElement('div'); pop.className = 'sta-dp'; pop.setAttribute('role', 'dialog');
+    document.body.appendChild(pop);
+    document.addEventListener('mousedown', outside, true);
+    view = new Date(v.getFullYear(), v.getMonth(), 1);
+    draw();
+    place();
+  }
+  function place() {
+    if (!pop || !cur) return;
+    var r = cur.wrap.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    var top = r.bottom + 6, left = Math.min(Math.max(8, r.left), innerWidth - w - 8);
+    if (top + h > innerHeight - 8 && r.top - h - 6 > 8) top = r.top - h - 6;
+    pop.style.top = (top + scrollY) + 'px'; pop.style.left = (left + scrollX) + 'px';
+  }
+  addEventListener('resize', place); addEventListener('scroll', function () { place(); }, { passive: true });
+  function draw(goTo) {
+    if (!pop || !cur) return;
+    if (goTo) view = new Date(goTo.getFullYear(), goTo.getMonth(), 1);
+    var inp = cur.inp, sel = proto.get.call(inp), t = todayIso(), y0 = new Date().getFullYear();
+    var minY = inp.min ? +inp.min.slice(0, 4) : (cur.birth ? y0 - 100 : y0 - 2), maxY = inp.max ? +inp.max.slice(0, 4) : (cur.birth ? y0 : y0 + 4);
+    var ys = ''; for (var y = maxY; y >= minY; y--) ys += '<option' + (y === view.getFullYear() ? ' selected' : '') + '>' + y + '</option>';
+    var ms = MON.map(function (m, i) { return '<option value="' + i + '"' + (i === view.getMonth() ? ' selected' : '') + '>' + m + '</option>'; }).join('');
+    var first = (view.getDay() + 6) % 7, n = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate(), cells = '';
+    for (var i = 0; i < first; i++) cells += '<span></span>';
+    for (var d = 1; d <= n; d++) {
+      var v = view.getFullYear() + '-' + pad(view.getMonth() + 1) + '-' + pad(d), off = !inRange(inp, v);
+      cells += '<button type="button" data-d="' + v + '"' + (off ? ' disabled' : '') + ' class="' + (v === sel ? 'is-sel ' : '') + (v === t ? 'is-today' : '') + '">' + d + '</button>';
+    }
+    pop.innerHTML = '<div class="sta-dp-head"><button type="button" data-m="-1" aria-label="‹">‹</button><select data-mon>' + ms + '</select><select data-yr>' + ys + '</select><button type="button" data-m="1" aria-label="›">›</button></div>'
+      + '<div class="sta-dp-days">' + DAYS.map(function (x) { return '<b>' + x + '</b>'; }).join('') + '</div><div class="sta-dp-grid">' + cells + '</div>'
+      + '<div class="sta-dp-foot"><button type="button" data-clear>' + L.clear + '</button>' + (inRange(inp, t) ? '<button type="button" data-today>' + L.today + '</button>' : '') + '</div>';
+  }
+  document.addEventListener('click', function (e) {
+    if (!pop || !pop.contains(e.target)) return;
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.m) { view = new Date(view.getFullYear(), view.getMonth() + +b.dataset.m, 1); draw(); return; }
+    if (b.dataset.d) { var st = cur; st.commit(b.dataset.d); close(); st.txt.focus(); return; }
+    if (b.hasAttribute('data-today')) { var s2 = cur; s2.commit(todayIso()); close(); return; }
+    if (b.hasAttribute('data-clear')) { var s3 = cur; s3.commit(''); close(); s3.txt.focus(); }
+  });
+  document.addEventListener('change', function (e) {
+    if (!pop || !pop.contains(e.target)) return;
+    var m = pop.querySelector('[data-mon]'), y = pop.querySelector('[data-yr]');
+    view = new Date(+y.value, +m.value, 1); draw();
+  });
+  function scan(root) { Array.prototype.forEach.call((root || document).querySelectorAll('input[type="date"]'), enhance); }
+  function start() {
+    scan();
+    // fields added later (passengers, hotel dates, dialogs)
+    new MutationObserver(function (list) { list.forEach(function (r) { Array.prototype.forEach.call(r.addedNodes, function (n) { if (n.nodeType === 1) { if (n.matches && n.matches('input[type="date"]')) enhance(n); else if (n.querySelectorAll) scan(n); } }); }); })
+      .observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
