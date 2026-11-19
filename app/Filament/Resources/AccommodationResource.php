@@ -184,7 +184,7 @@ class AccommodationResource extends Resource
                             ->options(fn (Get $get) => \App\Services\Mcs\McsService::accommodationOptions($get('supplier_connection_id') ? (int) $get('supplier_connection_id') : null))
                             ->helperText(__('Search by name or by the Id of the old system (e.g. 151). Villas in fixed terms are "packages" there. Rooms: in the Rooms tab choose the Room-Id of the old system for each room.')),
                         Forms\Components\Toggle::make('sync_supplier_prices')->label(__('Take term prices from the old system'))->default(true)
-                            ->helperText(__('Every night: the fixed terms of the old system and the price of each room for each term (Terms tab). Texts, photos and rooms stay as they are here.'))
+                            ->helperText(__('Every night: the fixed terms of the old system and the price of each room for each term (Terms tab). Terms, room prices and period prices entered here are removed at the sync – only those from Aries stay. Texts, photos and rooms stay as they are here.'))
                             ->visible(fn (Get $get) => self::isMcs($get('supplier_connection_id'))),
                         Forms\Components\Toggle::make('use_supplier_availability')->label(__('Take availability (free / booked) from the booking system'))
                             ->helperText(__('Each room needs its room code from the booking system (Rooms tab).'))

@@ -244,6 +244,22 @@ class McsService
         return null;
     }
 
+    /**
+     * Guests that fill one room of the old system ("1/2+2deca studio" → 2 adults + 2 children, "1/2 +1 studio" → 3 adults):
+     * the package search prices the cheapest room that fits the guests, so each room is asked with its own full occupancy.
+     */
+    public static function roomGuests(?SupplierProduct $p, string $roomCode): array
+    {
+        $room = collect((array) ($p?->rooms ?? []))->first(fn ($r) => (string) ($r['code'] ?? '') === $roomCode) ?? [];
+        $text = mb_strtolower(trim(($room['content'] ?? '').' '.($room['room'] ?? '')));
+        if (preg_match('#1\s*/\s*(\d+)\s*\+\s*(\d+)\s*(?:deca|deti|dete|chd|child|kids|деца|дете)#u', $text, $m)) {
+            return ['adults' => (int) $m[1], 'children_ages' => array_fill(0, (int) $m[2], 8)];
+        }
+        $n = self::persons($room['content'] ?? null) ?? self::persons($room['room'] ?? null);
+
+        return ['adults' => $n ?: 2];
+    }
+
     /** Rooms: the only room, the same name, or the same number of persons (when that is unique). @return int newly linked */
     public static function linkRooms(Accommodation $a, SupplierProduct $p): int
     {
@@ -666,6 +682,7 @@ class McsService
             if ($gone->isNotEmpty()) {
                 $out['stop_sale'] += TermPrice::query()->whereIn('stay_term_id', $gone)->where('stop_sale', false)->update(['stop_sale' => true]);
             }
+            $out['removed'] = ($out['removed'] ?? 0) + self::onlyFromAries($a, $seenTerms);
             TermPrice::$quiet = false;
             if (! $a->book_by_terms) {
                 $a->forceFill(['book_by_terms' => true])->save();   // sold only in these terms, like in the old system
@@ -718,6 +735,12 @@ class McsService
                     $tp->save();
                 }
             }
+            if ($terms->isNotEmpty() && ! $out['errors']) {
+                // the terms are ours here (asked from Aries one by one): only the prices entered by hand and the period prices go
+                $out['removed'] = ($out['removed'] ?? 0)
+                    + TermPrice::query()->whereIn('stay_term_id', $terms->pluck('id'))->whereNull('supplier_synced_at')->delete()
+                    + \App\Models\RoomRate::query()->whereIn('accommodation_room_id', $a->rooms->pluck('id'))->delete();
+            }
             TermPrice::$quiet = false;
             if ($terms->isNotEmpty()) {
                 $a->touch();
@@ -731,6 +754,35 @@ class McsService
         \Illuminate\Support\Facades\Cache::forget('mcs-sync-progress-'.$c->id);
 
         return $out;
+    }
+
+    /**
+     * "Take term prices from the old system" is on: only what came from Aries stays. Terms, room prices and
+     * period prices entered here are removed (a term with a booking is kept but switched off).
+     */
+    protected static function onlyFromAries(Accommodation $a, array $seenTerms): int
+    {
+        if (! $seenTerms) {
+            return 0;   // nothing came from Aries – leave everything as it is
+        }
+        $n = 0;
+        $manual = StayTerm::query()->where('accommodation_id', $a->id)->whereNull('supplier_synced_at')->pluck('id');
+        if ($manual->isNotEmpty()) {
+            $booked = Booking::withoutGlobalScopes()->whereIn('stay_term_id', $manual)->pluck('stay_term_id')->unique();
+            $free = $manual->diff($booked);
+            $n += TermPrice::query()->whereIn('stay_term_id', $manual)->delete();
+            $n += $free->isEmpty() ? 0 : StayTerm::query()->whereIn('id', $free)->delete();
+            if ($booked->isNotEmpty()) {
+                StayTerm::query()->whereIn('id', $booked)->update(['is_active' => false]);
+            }
+        }
+        // prices typed by hand in the Aries terms (rooms the old system did not price)
+        $n += TermPrice::query()->whereIn('stay_term_id', StayTerm::query()->where('accommodation_id', $a->id)->whereNotNull('supplier_synced_at')->select('id'))
+            ->whereNull('supplier_synced_at')->delete();
+        // "Prices by period" of the rooms – the prices are only in the terms now
+        $n += \App\Models\RoomRate::query()->whereIn('accommodation_room_id', $a->rooms->pluck('id'))->delete();
+
+        return $n;
     }
 
     /** What the background sync is doing now (shown in Booking systems) */
@@ -793,7 +845,7 @@ class McsService
                 continue;
             }
             foreach ($rooms as $room) {
-                $queries[$checkin.'|'.$room->provider_code] = ['checkin' => $checkin, 'package' => $code, 'room' => (string) $room->provider_code, 'adults' => 2] + $where;
+                $queries[$checkin.'|'.$room->provider_code] = ['checkin' => $checkin, 'package' => $code, 'room' => (string) $room->provider_code] + self::roomGuests($p, (string) $room->provider_code) + $where;
             }
         }
         $prices = [];
@@ -837,8 +889,9 @@ class McsService
             // each room on its own: does the old system give a price per room?
             foreach ((array) ($p?->rooms ?? []) as $room) {
                 try {
-                    $rr = $api->packageSearch(['checkin' => $date, 'package' => $code, 'room' => (string) $room['code'], 'adults' => 2] + $where);
-                    $perRoom[] = ['room' => $room['code'].' · '.$room['room'], 'offers' => count($rr), 'prices' => array_values(array_unique(array_map(fn ($r) => $r['price'] ?? null, $rr))),
+                    $g = self::roomGuests($p, (string) $room['code']);
+                    $rr = $api->packageSearch(['checkin' => $date, 'package' => $code, 'room' => (string) $room['code']] + $g + $where);
+                    $perRoom[] = ['room' => $room['code'].' · '.$room['room'], 'asked_with' => $g['adults'].' adults'.(! empty($g['children_ages']) ? ' + '.count($g['children_ages']).' children' : ''), 'offers' => count($rr), 'prices' => array_values(array_unique(array_map(fn ($r) => $r['price'] ?? null, $rr))),
                         'accommodationid' => array_values(array_unique(array_map(fn ($r) => $r['accommodationid'] ?? null, $rr)))];
                 } catch (Throwable $e) {
                     $perRoom[] = ['room' => $room['code'], 'error' => $e->getMessage()];
@@ -846,8 +899,21 @@ class McsService
             }
         }
         $prices = array_filter(array_map(fn ($x) => $x['prices'][0] ?? null, $perRoom), fn ($v) => $v !== null);
+        // the same search with other guests: shows whether the price follows the number of persons
+        $byGuests = [];
+        if ($kind === 'package') {
+            foreach ([['adults' => 1], ['adults' => 2], ['adults' => 3], ['adults' => 4], ['adults' => 2, 'children_ages' => [8]], ['adults' => 2, 'children_ages' => [8, 8]]] as $g) {
+                $label = $g['adults'].(! empty($g['children_ages']) ? '+'.count($g['children_ages']).'ch' : '');
+                try {
+                    $rr = $api->packageSearch(['checkin' => $date, 'package' => $code] + $g + $where);
+                    $byGuests[$label] = array_values(array_map(fn ($r) => $r['price'] ?? null, $rr));
+                } catch (Throwable $e) {
+                    $byGuests[$label] = $e->getMessage();
+                }
+            }
+        }
 
-        return ['per_room' => $perRoom, 'per_room_prices_differ' => count(array_unique($prices)) > 1,
+        return ['per_room' => $perRoom, 'by_guests' => $byGuests, 'per_room_prices_differ' => count(array_unique($prices)) > 1,
             'rows' => $rows, 'where' => $where, 'product' => $p?->only(['kind', 'code', 'name', 'country', 'region', 'city', 'rooms'])];
     }
 }
