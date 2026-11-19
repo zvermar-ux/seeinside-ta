@@ -27,7 +27,7 @@ class Halk
 
     public static function settings(?Agency $agency): array
     {
-        return (array) ($agency?->payment_settings ?? []);
+        return $agency ? $agency->paySettings() : [];
     }
 
     /** Online payment is switched on and the bank data is entered */

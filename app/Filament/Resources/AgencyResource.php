@@ -123,7 +123,11 @@ class AgencyResource extends Resource
                         ->visible(fn (Forms\Get $get) => $get('payment_provider') === 'nestpay')
                         ->content(function ($record) {
                             $agency = $record instanceof Agency ? $record : \Illuminate\Support\Facades\Auth::user()?->agency;
-                            $last = $agency ? \App\Models\OnlinePayment::withoutGlobalScopes()->where('agency_id', $agency->id)->where('payable_type', 'test')->latest('id')->limit(5)->get() : collect();
+                            try {
+                                $last = $agency ? \App\Models\OnlinePayment::withoutGlobalScopes()->where('agency_id', $agency->id)->where('payable_type', 'test')->latest('id')->limit(5)->get() : collect();
+                            } catch (\Throwable) {
+                                $last = collect();   // table not there yet (deploy without migrations)
+                            }
                             $rows = $last->map(fn ($p) => '<div>'.$p->created_at->format('d.m.Y H:i').' · '.number_format((float) $p->amount, 2, ',', '.').' '.e($p->currency).' · '
                                 .match ($p->status) { 'approved' => '<b style="color:#16a34a">✓ '.e(__('Paid')).'</b>'.($p->auth_code ? ' · Auth '.e($p->auth_code) : ''), 'pending' => '<span style="color:#d97706">… '.e(__('Not finished')).'</span>', default => '<span style="color:#dc2626">✕ '.e(__('Not approved')).'</span>'.($p->message ? ' · '.e($p->message) : '') }
                                 .($p->status_check ? ' · <span title="'.e(mb_substr($p->status_check, 0, 500)).'">'.e(__('status query')).' ✓</span>' : '').'</div>')->implode('');

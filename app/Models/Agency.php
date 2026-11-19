@@ -122,6 +122,18 @@ class Agency extends Model
         return data_get($this->documents ?? [], $key) ?? $default ?? ($defaults[$key] ?? null);
     }
 
+    /** Online payment settings (encrypted); an old / unreadable value counts as empty instead of breaking the page */
+    public function paySettings(): array
+    {
+        try {
+            return (array) ($this->payment_settings ?? []);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return [];
+        }
+    }
+
     public function eurRate(): float
     {
         return (float) ($this->doc('eur_rate') ?: 62);

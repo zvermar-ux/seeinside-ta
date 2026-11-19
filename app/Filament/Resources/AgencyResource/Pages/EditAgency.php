@@ -18,6 +18,6 @@ class EditAgency extends EditRecord
     /** the payment keys are hidden from arrays (API, logs) – the form still needs them */
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        return $data + ['payment_settings' => (array) ($this->record->payment_settings ?? [])];
+        return $data + ['payment_settings' => $this->record->paySettings()];
     }
 }
