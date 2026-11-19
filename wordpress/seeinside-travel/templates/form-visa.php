@@ -69,6 +69,7 @@ $label = fn ($q) => sta_t($q['label'] ?? $q['key']);
     <?php if (! empty($d['fees']['express'])) : ?>
         <label class="sta-check"><input type="checkbox" name="express" value="1"> <?php echo esc_html(sprintf(__('Express processing (+%s)', 'seeinside-travel'), sta_money($d['fees']['express'], $d['currency'] ?? 'EUR'))); ?></label>
     <?php endif; ?>
+    <?php echo sta_part('payment-choice', ['pay' => sta_payment($d, 'visa'), 'currency' => $d['currency'] ?? 'EUR']); // phpcs:ignore ?>
     <label class="sta-check sta-consent"><input type="checkbox" required> <span><?php esc_html_e('I confirm the data is correct and agree that it is used to process my visa application.', 'seeinside-travel'); ?></span></label>
     <button type="submit" class="sta-btn sta-btn-lg sta-btn-block"><?php esc_html_e('Send application', 'seeinside-travel'); ?></button>
     <div class="sta-msg" data-sta-msg role="status" aria-live="polite"></div>

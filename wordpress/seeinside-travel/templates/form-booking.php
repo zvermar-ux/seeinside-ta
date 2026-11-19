@@ -131,8 +131,9 @@ $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array(
     </div>
 
     <div class="sta-total" data-sta-total hidden></div>
+    <?php $pay = sta_payment($d, $type); echo sta_part('payment-choice', ['pay' => $pay, 'currency' => $currency]); // phpcs:ignore ?>
     <ul class="sta-trust">
-        <li><?php esc_html_e('No payment now – the agency confirms first', 'seeinside-travel'); ?></li>
+        <?php if (empty($pay['online'])) : ?><li><?php esc_html_e('No payment now – the agency confirms first', 'seeinside-travel'); ?></li><?php endif; ?>
         <li><?php esc_html_e('Your own page to follow the booking, documents and messages', 'seeinside-travel'); ?></li>
         <li><?php esc_html_e('Answer by e-mail, Viber or WhatsApp', 'seeinside-travel'); ?></li>
     </ul>

@@ -487,6 +487,18 @@
     }
 
     /* ---------- booking ---------- */
+    // card online / at the agency (rule of the agency for hotels)
+    function payChoice(total, cur) {
+      var p = H.payment || {};
+      if (!p.online) return '';
+      var now = Math.round(total * (p.percent || 100)) / 100;
+      return '<fieldset class="sta-pay"><legend>' + esc(L.payTitle) + '</legend>'
+        + '<label class="sta-pay-opt"><input type="radio" name="payment_method" value="card" checked><span class="sta-pay-txt"><b>' + esc(p.title || L.payCard) + '</b><small>'
+        + esc(p.mode === 'full' ? L.payFull : fmt(L.payDeposit, p.percent).replace('%%', '%')) + ' (' + money(now, cur) + ')</small>' + (p.note ? '<small class="sta-muted">' + esc(p.note) + '</small>' : '') + '</span>'
+        + '<span class="sta-pay-cards" aria-hidden="true"><i>VISA</i><i>Mastercard</i><i>Maestro</i></span></label>'
+        + (p.agency ? '<label class="sta-pay-opt"><input type="radio" name="payment_method" value="agency"><span class="sta-pay-txt"><b>' + esc(L.payAgency) + '</b><small>' + esc(L.payAgencyNote) + '</small></span></label>' : '')
+        + '<p class="sta-pay-lock">🔒 ' + esc(L.payLock) + '</p></fieldset>';
+    }
     function book(room, rate) {
       var h = state.hotel, q = state.q;
       if (state.at && Date.now() - state.at > 14 * 60 * 1000) {
@@ -518,6 +530,7 @@
         + '<label class="sta-field"><span>' + esc(L.phone) + ' *</span><input type="tel" name="customer[phone]" required autocomplete="tel"></label></div>'
         + '<label class="sta-field"><span>' + esc(L.message) + '</span><textarea name="message" rows="2"></textarea></label>'
         + '<input type="text" name="website" class="sta-hp" tabindex="-1" autocomplete="off" aria-hidden="true">'
+        + payChoice(rate.price, h.currency)
         + '<label class="sta-check sta-consent"><input type="checkbox" required> <span>' + (H.consent || '') + '</span></label>'
         + '<div class="sta-msg" data-sta-msg></div><button type="submit" class="sta-btn sta-btn-block">' + esc(L.send) + '</button></form>';
       document.body.appendChild(dlg);
@@ -539,6 +552,7 @@
           query: { from: q.from, to: q.to, rooms: q.rooms }, passengers: pax,
           customer: { name: fd.get('customer[name]'), email: fd.get('customer[email]'), phone: fd.get('customer[phone]') },
           message: fd.get('message') || '', website: fd.get('website') || '', sta_ts: started,
+          payment_method: fd.get('payment_method') || null, return_url: location.href.split('#')[0],
         };
         if (accept) payload.accept_price = accept;
         var btn = $('button[type=submit]', form); btn.disabled = true; K.msg(form, '<span class="sta-spin"></span> ' + esc(L.sending), true);
@@ -551,6 +565,11 @@
           }
           if (!r.ok) { K.msg(form, K.errors(r.body), false); return; }
           var d = r.body.data || {};
+          if (d.payment && d.payment.method === 'card' && d.payment.url) {
+            K.msg(form, '<span class="sta-spin"></span> <b>' + esc(L.payGo) + '</b> ' + esc(d.reference || ''), true);
+            setTimeout(function () { location.href = d.payment.url; }, 700);
+            return;
+          }
           form.innerHTML = '<div class="sta-ht-done"><div class="sta-ht-check">✓</div><h3>' + esc(d.booked ? L.booked : L.thanks) + '</h3>'
             + '<p>' + esc(L.reference) + ': <b class="sta-ref">' + esc(d.reference || '') + '</b></p>'
             + (d.total ? '<p>' + esc(L.total) + ': <b>' + money(d.total, d.currency) + '</b></p>' : '')

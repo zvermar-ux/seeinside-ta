@@ -52,6 +52,9 @@ class STA_Frontend
                 'passenger1' => __('passenger', 'seeinside-travel'), 'passengerN' => __('passengers', 'seeinside-travel'),
                 'adult1' => __('adult', 'seeinside-travel'), 'adultN' => __('adults', 'seeinside-travel'), 'child1' => __('child', 'seeinside-travel'), 'childN' => __('children', 'seeinside-travel'),
                 'freePlaces' => __('free for your dates', 'seeinside-travel'),
+                'payGo' => __('Booking received – opening the card payment…', 'seeinside-travel'),
+                'payNow' => __('now', 'seeinside-travel'),
+                'bookAndPay' => __('Book and pay', 'seeinside-travel'),
                 'freeNote' => __('Showing only places that are free for your dates, with the total price.', 'seeinside-travel'),
                 'hasTerm' => __('Has a term for the selected period', 'seeinside-travel'),
                 'noTerm' => __('No free places for the selected period', 'seeinside-travel'),
@@ -483,7 +486,7 @@ class STA_Frontend
             return $blocked;
         }
         $p = $r->get_json_params() ?: $r->get_body_params();
-        $allowed = ['type', 'slug', 'charter_id', 'transport_only', 'departure_id', 'departure_place_id', 'with_transport', 'room_id', 'term_id', 'ticket_id', 'date_from', 'date_to', 'adults', 'children', 'children_ages', 'quantity', 'extras', 'customer', 'passengers', 'message'];
+        $allowed = ['type', 'slug', 'charter_id', 'transport_only', 'departure_id', 'departure_place_id', 'with_transport', 'room_id', 'term_id', 'ticket_id', 'date_from', 'date_to', 'adults', 'children', 'children_ages', 'quantity', 'extras', 'customer', 'passengers', 'message', 'payment_method', 'return_url'];
         $data = array_intersect_key((array) $p, array_flip($allowed));
         $data['locale'] = sta_lang();
         $data['message'] = trim(($data['message'] ?? '')."\n\n[".home_url('/').']');
@@ -503,7 +506,7 @@ class STA_Frontend
             return $blocked;
         }
         $fields = [];
-        foreach (['visa', 'first_name', 'last_name', 'email', 'phone', 'nationality', 'travel_date', 'express'] as $k) {
+        foreach (['visa', 'first_name', 'last_name', 'email', 'phone', 'nationality', 'travel_date', 'express', 'payment_method', 'return_url'] as $k) {
             if ($r->get_param($k) !== null) {
                 $fields[$k] = sanitize_text_field((string) $r->get_param($k));
             }

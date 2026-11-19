@@ -14,6 +14,27 @@
   }
   function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
   function t(v) { if (!v || typeof v !== 'object') return v || ''; return v[C.lang] || v.mk || v.en || ''; }
+  /* card payment: the amount paid now next to the choice, and the button says "Book and pay" */
+  function payInfo(form, sum, cur) {
+    var box = $('[data-sta-pay]', form); if (!box) return;
+    var amt = $('[data-sta-pay-amount]', box), pct = +box.dataset.percent || 100;
+    if (amt) amt.textContent = sum ? '(' + money(Math.round(sum * pct) / 100, cur || box.dataset.currency) + ')' : '';
+  }
+  function payButton(form) {
+    var box = $('[data-sta-pay]', form), btn = $('[type="submit"]', form); if (!box || !btn) return;
+    var card = $('[name="payment_method"]:checked', form); card = !card || card.value === 'card';
+    if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+    btn.textContent = card ? (T.bookAndPay || btn.dataset.label) : btn.dataset.label;
+  }
+  $$('[data-sta-pay]').forEach(function (box) { var f = box.closest('form'); if (!f) return; f.addEventListener('change', function (e) { if (e.target.name === 'payment_method') payButton(f); }); payButton(f); });
+  /* after the booking: the bank's page opens (card) */
+  function payGo(form, d) {
+    var p = d && d.payment;
+    if (!p || p.method !== 'card' || !p.url) return false;
+    msg(form, '<span class="sta-spin"></span> <b>' + esc(T.payGo) + '</b>' + (d.reference ? '<span class="sta-muted">' + esc(T.reference) + ':</span><span class="sta-ref">' + esc(d.reference) + '</span>' : ''), true);
+    setTimeout(function () { location.href = p.url; }, 700);
+    return true;
+  }
   function msg(form, html, ok) {
     var box = $('[data-sta-msg]', form); if (!box) return;
     box.className = 'sta-msg ' + (ok ? 'is-ok' : 'is-error'); box.innerHTML = html;
@@ -271,6 +292,7 @@
       }
       totalBox.hidden = sum === null;
       if (sum !== null) totalBox.innerHTML = '<span>' + esc(T.estimate) + '</span><b>' + money(sum, cur) + '</b>';
+      payInfo(form, sum, cur);
     }
     form.addEventListener('change', estimate); form.addEventListener('input', estimate);
 
@@ -301,7 +323,7 @@
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       if (!validate(form)) return;
-      var fd = new FormData(form), data = { type: type, slug: form.dataset.slug, website: fd.get('website') || '', sta_ts: started, customer: {}, extras: [], children_ages: [] }, px = [];
+      var fd = new FormData(form), data = { type: type, slug: form.dataset.slug, website: fd.get('website') || '', sta_ts: started, customer: {}, extras: [], children_ages: [], return_url: location.href.split('#')[0] }, px = [];
       fd.forEach(function (v, k) {
         var m = k.match(/^customer\[(\w+)\]$/), pm = k.match(/^passengers\[(\d+)\]\[(\w+)\]$/);
         if (pm) { px[+pm[1]] = px[+pm[1]] || {}; if (v) px[+pm[1]][pm[2]] = v; }
@@ -321,10 +343,11 @@
       api('booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function (r) {
         if (r.ok && r.body && r.body.data) {
           var d = r.body.data;
+          if (payGo(form, d)) { remember(data); return; }
           msg(form, '<b>' + esc(T.thanks) + '</b><span class="sta-muted">' + esc(T.reference) + ':</span><span class="sta-ref">' + esc(d.reference) + '</span>' + (d.total ? esc(T.total) + ': <b>' + money(d.total, d.currency) + '</b>' : '')
             + (d.qr_url ? '<div class="sta-qr"><img src="' + esc(d.qr_url) + '" width="132" height="132" alt="QR ' + esc(d.reference) + '"><div><b>' + esc(T.qrTitle) + '</b><small>' + esc(T.qrHint) + '</small><a href="' + esc(d.qr_url) + '" download="' + esc(d.reference) + '.png" target="_blank" rel="noopener">' + esc(T.qrSave) + '</a></div></div>' : '')
             + (d.manage_url ? '<p class="sta-manage"><a class="sta-btn" href="' + esc(d.manage_url) + '" target="_blank" rel="noopener">' + esc(T.manage) + ' →</a><small>' + esc(T.manageHint) + '</small></p>' : '')
-            + (d.payment && d.payment.url ? '<p><a class="sta-btn" href="' + esc(d.payment.url) + '">Pay</a></p>' : ''), true);
+            , true);
           remember(data);
           var keep = {}; ['name', 'phone', 'email', 'city'].forEach(function (k) { var el = $('[name="customer[' + k + ']"]', form); if (el) keep[k] = el.value; });
           form.reset(); ages(); pax(); estimate();
@@ -367,10 +390,11 @@
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       if (!validate(form)) return;
-      var fd = new FormData(form); fd.append('sta_ts', started);
+      var fd = new FormData(form); fd.append('sta_ts', started); fd.append('return_url', location.href.split('#')[0]);
       var btn = $('[type="submit"]', form), label = btn.textContent; btn.disabled = true; btn.textContent = T.sending;
       api('visa', { method: 'POST', body: fd }).then(function (r) {
         if (r.ok && r.body && r.body.data) {
+          if (payGo(form, r.body.data)) return;
           msg(form, '<b>' + esc(T.thanks) + '</b><span class="sta-muted">' + esc(T.reference) + ':</span><span class="sta-ref">' + esc(r.body.data.reference) + '</span>', true);
           form.reset();
         } else msg(form, errors(r.body), false);

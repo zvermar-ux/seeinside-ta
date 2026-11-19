@@ -298,3 +298,34 @@ function sta_price_info(array $d, string $type = ''): array
 
     return [$price, $old, $label, $until];
 }
+
+
+/**
+ * How an offer is paid on the website (card online / at the agency) – the own rule of the offer,
+ * otherwise the rule of the agency for this kind of offer (meta.payment from SeeInside).
+ * @return array{online:bool,mode:string,percent:int,agency:bool,title:?string,note:?string}
+ */
+function sta_payment(array $d, string $kind): array
+{
+    $meta = (array) (get_option('sta_meta', [])['payment'] ?? []);
+    $off = ['online' => false, 'mode' => 'none', 'percent' => 0, 'agency' => true, 'title' => null, 'note' => null];
+    if (empty($meta['enabled'])) {
+        return $off;
+    }
+    $rule = (array) ($meta['rules'][$kind] ?? []);
+    $own = (array) ($d['payment_policy'] ?? []);
+    $ownMode = $own['mode'] ?? 'default';
+    $mode = $ownMode !== 'default' ? $ownMode : ($rule['mode'] ?? 'none');
+    $percent = (int) ($ownMode !== 'default' && ! empty($own['percent']) ? $own['percent'] : ($rule['percent'] ?? 30));
+    $agency = ($own['agency'] ?? 'default') !== 'default' ? ($own['agency'] === 'yes') : (bool) ($rule['agency'] ?? true);
+    $online = in_array($mode, ['deposit', 'full'], true);
+    if ($kind === 'visa' && empty($d['online_payment']) && $ownMode === 'default') {
+        $online = false;
+    }
+    if (! $online) {
+        return $off;
+    }
+
+    return ['online' => true, 'mode' => $mode, 'percent' => $mode === 'full' ? 100 : max(1, min(100, $percent)), 'agency' => $agency,
+        'title' => $meta['title'] ?? null, 'note' => $meta['note'] ?? null];
+}

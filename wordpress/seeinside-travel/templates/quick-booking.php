@@ -31,6 +31,7 @@ $privacy = get_privacy_policy_url();
             <label class="sta-field sta-col-2"><span><?php esc_html_e('Message', 'seeinside-travel'); ?></span><textarea name="message" rows="2"></textarea></label>
         </div>
         <div class="sta-total" data-sta-total hidden></div>
+        <?php echo sta_part('payment-choice', ['pay' => sta_payment($d, 'accommodation'), 'currency' => $d['currency'] ?? 'EUR']); // phpcs:ignore ?>
         <label class="sta-check sta-consent"><input type="checkbox" required> <span><?php echo wp_kses_post(sprintf(__('I agree that my data is used to process this request (%s).', 'seeinside-travel'), $privacy ? '<a href="'.esc_url($privacy).'" target="_blank">'.__('privacy policy', 'seeinside-travel').'</a>' : __('privacy policy', 'seeinside-travel'))); ?></span></label>
         <button type="submit" class="sta-btn sta-btn-block"><?php esc_html_e('Send booking', 'seeinside-travel'); ?></button>
         <div class="sta-msg" data-sta-msg role="status" aria-live="polite"></div>

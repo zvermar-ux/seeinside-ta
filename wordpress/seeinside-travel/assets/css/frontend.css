@@ -897,3 +897,16 @@ button.sta-sb-btn b { max-width: 100%; }
 .sta-finder-avail.is-busy { background: #f3f4f6; color: #6b7280; }
 .sta-finder-cell.is-busy .sta-card-media, .sta-finder-cell.is-busy img { filter: grayscale(.45); opacity: .85; }
 .sta-finder-cell.is-free .sta-finder-avail { border: 1px solid #a7f3d0; }
+
+/* payment choice in the booking forms (card online / at the agency) */
+.sta-pay { border: 1px solid var(--sta-line); border-radius: 12px; padding: 10px 12px 6px; margin: 12px 0; }
+.sta-pay legend { font-weight: 700; padding: 0 6px; font-size: .95rem; }
+.sta-pay-opt { display: flex; align-items: flex-start; gap: .6rem; padding: 10px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; margin: 0 0 6px; }
+.sta-pay-opt:has(input:checked) { border-color: var(--sta-primary); background: color-mix(in srgb, var(--sta-primary) 6%, #fff); }
+.sta-pay-opt input { margin-top: .25rem; accent-color: var(--sta-primary); }
+.sta-pay-txt { flex: 1; display: grid; gap: 2px; }
+.sta-pay-txt small { font-size: .85rem; color: var(--sta-muted); }
+.sta-pay-txt small [data-sta-pay-amount] { color: var(--sta-ink); font-weight: 700; }
+.sta-pay-cards { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; max-width: 46%; }
+.sta-pay-cards i { font-style: normal; font-size: .66rem; font-weight: 800; letter-spacing: .02em; border: 1px solid var(--sta-line); border-radius: 4px; padding: 2px 5px; color: #1e3a8a; background: #fff; }
+.sta-pay-lock { font-size: .8rem; color: var(--sta-muted); margin: 2px 0 6px; }

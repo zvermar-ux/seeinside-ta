@@ -50,6 +50,7 @@ class STA_Hotels
         wp_enqueue_script('sta-hotels', STA_URL.'assets/js/hotels.js', ['sta'], STA_VERSION, ['strategy' => 'defer', 'in_footer' => true]);
         $privacy = get_privacy_policy_url();
         wp_localize_script('sta-hotels', 'STA_HOTELS', [
+            'payment' => sta_payment([], 'hotel'),   // card online / at the agency for hotels (rule of the agency)
             'consent' => sprintf(__('I agree that my data is used to process this request (%s).', 'seeinside-travel'), $privacy ? '<a href="'.esc_url($privacy).'" target="_blank">'.esc_html__('privacy policy', 'seeinside-travel').'</a>' : esc_html__('privacy policy', 'seeinside-travel')),
             'destinations' => self::destinations(),
             // the apartment card (same design) with placeholders – the hotels are filled in by hotels.js
@@ -65,6 +66,14 @@ class STA_Hotels
                 'allZones' => __('All areas', 'seeinside-travel'),
                 'typeH' => __('Type of accommodation', 'seeinside-travel'),
                 'afterDates' => __('Prices, free rooms and free cancellation: choose your dates above.', 'seeinside-travel'),
+                'payCard' => __('Card payment', 'seeinside-travel'),
+                'payAgency' => __('Pay at the agency', 'seeinside-travel'),
+                'payAgencyNote' => __('Book now, pay at our office or by bank transfer.', 'seeinside-travel'),
+                'payFull' => __('The whole amount is paid now by card.', 'seeinside-travel'),
+                'payDeposit' => __('Deposit %d%% now by card, the rest later.', 'seeinside-travel'),
+                'payLock' => __('You pay on the secure page of Halk Bank – the card details never reach us.', 'seeinside-travel'),
+                'payTitle' => __('Payment', 'seeinside-travel'),
+                'payGo' => __('Booking received – opening the card payment…', 'seeinside-travel'),
                 'yourDates' => __('Your dates', 'seeinside-travel'),
                 'searchName' => __('Search', 'seeinside-travel'),
                 'searchPh' => __('Hotel name', 'seeinside-travel'),
@@ -208,7 +217,7 @@ class STA_Hotels
                 return $blocked;
             }
             $p = (array) ($r->get_json_params() ?: $r->get_body_params());
-            $data = array_intersect_key($p, array_flip(['search_id', 'hotel', 'rate_key', 'accept_price', 'query', 'customer', 'passengers', 'message']));
+            $data = array_intersect_key($p, array_flip(['search_id', 'hotel', 'rate_key', 'accept_price', 'query', 'customer', 'passengers', 'message', 'payment_method', 'return_url']));
             $data['locale'] = sta_lang();
             $data['message'] = trim(($data['message'] ?? '')."\n\n[".home_url('/').']');
             $res = STA_Api::post('hotels/book', $data, 90);

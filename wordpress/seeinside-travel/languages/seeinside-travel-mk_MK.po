@@ -3442,3 +3442,27 @@ msgstr "%1$d од %2$d слободни за вашите датуми"
 
 msgid "The places free for your dates are shown first, the others below."
 msgstr "Најгоре се сместувањата слободни за вашите датуми, подолу се останатите."
+
+msgid "Card payment"
+msgstr "Плаќање со картичка"
+
+msgid "The whole amount is paid now by card."
+msgstr "Целиот износ се плаќа сега со картичка."
+
+msgid "Deposit %d%% now by card, the rest later."
+msgstr "Аванс %d%% сега со картичка, остатокот подоцна."
+
+msgid "Pay at the agency"
+msgstr "Плаќање во агенцијата"
+
+msgid "Book now, pay at our office or by bank transfer."
+msgstr "Резервирајте сега, платете во нашата агенција или со уплатница."
+
+msgid "You pay on the secure page of Halk Bank – the card details never reach us."
+msgstr "Плаќате на безбедната страница на Халк Банка – податоците од картичката не стигнуваат до нас."
+
+msgid "Booking received – opening the card payment…"
+msgstr "Резервацијата е примена – се отвора плаќањето со картичка…"
+
+msgid "Book and pay"
+msgstr "Резервирај и плати"
