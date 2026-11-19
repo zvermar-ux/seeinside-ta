@@ -25,7 +25,7 @@ class PaymentController extends Controller
 
     protected function lang(Request $r, OnlinePayment $p): string
     {
-        $l = $r->query('lang') ?: ($p->payable()->withoutGlobalScopes()->value('locale') ?? 'mk');
+        $l = $r->query('lang') ?: ($p->payable_type === 'test' ? 'mk' : ($p->payable()->withoutGlobalScopes()->value('locale') ?? 'mk'));
         $l = $l === 'en' ? 'en' : 'mk';
         app()->setLocale($l);
 
@@ -64,7 +64,7 @@ class PaymentController extends Controller
         $p = $this->find($token);
         $lang = $this->lang($request, $p);
         $agency = Agency::findOrFail($p->agency_id);
-        $what = $p->payable()->withoutGlobalScopes()->first();
+        $what = $p->payable_type === 'test' ? null : $p->payable()->withoutGlobalScopes()->first();
 
         return response()->view('pay.result', [
             'p' => $p, 'agency' => $agency, 'what' => $what, 'lang' => $lang,
@@ -77,8 +77,15 @@ class PaymentController extends Controller
     public function retry(Request $request, string $token): RedirectResponse
     {
         $p = $this->find($token);
+        abort_if($p->status === 'approved', 404);
+        if ($p->payable_type === 'test') {
+            $new = $p->replicate(['token', 'oid', 'status', 'response', 'auth_code', 'trans_id', 'card_mask', 'message', 'status_check', 'paid_at']);
+            $new->forceFill(['token' => \Illuminate\Support\Str::random(48), 'oid' => 'TEST-'.now()->format('ymdHis').'-'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(4)), 'status' => 'pending'])->save();
+
+            return redirect()->route('pay.show', $new->token);
+        }
         $what = $p->payable()->withoutGlobalScopes()->first();
-        abort_if(! $what || $p->status === 'approved', 404);
+        abort_if(! $what, 404);
         $new = PaymentPolicy::start($what, (float) $p->booking_amount, $p->return_url);
 
         return redirect()->route('pay.show', $new->token);

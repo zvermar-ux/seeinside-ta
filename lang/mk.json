@@ -2115,5 +2115,12 @@
     "not paid yet": "уште не е платено",
     "online card payment": "онлајн плаќање со картичка",
     "or at the agency": "или во агенција",
-    "Payment number": "Број на плаќање"
+    "Payment number": "Број на плаќање",
+    "Test payment": "Тест плаќање",
+    "Test payment 1 MKD": "Тест плаќање 1 ден.",
+    "status query": "проверка на статус",
+    "Pays 1 MKD with a real card through the same pages as the clients. Save the settings first. The 1 MKD can be returned (Void / Refund) in the merchant panel of the bank.": "Плаќа 1 денар со вистинска картичка преку истите страници како клиентите. Прво зачувајте ги поставките. Денарот може да се врати (Void / Refund) во трговскиот панел на банката.",
+    "You will be taken to the page of Halk Bank to pay 1 MKD with a real card. Afterwards you come back here.": "Ќе ве однесе на страницата на Халк Банка за да платите 1 денар со вистинска картичка. Потоа се враќате тука.",
+    "Save the settings first: Halk Bank, card payment switched on, Client ID and Store key.": "Прво зачувајте ги поставките: Halk Bank, вклучено плаќање со картичка, Client ID и Store key.",
+    "Back to the settings": "Назад на поставките"
 }

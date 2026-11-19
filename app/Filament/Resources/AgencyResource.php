@@ -118,6 +118,38 @@ class AgencyResource extends Resource
                             Forms\Components\TextInput::make('payment_settings.title')->label(__('Name of the payment on the website'))->placeholder('Плаќање со картичка')->maxLength(80),
                             Forms\Components\TextInput::make('payment_settings.note')->label(__('Note under it'))->placeholder('Visa, Mastercard, Maestro · безбедно преку Halk Bank')->maxLength(200)->columnSpan(2),
                         ]),
+                    // test with a real card: 1 MKD through the same pages as the clients
+                    Forms\Components\Placeholder::make('pay_test')->label(__('Test payment'))->columnSpanFull()
+                        ->visible(fn (Forms\Get $get) => $get('payment_provider') === 'nestpay')
+                        ->content(function ($record) {
+                            $agency = $record instanceof Agency ? $record : \Illuminate\Support\Facades\Auth::user()?->agency;
+                            $last = $agency ? \App\Models\OnlinePayment::withoutGlobalScopes()->where('agency_id', $agency->id)->where('payable_type', 'test')->latest('id')->limit(5)->get() : collect();
+                            $rows = $last->map(fn ($p) => '<div>'.$p->created_at->format('d.m.Y H:i').' · '.number_format((float) $p->amount, 2, ',', '.').' '.e($p->currency).' · '
+                                .match ($p->status) { 'approved' => '<b style="color:#16a34a">✓ '.e(__('Paid')).'</b>'.($p->auth_code ? ' · Auth '.e($p->auth_code) : ''), 'pending' => '<span style="color:#d97706">… '.e(__('Not finished')).'</span>', default => '<span style="color:#dc2626">✕ '.e(__('Not approved')).'</span>'.($p->message ? ' · '.e($p->message) : '') }
+                                .($p->status_check ? ' · <span title="'.e(mb_substr($p->status_check, 0, 500)).'">'.e(__('status query')).' ✓</span>' : '').'</div>')->implode('');
+
+                            return new \Illuminate\Support\HtmlString('<p style="font-size:.85rem;color:rgb(var(--gray-500))">'.e(__('Pays 1 MKD with a real card through the same pages as the clients. Save the settings first. The 1 MKD can be returned (Void / Refund) in the merchant panel of the bank.')).'</p>'.$rows);
+                        })
+                        ->hintAction(
+                            Forms\Components\Actions\Action::make('payTest')->label(__('Test payment 1 MKD'))->icon('heroicon-o-credit-card')->button()->color('primary')
+                                ->requiresConfirmation()
+                                ->modalDescription(__('You will be taken to the page of Halk Bank to pay 1 MKD with a real card. Afterwards you come back here.'))
+                                ->action(function ($record, $livewire) {
+                                    $agency = $record instanceof Agency ? $record->fresh() : Agency::find(\Illuminate\Support\Facades\Auth::user()?->agency_id);
+                                    if (! \App\Services\Payments\Halk::enabled($agency)) {
+                                        \Filament\Notifications\Notification::make()->title(__('Save the settings first: Halk Bank, card payment switched on, Client ID and Store key.'))->warning()->send();
+
+                                        return;
+                                    }
+                                    $p = \App\Models\OnlinePayment::withoutGlobalScopes()->create([
+                                        'agency_id' => $agency->id, 'payable_type' => 'test', 'payable_id' => 0,
+                                        'token' => \Illuminate\Support\Str::random(48), 'oid' => 'TEST-'.now()->format('ymdHis').'-'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(4)),
+                                        'provider' => 'halk', 'amount' => 1, 'currency' => 'MKD', 'booking_amount' => 1, 'status' => 'pending',
+                                        'return_url' => $record instanceof Agency ? static::getUrl('edit', ['record' => $record]) : \App\Filament\Pages\MyAgency::getUrl(),
+                                    ]);
+                                    $livewire->redirect($p->url());
+                                })
+                        ),
                     Forms\Components\Placeholder::make('pay_rules_info')->hiddenLabel()->columnSpanFull()
                         ->visible(fn (Forms\Get $get) => $get('payment_provider') === 'nestpay')
                         ->content(__('How each kind of offer is paid when it is booked on the website. Every tour, apartment, event or visa can have its own rule (its "Payment" section).')),

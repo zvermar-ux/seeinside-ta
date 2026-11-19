@@ -59,6 +59,9 @@ class OnlinePayments
     /** The money is in: a payment on the booking (in its currency) or on the visa application */
     protected static function register(OnlinePayment $p): void
     {
+        if ($p->payable_type === 'test') {
+            return;   // test payment of 1 MKD from the agency settings: nothing to register
+        }
         $what = $p->payable()->withoutGlobalScopes()->first();
         $note = 'Halk Bank · '.__('online card payment').' · '.number_format((float) $p->amount, 2, ',', '.').' '.$p->currency
             .($p->auth_code ? ' · Auth '.$p->auth_code : '').($p->trans_id ? ' · Trans '.$p->trans_id : '').($p->card_mask ? ' · '.$p->card_mask : '');

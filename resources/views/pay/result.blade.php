@@ -36,6 +36,7 @@
         <p class="muted">{{ __('The bank did not approve the payment – no money was taken. You can try again with the same or another card, or pay at the agency.') }}</p>
     @endif
     <dl>
+        @if ($p->payable_type === 'test')<dt>{{ __('Booking') }}</dt><dd>{{ __('Test payment') }}</dd>@endif
         @if ($ref)<dt>{{ __('Booking') }}</dt><dd>{{ $ref }}</dd>@endif
         <dt>{{ __('Amount') }}</dt><dd>{{ number_format((float) $p->amount, 2, ',', '.') }} {{ $p->currency }}@if ($what && $what->currency && $what->currency !== $p->currency) <span class="muted">({{ number_format((float) $p->booking_amount, 2, ',', '.') }} {{ $what->currency }})</span>@endif</dd>
         @if ($ok && $p->auth_code)<dt>{{ __('Authorization code') }}</dt><dd>{{ $p->auth_code }}</dd>@endif
@@ -47,7 +48,7 @@
         <form method="post" action="{{ route('pay.retry', $p->token) }}">@csrf<button class="btn" type="submit">{{ __('Try again') }}</button></form>
     @endif
     @if ($portal)<a class="btn {{ $ok ? '' : 'ghost' }}" href="{{ $portal }}">{{ __('My booking') }}</a>@endif
-    @if ($back)<a class="btn ghost" href="{{ $back }}">{{ __('Back to the website') }}</a>@endif
+    @if ($back)<a class="btn ghost" href="{{ $back }}">{{ $p->payable_type === 'test' ? __('Back to the settings') : __('Back to the website') }}</a>@endif
     <p class="muted" style="margin-top:14px">{{ $agency->name }}@if ($agency->phone) · {{ $agency->phone }}@endif</p>
 </div>
 </body>
