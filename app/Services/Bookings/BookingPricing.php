@@ -56,6 +56,12 @@ class BookingPricing
             if ($tp && $tp->price !== null) {
                 $perPerson = $item->term_price_type === 'per_person';
                 $lines[] = self::line('base', trim(($room?->tr('name') ?? '').' · '.$b->stayTerm?->label().' ('.$nights.' '.__('nights').')'), $perPerson ? $pax : $qty, (float) $tp->price);
+                // early booking / last minute of the apartment (the term price is the regular one)
+                $promo = (float) $item->promoPrice((float) $tp->price);
+                if ($promo < (float) $tp->price) {
+                    $label = $item->isLastMinuteActive() ? 'Last minute' : ($item->first_minute_label ?: 'Early Booking');
+                    $lines[] = self::line('discount', $label, $perPerson ? $pax : $qty, -round((float) $tp->price - $promo, 2));
+                }
             } elseif ($room && $b->date_from && $b->date_to) {
                 // the booking itself occupies the room – price only, no availability check
                 $offer = collect($item->quote($b->date_from->toDateString(), $b->date_to->toDateString(), max(1, $adults), $kids, false))->firstWhere('room_id', $room->id);

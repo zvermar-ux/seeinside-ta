@@ -390,7 +390,11 @@ class McsService
             $roomCode = $b->room?->provider_code;
             if ($kind === 'package') {
                 // villa sold in fixed terms (a "package" in the old system): the term starts on the check-in day
-                $rows = $api->packageSearch(['checkin' => $b->date_from->toDateString(), 'package' => $code, 'room' => $roomCode, 'adults' => $adults, 'children_ages' => $ages] + (self::where($p) ?: ['country' => $item->country]));
+                // the old system prices the cheapest room that fits the guests: the booked room is asked with all its beds,
+                // so the price (with the discount of the old system) is the one of this room
+                $ask = $roomCode && ($g = self::roomGuests($p, (string) $roomCode)['adults']) >= $adults + count($ages) ? ['adults' => $g] : ['adults' => $adults, 'children_ages' => $ages];
+                $rows = $api->packageSearch(['checkin' => $b->date_from->toDateString(), 'package' => $code, 'room' => $roomCode] + $ask + (self::where($p) ?: ['country' => $item->country]));
+                $rows = array_values(array_filter($rows, [McsClient::class, 'offer']));
                 $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? '') === (string) $code));
                 // the answer has no room (accommodationid empty) although this room was asked: it is the answer for this room
                 if ($roomCode && $rows && collect($rows)->every(fn ($r) => blank($r['accommodationid'] ?? null))) {
@@ -582,6 +586,7 @@ class McsService
         // tours: departures and the price per person (price for 2 adults / 2)
         foreach ($tours as $t) {
             $seen = [];
+            $disc = self::discountFor($c, $t);
             foreach ($found[(string) $t->provider_code] ?? [] as $checkin => $rows) {
                 if ($t->provider_room_code) {
                     $rows = array_filter($rows, fn ($r) => (string) ($r['accommodationid'] ?? '') === (string) $t->provider_room_code);
@@ -592,7 +597,7 @@ class McsService
                 $min = collect($rows)->sortBy(fn ($r) => (float) $r['price'])->first();
                 $dep = TourDeparture::query()->firstOrNew(['tour_id' => $t->id, 'start_date' => $checkin]);
                 $dep->end_date = $min['checkout'] ?? $dep->end_date;
-                $dep->price_adult = round((float) $min['price'] / 2 * $k, 2);
+                $dep->price_adult = round(self::regular((float) $min['price'], $disc) / 2 * $k, 2);   // regular price; the website takes the discount off
                 $dep->supplier_price = round((float) $min['price'] / 2, 2);
                 $dep->supplier_synced_at = now();
                 if (in_array($dep->status instanceof DepartureStatus ? $dep->status->value : $dep->status, [null, '', 'sold_out'], true)) {
@@ -634,6 +639,7 @@ class McsService
                 continue;
             }
             $byDate = self::perRoom($api, $c, $code, $byDate, $rooms, $out);
+            $disc = self::discountFor($c, $a);
             TermPrice::$quiet = true;
             $seenTerms = [];
             foreach ($byDate as $checkin => $rows) {
@@ -657,7 +663,7 @@ class McsService
                         $hit = $byRoom->get((string) $room->provider_code)?->sortBy(fn ($r) => (float) $r['price'])->first();
                         $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $room->id]);
                         if ($hit) {
-                            $tp->price = round((float) $hit['price'] * $k, 2);
+                            $tp->price = round(self::regular((float) $hit['price'], $disc) * $k, 2);
                             $tp->supplier_price = (float) $hit['price'];
                             $tp->stop_sale = false;
                             $out['term_prices']++;
@@ -696,6 +702,7 @@ class McsService
                 continue;
             }
             TermPrice::$quiet = true;
+            $disc = self::discountFor($c, $a);
             $terms = StayTerm::query()->where('accommodation_id', $a->id)->where('is_active', true)
                 ->where('date_from', '>', now()->toDateString())->where('date_from', '<=', $window[1])->get();
             foreach ($terms as $term) {
@@ -717,7 +724,7 @@ class McsService
                     $hit = $rows->get((string) $room->provider_code)?->sortBy(fn ($r) => (float) $r['price'])->first();
                     $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $room->id]);
                     if ($hit) {
-                        $tp->price = round((float) $hit['price'] * $k, 2);
+                        $tp->price = round(self::regular((float) $hit['price'], $disc) * $k, 2);
                         $tp->supplier_price = (float) $hit['price'];
                         $tp->stop_sale = false;
                         $out['term_prices']++;
@@ -780,6 +787,50 @@ class McsService
         $n += \App\Models\RoomRate::query()->whereIn('accommodation_room_id', $a->rooms->pluck('id'))->delete();
 
         return $n;
+    }
+
+    /** Early booking steps of the old system (connection), still valid, sorted */
+    public static function connectionTiers(SupplierConnection $c): array
+    {
+        return collect((array) ($c->settings['early_booking'] ?? []))
+            ->filter(fn ($t) => is_array($t) && (float) ($t['percent'] ?? 0) > 0 && ! empty($t['until']))
+            ->map(fn ($t) => ['percent' => (float) $t['percent'], 'until' => Carbon::parse($t['until'])->toDateString()])
+            ->sortBy('until')->values()->all();
+    }
+
+    /**
+     * The steps for one apartment / tour: those of the connection are written onto it (the website shows them),
+     * otherwise its own. Returns the discount valid today in percent (0 = none).
+     */
+    protected static function discountFor(SupplierConnection $c, $item): float
+    {
+        $tiers = self::connectionTiers($c);
+        if ($tiers && json_encode(array_values((array) $item->early_booking_tiers)) !== json_encode($tiers)) {
+            $item->forceFill(['early_booking_tiers' => $tiers])->saveQuietly();
+        }
+        $t = $item->currentEarlyBookingTier();
+
+        return $t ? (float) $t['percent'] : 0.0;
+    }
+
+    /**
+     * The regular price from a price with the discount taken off. The old system rounds the discounted price up to
+     * whole euros (419 − 20% = 335.2 → 336), so the regular price is the smallest whole number that gives it back.
+     */
+    public static function regular(float $price, float $percent): float
+    {
+        if ($percent <= 0 || $percent >= 100) {
+            return $price;
+        }
+        $f = 1 - $percent / 100;
+        if (abs($price - round($price)) < 0.001) {
+            $n = (int) floor(($price - 1) / $f) + 1;
+            if ((int) ceil(round($n * $f, 4)) === (int) round($price)) {
+                return (float) $n;
+            }
+        }
+
+        return round($price / $f, 2);
     }
 
     /** What the background sync is doing now (shown in Booking systems) */

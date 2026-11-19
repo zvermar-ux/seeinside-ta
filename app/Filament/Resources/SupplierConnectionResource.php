@@ -101,6 +101,14 @@ class SupplierConnectionResource extends Resource
                             ->default(range(4, 10))->helperText(__('Only these months are searched for package terms (fewer searches). Departures in other months are not changed.')),
                         Forms\Components\TextInput::make('settings.markup_percent')->label(__('Change of the prices taken %'))->numeric()->default(0)->suffix('%')
                             ->helperText(__('0 = the same prices as in the old system.')),
+                        Forms\Components\Repeater::make('settings.early_booking')->label(__('Early booking in the old system'))->columnSpanFull()
+                            ->defaultItems(0)->columns(2)->reorderable(false)->addActionLabel(__('Add step'))
+                            ->helperText(__('The same steps as in the old system (e.g. 20% until 30.11, 15% until 31.12, 10% until 31.03). The old system gives prices with the discount already taken off: the sync turns them back into the regular price and sets these steps on every linked apartment and tour, so the website shows the regular price struck through and the discount – never twice. Empty = the steps of each apartment / tour are used.'))
+                            ->itemLabel(fn (array $state) => filled($state['percent'] ?? null) ? '−'.$state['percent'].'% '.__('until').' '.(! empty($state['until']) ? \Illuminate\Support\Carbon::parse($state['until'])->format('d.m.Y') : '…') : null)
+                            ->schema([
+                                Forms\Components\TextInput::make('percent')->label(__('Discount'))->numeric()->suffix('%')->required()->minValue(0.5)->maxValue(90),
+                                Forms\Components\DatePicker::make('until')->label(__('For bookings until'))->native(false)->displayFormat('d.m.Y')->required(),
+                            ]),
                     ]),
                 Forms\Components\TextInput::make('settings.availability_url')->label(__('Availability address (JSON)'))->columnSpanFull()
                     ->placeholder('https://partner.mk/api/availability?hotel={hotel}&from={from}&to={to}')
