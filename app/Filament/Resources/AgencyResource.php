@@ -119,7 +119,7 @@ class AgencyResource extends Resource
                             Forms\Components\TextInput::make('payment_settings.note')->label(__('Note under it'))->placeholder('Visa, Mastercard, Maestro · безбедно преку Halk Bank')->maxLength(200)->columnSpan(2),
                         ]),
                     // test with a real card: 1 MKD through the same pages as the clients
-                    Forms\Components\Placeholder::make('pay_test')->label(__('Test payment'))->columnSpanFull()
+                    Forms\Components\Placeholder::make('pay_test')->key('payTestBox')->label(__('Test payment'))->columnSpanFull()
                         ->visible(fn (Forms\Get $get) => $get('payment_provider') === 'nestpay')
                         ->content(function ($record) {
                             $agency = $record instanceof Agency ? $record : \Illuminate\Support\Facades\Auth::user()?->agency;
@@ -200,6 +200,7 @@ class AgencyResource extends Resource
                         ->formatStateUsing(fn ($state) => $state === null ? array_keys(Agency::moduleOptions()) : $state),
                 ]),
             Forms\Components\Section::make(__('Outgoing e-mail (SMTP)'))
+                ->key('smtpBox')
                 ->description(__('Used for e-mails sent on behalf of the agency.'))
                 ->collapsible()->collapsed()
                 ->columns(3)
