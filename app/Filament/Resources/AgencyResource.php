@@ -178,7 +178,7 @@ class AgencyResource extends Resource
                                 return;
                             }
                             $hint = match (true) {
-                                str_contains($err, '535') || stripos($err, 'Username and Password not accepted') !== false => __('The server refused the username or password. Gmail: use an App Password (16 letters), not the normal password.'),
+                                str_contains($err, '535') || str_contains($err, '534') || stripos($err, 'Username and Password not accepted') !== false || stripos($err, 'Application-specific password') !== false => __('The server refused the username or password. Gmail: use an App Password (16 letters), not the normal password.'),
                                 stripos($err, 'timed out') !== false || stripos($err, 'Connection could not be established') !== false => __('No connection to the server: check the server name and port (587 with TLS or 465 with SSL).'),
                                 stripos($err, 'certificate') !== false || stripos($err, 'SSL') !== false || stripos($err, 'TLS') !== false => __('Encryption problem: try 587 with TLS or 465 with SSL.'),
                                 default => null,
