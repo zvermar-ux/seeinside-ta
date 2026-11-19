@@ -245,16 +245,13 @@ class McsService
     }
 
     /**
-     * Guests that fill one room of the old system ("1/2+2deca studio" → 2 adults + 2 children, "1/2 +1 studio" → 3 adults):
-     * the package search prices the cheapest room that fits the guests, so each room is asked with its own full occupancy.
+     * Guests that fill one room of the old system. The package search answers with the cheapest room that fits the
+     * guests (children are not counted there), so each room is asked with all its beds as adults:
+     * "1/2+2deca studio" → 4 adults (only that room fits), "1/2 +1 studio" → 3 adults.
      */
     public static function roomGuests(?SupplierProduct $p, string $roomCode): array
     {
         $room = collect((array) ($p?->rooms ?? []))->first(fn ($r) => (string) ($r['code'] ?? '') === $roomCode) ?? [];
-        $text = mb_strtolower(trim(($room['content'] ?? '').' '.($room['room'] ?? '')));
-        if (preg_match('#1\s*/\s*(\d+)\s*\+\s*(\d+)\s*(?:deca|deti|dete|chd|child|kids|деца|дете)#u', $text, $m)) {
-            return ['adults' => (int) $m[1], 'children_ages' => array_fill(0, (int) $m[2], 8)];
-        }
         $n = self::persons($room['content'] ?? null) ?? self::persons($room['room'] ?? null);
 
         return ['adults' => $n ?: 2];
