@@ -237,6 +237,7 @@ class SupplierConnectionResource extends Resource
                             .$row(__('Searches'), e(($x['calls'] ?? 0).' · '.__('offers found: :o', ['o' => $x['results'] ?? 0])))
                             .$row(__('Tours'), e(__(':d dates (no longer offered: :s)', ['d' => $x['departures'] ?? 0, 's' => $x['sold_out'] ?? 0])))
                             .$row(__('Apartments'), e(__(':n new terms, :t room prices, stop sale: :x', ['n' => $x['terms'] ?? 0, 't' => $x['term_prices'] ?? 0, 'x' => $x['stop_sale'] ?? 0])))
+                            .(! empty($x['removed']) ? $row(__('Removed (entered here)'), e((string) $x['removed'])) : '')
                             .$row(__('Errors'), $list($x['errors'] ?? [], '#dc2626'))
                             .$row(__('Notes'), $list($x['notes'] ?? []))
                             .'</table>';
