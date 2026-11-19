@@ -421,6 +421,8 @@ class BookingResource extends Resource
             ->modifyQueryUsing(fn ($query) => $query->with(['bookable', 'departure'])
                 ->withCount(['messages as unread_count' => fn ($q) => $q->withoutGlobalScopes()->where('direction', 'in')->whereNull('read_at')]))
             ->columns([
+                Tables\Columns\TextColumn::make('agency.name')->label(__('Agency'))->toggleable()
+                    ->visible(fn () => Auth::user()?->isSuperAdmin()),
                 Tables\Columns\TextColumn::make('reference')->label(__('Reference'))->searchable()->weight('semibold')->copyable()
                     ->description(fn (Booking $r) => $r->created_at?->format('d.m.Y H:i'))
                     ->icon(fn (Booking $r) => $r->cancel_requested_at && $r->status !== BookingStatus::Cancelled ? 'heroicon-m-exclamation-triangle' : ($r->unread_count ? 'heroicon-m-chat-bubble-left-ellipsis' : null))
@@ -452,6 +454,8 @@ class BookingResource extends Resource
                 Tables\Filters\SelectFilter::make('bookable_type')->label(__('Type'))
                     ->options(fn () => array_filter(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Apartment / villa'), 'charter' => __('Charter')] + static::customTypeOptions(),
                     fn ($label, $key) => $key === 'custom' || \App\Models\Agency::moduleOn(\App\Http\Middleware\AgencyModule::BY_TYPE[$key] ?? $key), ARRAY_FILTER_USE_BOTH)),
+                Tables\Filters\SelectFilter::make('agency_id')->label(__('Agency'))->relationship('agency', 'name')
+                    ->visible(fn () => Auth::user()?->isSuperAdmin()),
                 Tables\Filters\SelectFilter::make('legacy_status')->label(__('Old Aries system'))
                     ->options(['sent' => __('Booked in the old system'), 'failed' => __('Not sent to the old system'), 'not_available' => __('Not available in the old system')]),
                 // hotels from booking systems (Hotelbeds…) are separate from the own apartments
@@ -465,10 +469,13 @@ class BookingResource extends Resource
                     ->action(fn (Booking $r) => $r->update(['status' => BookingStatus::Confirmed])),
                 Tables\Actions\EditAction::make(),
                 Duplicate::action(null, ['external_ref', 'confirmed_at', 'paid_amount', 'status', 'payment_status']),
+                // super admin only (e.g. test bookings): the payments go with the booking, documents stay without it
+                Tables\Actions\DeleteAction::make()->iconButton()->visible(fn () => Auth::user()?->isSuperAdmin()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkAction::make('export')->label(__('Export to Excel (CSV)'))->icon('heroicon-o-arrow-down-tray')->deselectRecordsAfterCompletion()
                     ->action(fn (\Illuminate\Database\Eloquent\Collection $records) => static::exportCsv($records)),
+                Tables\Actions\DeleteBulkAction::make()->visible(fn () => Auth::user()?->isSuperAdmin()),
             ])
             ->defaultSort('created_at', 'desc');
     }
