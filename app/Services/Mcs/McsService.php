@@ -406,6 +406,32 @@ class McsService
         }
     }
 
+    /**
+     * Names in Latin letters as in the passport (Марјан Делевски → Marjan Delevski): the old system takes no Cyrillic
+     * (it answered with an empty page to Cyrillic names).
+     */
+    public static function latin(string $s): string
+    {
+        $map = ['а' => 'a', 'б' => 'b', 'в' => 'v', 'г' => 'g', 'д' => 'd', 'ѓ' => 'gj', 'е' => 'e', 'ж' => 'zh', 'з' => 'z', 'ѕ' => 'dz', 'и' => 'i', 'ј' => 'j',
+            'к' => 'k', 'л' => 'l', 'љ' => 'lj', 'м' => 'm', 'н' => 'n', 'њ' => 'nj', 'о' => 'o', 'п' => 'p', 'р' => 'r', 'с' => 's', 'т' => 't', 'ќ' => 'kj',
+            'у' => 'u', 'ф' => 'f', 'х' => 'h', 'ц' => 'c', 'ч' => 'ch', 'џ' => 'dzh', 'ш' => 'sh', 'й' => 'j', 'ю' => 'ju', 'я' => 'ja', 'ы' => 'i', 'э' => 'e', 'ё' => 'e',
+            'щ' => 'sht', 'ъ' => 'a', 'ь' => '', 'ђ' => 'dj', 'ћ' => 'c'];
+        $out = '';
+        foreach (mb_str_split($s) as $ch) {
+            $low = mb_strtolower($ch);
+            if (isset($map[$low])) {
+                $t = $map[$low];
+                $out .= $low !== $ch ? mb_strtoupper(mb_substr($t, 0, 1)).mb_substr($t, 1) : $t;
+            } else {
+                $out .= $ch;
+            }
+        }
+        // no accents either (Đ, Š, Č … → D, S, C)
+        $plain = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $out);
+
+        return trim($plain !== false && $plain !== '' ? $plain : $out);
+    }
+
     /** A booking number came back (not empty, not NotAvailable, not an error text) */
     protected static function booked(string $ref): bool
     {
@@ -502,14 +528,14 @@ class McsService
         [$hf, $hl] = self::split((string) $b->customer_name);
         for ($i = 0; $i < $adults; $i++) {
             $p = $grown[$i] ?? null;
-            $params['passenger'.($i + 1).'_name'] = $p ? trim((string) ($p['first_name'] ?? '')) : ($i === 0 ? $hf : 'TBA');
-            $params['passenger'.($i + 1).'_surname'] = $p ? trim((string) ($p['last_name'] ?? '')) : $hl;
+            $params['passenger'.($i + 1).'_name'] = self::latin($p ? trim((string) ($p['first_name'] ?? '')) : ($i === 0 ? $hf : 'TBA'));
+            $params['passenger'.($i + 1).'_surname'] = self::latin($p ? trim((string) ($p['last_name'] ?? '')) : $hl);
             $params['passenger'.($i + 1).'_birthdate'] = self::date($p['birth_date'] ?? null);
         }
         foreach ($ages as $i => $age) {
             $p = $kids[$i] ?? null;
-            $params['child_passenger'.($i + 1).'_name'] = $p ? trim((string) ($p['first_name'] ?? '')) : 'TBA';
-            $params['child_passenger'.($i + 1).'_surname'] = $p ? trim((string) ($p['last_name'] ?? '')) : $hl;
+            $params['child_passenger'.($i + 1).'_name'] = self::latin($p ? trim((string) ($p['first_name'] ?? '')) : 'TBA');
+            $params['child_passenger'.($i + 1).'_surname'] = self::latin($p ? trim((string) ($p['last_name'] ?? '')) : $hl);
             $params['child_passenger'.($i + 1).'_birthdate'] = self::date($p['birth_date'] ?? null);
         }
 
