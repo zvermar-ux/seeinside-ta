@@ -107,7 +107,7 @@ class Agency extends Model
     {
         $defaults = [
             'base_currency' => 'MKD',
-            'eur_rate' => 61.5,
+            'eur_rate' => 62,
             'vat_rate' => 0,
             'invoice_days' => 8,
             'registers' => ['main' => 'Главна благајна'],
@@ -124,7 +124,7 @@ class Agency extends Model
 
     public function eurRate(): float
     {
-        return (float) ($this->doc('eur_rate') ?: 61.5);
+        return (float) ($this->doc('eur_rate') ?: 62);
     }
 
     /** Amount in the agency's base currency (MKD) */

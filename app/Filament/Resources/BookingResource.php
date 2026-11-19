@@ -181,7 +181,7 @@ class BookingResource extends Resource
                         ->visible(fn (Get $get) => filled($get('total')) && $get('currency') !== 'MKD')
                         ->content(function (Get $get) {
                             $agency = \App\Models\Agency::find(AgencyField::current($get) ?? Auth::user()->agency_id);
-                            $rate = (float) ($get('exchange_rate') ?: $agency?->eurRate() ?: 61.5);
+                            $rate = (float) ($get('exchange_rate') ?: $agency?->eurRate() ?: 62);
 
                             return '= '.number_format((float) $get('total') * $rate, 2, ',', '.').' MKD ('.__('rate').' '.$rate.')';
                         }),
