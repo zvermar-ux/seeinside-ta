@@ -3580,3 +3580,15 @@ msgstr "Копче со текст"
 
 msgid "Search field"
 msgstr "Поле за пребарување"
+
+msgid "Search in the header"
+msgstr "Пребарување во хедерот"
+
+msgid "Magnifier in the site header automatically (next to the menu / Contact button)"
+msgstr "Лупа во хедерот на сајтот автоматски (до менито / копчето Контакт)"
+
+msgid "Off – I place [sta_search_button] myself"
+msgstr "Исклучено – сам го ставам [sta_search_button]"
+
+msgid "Opens the quick search and the search form from any page (\"/\" or Ctrl+K too). Without a header found, it is shown as a round button at the bottom left."
+msgstr "Го отвора брзото пребарување и формата од секоја страница (и со „/“ или Ctrl+K). Ако не се најде хедер, се прикажува како тркалезно копче долу лево."

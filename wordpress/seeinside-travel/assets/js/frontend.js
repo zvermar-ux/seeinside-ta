@@ -1067,6 +1067,25 @@
 
   /* ---------- quick search from anywhere: [sta_search_button] → window with search as you type + the search form ---------- */
   (function () {
+    // automatic place in the theme header: before the side-menu / contact button, otherwise at the end of the menu row
+    var tpl = $('template[data-sta-qs-auto]');
+    if (tpl && !$('header [data-sta-qs-open], .elementor-location-header [data-sta-qs-open]')) {
+      var btn = tpl.content.firstElementChild.cloneNode(true), placed = false;
+      var head = $('.elementor-location-header') || $('header.th-header, .th-header') || $('header');
+      if (head) {
+        var spots = ['.sideMenuToggler', '.sidebar-btn', '.side-menu-toggle', '.offcanvas-btn', '[class*="sideMenu"]', '.header-button', '.th-menu-toggle'];
+        for (var si = 0; si < spots.length && !placed; si++) {
+          var all = $$(spots[si], head).filter(function (x) { return x.offsetParent !== null; });
+          if (all.length) { all[0].parentNode.insertBefore(btn, all[0]); placed = true; }
+        }
+        if (!placed) { var nav = $('nav', head) || $('.main-menu', head); if (nav && nav.parentNode) { nav.parentNode.appendChild(btn); placed = true; } }
+        if (placed) btn.classList.add('is-in-header');
+        // phones: a second one next to the mobile menu button
+        var mob = $$('.th-menu-toggle, .menu-toggle, .mobile-menu-toggle, [class*="hamburger"]', head).filter(function (x) { return x.offsetParent !== null; })[0];
+        if (mob && (!placed || btn.offsetParent === null)) { var b2 = btn.cloneNode(true); mob.parentNode.insertBefore(b2, mob); placed = true; }
+      }
+      if (!placed) { btn.classList.add('is-floating'); document.body.appendChild(btn); }
+    }
     var dlg = $('[data-sta-qs]'); if (!dlg) return;
     var input = $('[data-sta-qs-q]', dlg), res = $('[data-sta-qs-res]', dlg), hint = res.innerHTML, timer, seq = 0;
     function open() { if (dlg.open) return; if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); document.documentElement.classList.add('sta-qs-on'); setTimeout(function () { input.focus(); input.select(); }, 30); }

@@ -14,6 +14,7 @@ class STA_Quick_Search
     public static function init(): void
     {
         add_action('init', fn () => add_shortcode('sta_search_button', [self::class, 'button']));
+        add_action('wp_footer', [self::class, 'auto'], 1);
         add_action('wp_footer', [self::class, 'dialog'], 5);
         add_action('rest_api_init', fn () => register_rest_route('seeinside-travel/v1', '/quick', ['methods' => 'GET', 'callback' => [self::class, 'rest'], 'permission_callback' => '__return_true']));
         // the index follows the offers
@@ -35,6 +36,15 @@ class STA_Quick_Search
 
         return '<button type="button" class="sta-qs-open is-'.$style.'" data-sta-qs-open aria-haspopup="dialog" aria-label="'.esc_attr($label).'"'.$css.'>'
             .sta_icon('search').($style !== 'icon' ? '<span>'.esc_html($label).'</span>' : '').'</button>';
+    }
+
+    /** Settings → Display → "Search in the header": the magnifier is put into the theme header by itself */
+    public static function auto(): void
+    {
+        if (is_admin() || (get_option('sta_settings', [])['qs_header'] ?? 'auto') === 'off' || (isset($_GET['elementor-preview']))) {   // phpcs:ignore
+            return;
+        }
+        echo '<template data-sta-qs-auto>'.self::button(['style' => 'icon']).'</template>';   // phpcs:ignore
     }
 
     /** The window (once per page, at the end) */
