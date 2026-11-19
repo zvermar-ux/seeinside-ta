@@ -168,6 +168,31 @@ class MessagingSettings extends Page implements HasForms
                     $ok ? Notification::make()->success()->title(__('Sent'))->send()
                         : Notification::make()->danger()->title(__('Not sent'))->body($err)->persistent()->send();
                 }),
+            // every notification once to a test e-mail, with the data of a real booking
+            Action::make('testAll')->label(__('Test all notifications'))->icon('heroicon-o-envelope-open')->color('primary')
+                ->modalDescription(__('Each notification (to clients and to the agency) is sent once by e-mail to the test address, with the texts set here and the data of a booking. The client of the booking gets nothing.'))
+                ->form([
+                    Forms\Components\TextInput::make('to')->label(__('Test e-mail'))->email()->required()->default(fn () => Auth::user()?->email),
+                    Forms\Components\Select::make('booking')->label(__('With the data of the booking'))->searchable()
+                        ->options(fn () => \App\Models\Booking::withoutGlobalScopes()->where('agency_id', $this->agencyModel()?->id)->latest('id')->limit(40)->get()
+                            ->mapWithKeys(fn ($b) => [$b->id => $b->reference.' · '.$b->customer_name.' · '.\Illuminate\Support\Str::limit((string) $b->itemTitle(), 40)])->all())
+                        ->placeholder(__('The newest booking')),
+                ])
+                ->action(function (array $data) {
+                    $a = $this->agencyModel();
+                    $b = ! empty($data['booking']) ? \App\Models\Booking::withoutGlobalScopes()->find($data['booking'])
+                        : \App\Models\Booking::withoutGlobalScopes()->where('agency_id', $a->id)->latest('id')->first();
+                    $res = Messenger::testAll($a, $data['to'], $b);
+                    $okN = collect($res)->where('ok', true)->count();
+                    $rows = collect($res)->map(fn ($r) => '<div>'.($r['ok'] ? '✅' : '❌').' '.e($r['label'])
+                        .($r['on'] ? '' : ' <span style="color:#d97706">('.e(__('switched off – sent only in this test')).')</span>')
+                        .($r['error'] ? '<br><small style="color:#dc2626">'.e(\Illuminate\Support\Str::limit($r['error'], 200)).'</small>' : '').'</div>')->implode('');
+                    Notification::make()->title(__(':ok of :n notifications sent to :to', ['ok' => $okN, 'n' => count($res), 'to' => $data['to']]))
+                        ->body(new \Illuminate\Support\HtmlString('<div style="font-size:.85rem;line-height:1.6">'.$rows.'</div>'.($b ? '<small>'.e(__('Data of the booking')).' '.e($b->reference).'</small>' : '')))
+                        ->{$okN === count($res) ? 'success' : 'warning'}()->persistent()->send();
+                }),
+            Action::make('log')->label(__('Notification log'))->icon('heroicon-o-queue-list')->color('gray')
+                ->url(fn () => \App\Filament\Resources\NotificationLogResource::getUrl()),
             Action::make('pick')->label(fn () => $this->agencyModel()?->name ?? __('Agency'))->icon('heroicon-o-building-office')->color('gray')
                 ->visible(fn () => Auth::user()->isSuperAdmin())
                 ->form([Forms\Components\Select::make('agency')->label(__('Agency'))->options(Agency::query()->orderBy('name')->pluck('name', 'id'))->required()])

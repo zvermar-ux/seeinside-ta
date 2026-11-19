@@ -88,9 +88,18 @@ class Messenger
         if (! $recipient) {
             $error = $channel === 'email' ? __('No e-mail address.') : __('No phone number.');
         } elseif ($channel === 'email') {
-            $html = ($ctx['event'] ?? null) === 'booking_received' && $b && ! ($ctx['internal'] ?? false)
-                ? view('emails.booking-confirmation', ['booking' => $b->fresh(['room', 'bookable']), 'agency' => $a, 'portal' => \App\Http\Controllers\PortalController::url($b)])->render()
-                : self::emailHtml($a, $text, $b, (bool) ($ctx['internal'] ?? false));
+            $internal = (bool) ($ctx['internal'] ?? false);
+            $event = (string) ($ctx['event'] ?? '');
+            try {
+                // the booking itself (like Booking.com): to the client when it is received, and to the agency for a new booking
+                $html = $b && (($event === 'booking_received' && ! $internal) || ($event === 'new_booking' && $internal))
+                    ? view('emails.booking-confirmation', ['booking' => $b->fresh(['room', 'bookable']) ?? $b, 'agency' => $a, 'internal' => $internal,
+                        'portal' => \App\Http\Controllers\PortalController::url($b), 'admin' => url('/admin/bookings/'.$b->id.'/edit')])->render()
+                    : self::emailHtml($a, $text, $b, $internal);
+            } catch (\Throwable $e) {
+                Log::warning('Booking e-mail view failed: '.$e->getMessage());
+                $html = self::emailHtml($a, $text, $b, $internal);
+            }
             $error = AgencyMail::send($a, $recipient, $subject, $html, [], $ctx['attachments'] ?? []);
             $ok = $error === null;
         } else {
@@ -98,9 +107,10 @@ class Messenger
             $ok ? $ref = $res : $error = $res;
         }
         try {
+            $test = ! empty($ctx['test']);   // test sends: not linked to the booking (the client must not see them in the portal)
             Message::withoutGlobalScopes()->create([
-                'agency_id' => $a->id, 'booking_id' => $b?->id, 'invoice_id' => $i?->id, 'client_id' => $b?->client_id ?? $i?->client_id,
-                'direction' => 'out', 'channel' => $channel, 'event' => ($ctx['internal'] ?? false) ? 'agency:'.($ctx['event'] ?? '') : ($ctx['event'] ?? null),
+                'agency_id' => $a->id, 'booking_id' => $test ? null : $b?->id, 'invoice_id' => $test ? null : $i?->id, 'client_id' => $test ? null : ($b?->client_id ?? $i?->client_id),
+                'direction' => 'out', 'channel' => $channel, 'event' => $test ? 'test:'.($ctx['event'] ?? '') : (($ctx['internal'] ?? false) ? 'agency:'.($ctx['event'] ?? '') : ($ctx['event'] ?? null)),
                 'recipient' => $recipient ?: (string) $to, 'subject' => $subject, 'body' => $text,
                 'status' => $ok ? 'sent' : 'failed', 'error' => $error ? mb_substr($error, 0, 1000) : null, 'provider_ref' => $ref,
                 'created_by' => Auth::id(),
@@ -110,6 +120,27 @@ class Messenger
         }
 
         return $ok;
+    }
+
+    /**
+     * Every notification once to a test address (with the texts of the agency and the data of a booking).
+     * @return array<string, array{label:string, ok:bool, error:?string}>
+     */
+    public static function testAll(Agency $a, string $email, ?Booking $b = null): array
+    {
+        $out = [];
+        foreach (Templates::events() as $event => [$label, $for]) {
+            $locale = $b?->locale === 'en' ? 'en' : 'mk';
+            [$subject, $text] = Templates::for($a, $event, $locale);
+            $vars = Templates::vars($a, $b, null, ['{message}' => __('(text of the message)'), '{invoice}' => 'F-0001']);
+            $subject = '[TEST] '.Templates::render($subject, $vars);
+            $text = Templates::render($text, $vars);
+            $ok = self::send($a, 'email', $email, $subject, $text, ['event' => $event, 'booking' => $b, 'internal' => $for === 'agency', 'test' => true]);
+            $out[$event] = ['label' => $label, 'for' => $for, 'ok' => $ok, 'on' => in_array('email', self::channelsFor($a, $event), true),
+                'error' => $ok ? null : Message::withoutGlobalScopes()->where('agency_id', $a->id)->where('event', 'test:'.$event)->latest('id')->value('error')];
+        }
+
+        return $out;
     }
 
     /** Text message as a branded e-mail with a button to the client portal */
