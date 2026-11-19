@@ -13,6 +13,9 @@ use RuntimeException;
  */
 class McsClient
 {
+    /** The last answer (for the booking report): HTTP status, type and the beginning of the body */
+    public static array $last = [];
+
     public function __construct(protected SupplierConnection $c) {}
 
     protected function base(): string
@@ -59,6 +62,7 @@ class McsClient
             throw new RuntimeException(__('The old system does not answer: :e', ['e' => $e->getMessage()]));
         }
         Log::info('MCS '.$operation, ['status' => $res->status(), 'ms' => (int) ((microtime(true) - $started) * 1000), 'bytes' => strlen((string) $res->body())]);
+        self::$last = ['status' => $res->status(), 'type' => (string) $res->header('Content-Type'), 'body' => mb_substr((string) $res->body(), 0, 300)];
 
         return $this->parse($res);
     }

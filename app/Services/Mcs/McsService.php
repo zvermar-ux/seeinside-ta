@@ -372,16 +372,24 @@ class McsService
                     continue;   // the same offer again
                 }
                 $ref = self::client($c)->book($params);
+                // what exactly went (names hidden) and what came back – in the log for the old system's support
+                Log::warning('MCS BookRequest', ['booking' => $b->reference, 'mode' => $mode, 'answer' => McsClient::$last,
+                    'params' => collect($params)->map(fn ($v, $k) => preg_match('/_(name|surname)$/', (string) $k) ? (mb_substr((string) $v, 0, 1).'…') : $v)->all()]);
+                if ($ref === '') {
+                    $ref = 'HTTP '.(McsClient::$last['status'] ?? '?').' '.__('empty answer');
+                }
                 $tried[$key] = sprintf('%s · %s %s→%s · %s %s · %s %s · %s',
                     $params['booktype'].' '.$params['id'], ($params['accommodationid'] ?? null) ? 'accommodationid '.$params['accommodationid'] : 'roomid '.($params['roomid'] ?? ''),
                     $params['checkin'], $params['checkout'], $params['adults'], __('adults'), $params['price'], $params['currency'], $ref ?: '—');
-                if ($ref !== '' && strcasecmp($ref, 'NotAvailable') !== 0) {
+                if (self::booked($ref)) {
                     break;
                 }
             }
-            if ($ref === '' || strcasecmp($ref, 'NotAvailable') === 0) {
-                $b->forceFill(['legacy_status' => 'not_available', 'legacy_sent_at' => now(),
-                    'legacy_error' => __('The old system answered "NotAvailable".').' '.__('Tried:').' '.implode(' | ', $tried)])->saveQuietly();
+            if (! self::booked($ref)) {
+                $empty = str_contains($ref, __('empty answer'));
+                $b->forceFill(['legacy_status' => $empty ? 'failed' : 'not_available', 'legacy_sent_at' => now(),
+                    'legacy_error' => ($empty ? __('The old system gave an empty answer to the booking (no number, no "NotAvailable").') : __('The old system answered "NotAvailable".'))
+                        .' '.__('Tried:').' '.implode(' | ', $tried)])->saveQuietly();
                 Log::warning('MCS booking NotAvailable', ['booking' => $b->reference, 'tried' => array_values($tried)]);
 
                 return ['ok' => false, 'message' => $b->legacy_error];
@@ -396,6 +404,12 @@ class McsService
 
             return ['ok' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    /** A booking number came back (not empty, not NotAvailable, not an error text) */
+    protected static function booked(string $ref): bool
+    {
+        return $ref !== '' && strcasecmp($ref, 'NotAvailable') !== 0 && ! str_starts_with($ref, 'HTTP ') && ! str_starts_with($ref, '{');
     }
 
     /** Search the exact offer again (the price must be the one of the search), then the BookRequest fields */
