@@ -557,7 +557,7 @@ class McsService
                         continue;
                     }
                     $failedInRow = 0;
-                    foreach ($rows as $r) {
+                    foreach (array_filter($rows, [McsClient::class, 'offer']) as $r) {
                         $out['results']++;
                         $found[(string) ($r['id'] ?? $chunk[$k]['package'])][(string) ($r['checkin'] ?? $chunk[$k]['checkin'])][] = $r;
                     }
@@ -855,7 +855,7 @@ class McsService
             if ($rows instanceof Throwable || ! $rows) {
                 continue;   // this room is not free in this term
             }
-            $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? $code) === (string) $code));
+            $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? $code) === (string) $code && McsClient::offer($r)));
             // the answer for this room: its own row, or (when the API still gives no room) the first one
             $mine = array_values(array_filter($rows, fn ($r) => (string) ($r['accommodationid'] ?? '') === $room)) ?: $rows;
             if ($mine) {
@@ -913,7 +913,11 @@ class McsService
             }
         }
 
-        return ['per_room' => $perRoom, 'by_guests' => $byGuests, 'per_room_prices_differ' => count(array_unique($prices)) > 1,
+        $valid = count(array_filter($rows, [McsClient::class, 'offer']));
+
+        return ['offers_with_price' => $valid,
+            'note' => $valid ? null : __('The old system has no offer for this Id on this date (empty rows dated 1970-01-01). Choose the first day of a term that is free in the old system.'),
+            'per_room' => $perRoom, 'by_guests' => $byGuests, 'per_room_prices_differ' => count(array_unique($prices)) > 1,
             'rows' => $rows, 'where' => $where, 'product' => $p?->only(['kind', 'code', 'name', 'country', 'region', 'city', 'rooms'])];
     }
 }

@@ -2039,5 +2039,6 @@
     ":n of :t room prices from Aries": ":n од :t цени по соби од Aries",
     "Aries Room-Id": "Aries Room-Id",
     "Every night: the fixed terms of the old system and the price of each room for each term (Terms tab). Terms, room prices and period prices entered here are removed at the sync – only those from Aries stay. Texts, photos and rooms stay as they are here.": "Секоја ноќ: фиксните термини од старата апликација и цената на секоја соба за секој термин (таб Термини). Термините, цените по соби и цените по периоди внесени тука се бришат при синхронизацијата – остануваат само тие од Aries. Текстовите, сликите и собите остануваат како што се тука.",
-    "Removed (entered here)": "Избришани (внесени тука)"
+    "Removed (entered here)": "Избришани (внесени тука)",
+    "The old system has no offer for this Id on this date (empty rows dated 1970-01-01). Choose the first day of a term that is free in the old system.": "Старата апликација нема понуда за ова Id на овој датум (празни редови со датум 1970-01-01). Изберете прв ден на термин што е слободен во старата апликација."
 }

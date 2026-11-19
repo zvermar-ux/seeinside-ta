@@ -211,6 +211,14 @@ class McsClient
         return trim((string) $r, " \t\n\r\0\x0B\"");
     }
 
+    /** A real offer: with a price and a check-in date (the old system answers "no offer" with empty rows dated 1970-01-01) */
+    public static function offer(array $r): bool
+    {
+        $in = (string) ($r['checkin'] ?? '');
+
+        return is_numeric($r['price'] ?? null) && (float) $r['price'] > 0 && $in !== '' && ! str_starts_with($in, '1970') && ! str_starts_with($in, '0000');
+    }
+
     public static function params(array $q): array
     {
         $ages = array_values(array_map('intval', (array) ($q['children_ages'] ?? [])));
