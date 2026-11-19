@@ -89,3 +89,26 @@ Artisan::command('aries:retry', function () {
 \Illuminate\Support\Facades\Schedule::command('aries:prices')->dailyAt('03:20')->runInBackground();
 \Illuminate\Support\Facades\Schedule::command('aries:prices --requested')->everyMinute()->runInBackground();
 \Illuminate\Support\Facades\Schedule::command('aries:retry')->everyThirtyMinutes()->withoutOverlapping();
+
+Artisan::command('aries:availability', function () {
+    foreach (\App\Models\SupplierConnection::withoutGlobalScopes()->where('provider', 'mcs')->where('is_active', true)->get() as $c) {
+        if (($c->settings['sync_prices'] ?? true) === false) {
+            continue;
+        }
+        $lock = \Illuminate\Support\Facades\Cache::lock('mcs-sync-'.$c->id, 3600);   // not while the big sync runs
+        if (! $lock->get()) {
+            $this->line($c->name.': sync running');
+
+            continue;
+        }
+        try {
+            $this->info($c->name.': '.json_encode(\App\Services\Mcs\McsService::quickAvailability($c)));
+        } catch (\Throwable $e) {
+            report($e);
+        } finally {
+            $lock->release();
+        }
+    }
+})->purpose('What was booked offline in the old Aries system: free / stop sale for the terms and departures we have');
+// offline bookings of the old system reach the website within ~2 hours (7–23 h)
+\Illuminate\Support\Facades\Schedule::command('aries:availability')->cron('10 7-23/2 * * *')->runInBackground()->withoutOverlapping();

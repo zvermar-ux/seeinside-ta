@@ -909,6 +909,124 @@ class McsService
         return round($price / $f, 2);
     }
 
+    /**
+     * Fast check of what is still free (several times a day): only the terms we already have, each linked room asked
+     * on its own. A term/room booked offline in the old system becomes "stop sale" here (and on the website) and opens
+     * again when it is free there. Tours: each departure. Prices are not changed here (the nightly sync does that).
+     */
+    public static function quickAvailability(SupplierConnection $c, int $days = 400): array
+    {
+        $out = ['checked' => 0, 'closed' => 0, 'opened' => 0, 'errors' => 0];
+        $api = self::client($c);
+        $months = array_map('intval', array_filter((array) ($c->settings['months'] ?? []))) ?: range(1, 12);
+        $until = now()->addDays($days)->toDateString();
+        $queries = [];
+        $accs = Accommodation::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('sync_supplier_prices', true)
+            ->whereNotNull('provider_code')->with('rooms')->get()->filter(fn ($a) => self::ref($a->provider_code)[0] === 'package');
+        foreach ($accs as $a) {
+            $code = self::ref($a->provider_code)[1];
+            $p = self::product($c, 'package', $code);
+            $where = self::where($p) ?: ['country' => $p?->country];
+            $rooms = $a->rooms->filter(fn ($r) => filled($r->provider_code));
+            $terms = StayTerm::query()->where('accommodation_id', $a->id)->where('is_active', true)
+                ->where('date_from', '>', now()->toDateString())->where('date_from', '<=', $until)->get();
+            foreach ($terms as $t) {
+                if (! in_array((int) $t->date_from->month, $months, true)) {
+                    continue;
+                }
+                foreach ($rooms as $room) {
+                    $queries['a|'.$t->id.'|'.$room->id] = ['checkin' => $t->date_from->toDateString(), 'package' => $code, 'room' => (string) $room->provider_code] + self::roomGuests($p, (string) $room->provider_code) + $where;
+                }
+            }
+        }
+        $tours = Tour::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('sync_supplier_prices', true)->whereNotNull('provider_code')->get();
+        foreach ($tours as $tour) {
+            $p = self::product($c, 'package', (string) $tour->provider_code);
+            $where = self::where($p) ?: ['country' => $p?->country];
+            foreach (TourDeparture::query()->where('tour_id', $tour->id)->where('start_date', '>', now()->toDateString())->where('start_date', '<=', $until)
+                ->where('status', '!=', DepartureStatus::Cancelled->value)->get() as $d) {
+                $queries['t|'.$d->id] = ['checkin' => $d->start_date->toDateString(), 'package' => (string) $tour->provider_code, 'adults' => 2] + $where;
+            }
+        }
+        if (! $queries) {
+            return $out;
+        }
+        $failed = 0;
+        foreach (array_chunk($queries, 40, true) as $chunk) {
+            foreach ($api->packageSearchMany($chunk, max(1, (int) ($c->settings['concurrency'] ?? 1))) as $key => $rows) {
+                if ($rows instanceof Throwable) {
+                    $out['errors']++;
+                    if (++$failed >= 10) {
+                        break 2;   // the old server does not answer: change nothing more
+                    }
+
+                    continue;
+                }
+                $failed = 0;
+                $out['checked']++;
+                $parts = explode('|', $key);
+                $date = $chunk[$key]['checkin'];
+                $free = collect($rows)->filter([McsClient::class, 'offer'])->contains(fn ($r) => ($r['checkin'] ?? '') === $date);
+                if ($parts[0] === 'a') {
+                    $tp = TermPrice::query()->where('stay_term_id', $parts[1])->where('accommodation_room_id', $parts[2])->first();
+                    if ($tp && (bool) $tp->stop_sale === $free) {
+                        $tp->forceFill(['stop_sale' => ! $free, 'supplier_synced_at' => now()])->save();
+                        $free ? $out['opened']++ : $out['closed']++;
+                    }
+                } else {
+                    $d = TourDeparture::query()->find($parts[1]);
+                    $sold = ($d?->status instanceof DepartureStatus ? $d->status->value : $d?->status) === 'sold_out';
+                    if ($d && $sold === $free) {
+                        $d->forceFill(['status' => $free ? DepartureStatus::Available : DepartureStatus::SoldOut])->save();
+                        $free ? $out['opened']++ : $out['closed']++;
+                    }
+                }
+            }
+        }
+        if ($out['opened'] || $out['closed']) {
+            $accs->each->touch();   // the website gets the new availability
+            $tours->each->touch();
+        }
+        Log::info('MCS availability', $out);
+
+        return $out;
+    }
+
+    /**
+     * Just before a website booking is saved: is this term / room / departure still free in the old system?
+     * true = free, false = taken there, null = unknown (not linked or the old system does not answer – the booking goes on).
+     */
+    public static function liveCheck($item, ?string $date, ?\App\Models\AccommodationRoom $room = null): ?bool
+    {
+        try {
+            $c = $item?->supplier_connection_id ? SupplierConnection::withoutGlobalScopes()->find($item->supplier_connection_id) : null;
+            if (! $c || $c->provider !== SupplierProvider::Mcs || ! $date || blank($item->provider_code)) {
+                return null;
+            }
+            if ($item instanceof Accommodation) {
+                [$kind, $code] = self::ref($item->provider_code);
+                if ($kind !== 'package' || ! $room || blank($room->provider_code)) {
+                    return null;
+                }
+                $p = self::product($c, 'package', $code);
+                $q = ['checkin' => $date, 'package' => $code, 'room' => (string) $room->provider_code] + self::roomGuests($p, (string) $room->provider_code);
+            } elseif ($item instanceof Tour) {
+                $code = (string) $item->provider_code;
+                $p = self::product($c, 'package', $code);
+                $q = ['checkin' => $date, 'package' => $code, 'adults' => 2];
+            } else {
+                return null;
+            }
+            $rows = self::client($c)->packageSearch($q + (self::where($p) ?: ['country' => $p?->country]), 12);
+
+            return collect($rows)->filter([McsClient::class, 'offer'])->contains(fn ($r) => ($r['checkin'] ?? '') === $date);
+        } catch (Throwable $e) {
+            Log::info('MCS live check skipped: '.$e->getMessage());
+
+            return null;
+        }
+    }
+
     /** What the background sync is doing now (shown in Booking systems) */
     public static function progress(SupplierConnection $c, ?string $text = null): ?string
     {

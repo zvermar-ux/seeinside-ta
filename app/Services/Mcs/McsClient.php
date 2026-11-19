@@ -193,9 +193,9 @@ class McsClient
         return $out;
     }
 
-    public function packageSearch(array $q): array
+    public function packageSearch(array $q, int $timeout = 60): array
     {
-        return self::rows($this->call('PackageSearch', self::params($q) + array_filter(['package' => $q['package'] ?? null])), ['PackagesResult', 'PackageResult', 'Packages', 'result']);
+        return self::rows($this->call('PackageSearch', self::params($q) + array_filter(['package' => $q['package'] ?? null]), $timeout), ['PackagesResult', 'PackageResult', 'Packages', 'result']);
     }
 
     /** @return string the booking number in the old system, or "NotAvailable" */

@@ -141,6 +141,10 @@ class BookingController extends Controller
             if ($dep->seatsLeft() !== null && $dep->seatsLeft() < $adults + $children) {
                 throw ValidationException::withMessages(['adults' => 'Not enough seats left on this departure.']);
             }
+            if (\App\Services\Mcs\McsService::liveCheck($item, $dep->start_date?->toDateString()) === false) {
+                $dep->forceFill(['status' => \App\Enums\DepartureStatus::SoldOut])->save();
+                throw ValidationException::withMessages(['departure_id' => __('This departure has just been sold out. Please choose another date.')]);
+            }
             $booking->tour_departure_id = $dep->id;
             $booking->date_from = $dep->start_date;
             $booking->date_to = $dep->end_date;
@@ -186,6 +190,13 @@ class BookingController extends Controller
             $offer = collect($item->termOffers($term, max(1, $adults), $children))->firstWhere('room_id', (int) ($data['room_id'] ?? 0));
             if (! $offer) {
                 throw ValidationException::withMessages(['room_id' => 'This room is not available in the selected term.']);
+            }
+            // villas linked to the old Aries system: booked there offline in the meantime?
+            $legacyRoom = \App\Models\AccommodationRoom::query()->find($offer['room_id']);
+            if (\App\Services\Mcs\McsService::liveCheck($item, $term->date_from->toDateString(), $legacyRoom) === false) {
+                \App\Models\TermPrice::query()->where('stay_term_id', $term->id)->where('accommodation_room_id', $offer['room_id'])->update(['stop_sale' => true]);
+                $item->touch();
+                throw ValidationException::withMessages(['room_id' => __('This room has just been booked for this term. Please choose another room or term.')]);
             }
             $booking->stay_term_id = $term->id;
             $booking->accommodation_room_id = $offer['room_id'];
