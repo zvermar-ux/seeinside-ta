@@ -261,6 +261,7 @@ class TourResource extends Resource
 
                 Forms\Components\Tabs\Tab::make(__('Promotions & booking'))->icon('heroicon-o-bolt')->schema([
                     CatalogFields::promotions(),
+                    CatalogFields::payment(),
                     Forms\Components\Section::make(__('Booking'))->columns(2)->schema([
                         Forms\Components\Select::make('booking_mode')->label(__('Booking mode'))->selectablePlaceholder(false)
                             ->options(['request' => __('On request (agency confirms)'), 'instant' => __('Instant confirmation')])->default('request'),

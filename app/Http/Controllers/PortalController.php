@@ -74,7 +74,24 @@ class PortalController extends Controller
             'canCancel' => ! $b->cancel_requested_at && in_array($b->status, [BookingStatus::Inquiry, BookingStatus::Pending, BookingStatus::Confirmed], true) && ! $ended,
             'canEditPax' => in_array($b->status, [BookingStatus::Inquiry, BookingStatus::Pending, BookingStatus::Confirmed], true) && ! $ended,
             'canReview' => $ended && $b->status !== BookingStatus::Cancelled && ! $reviewed,
+            // card payment of what is still owed (Halk Bank), when the rule of the offer allows it
+            'payOnline' => \App\Services\Payments\Halk::enabled($agency) && ($b->payment_choice === 'card' || ($b->bookable && \App\Services\Payments\PaymentPolicy::for($agency, $b->bookable)['online'])),
         ])->header('X-Robots-Tag', 'noindex, nofollow')->header('Referrer-Policy', 'no-referrer');
+    }
+
+    /** Card payment of the deposit or of the whole balance → the bank's page */
+    public function pay(Request $request, string $token): RedirectResponse
+    {
+        $b = $this->booking($token);
+        $agency = Agency::findOrFail($b->agency_id);
+        abort_unless(\App\Services\Payments\Halk::enabled($agency) && $b->status !== BookingStatus::Cancelled, 404);
+        $balance = $b->balance();
+        $due = $b->payment_due_now ? max(0, round((float) $b->payment_due_now - (float) $b->paid_amount, 2)) : 0;
+        $amount = $request->input('what') === 'due' && $due > 0 ? min($due, $balance) : $balance;
+        abort_unless($amount > 0, 404);
+        $p = \App\Services\Payments\PaymentPolicy::start($b, $amount);
+
+        return redirect()->route('pay.show', $p->token);
     }
 
     public function message(Request $request, string $token): RedirectResponse

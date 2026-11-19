@@ -215,6 +215,19 @@
                 @if ($b->balance() > 0 && $b->option_until && $status !== BookingStatus::Confirmed)
                     <div class="due">{{ __('Reservation held until :date', ['date' => $b->option_until->format('d.m.Y')]) }}</div>
                 @endif
+                @if ($b->balance() > 0 && $status !== BookingStatus::Cancelled && ($payOnline ?? false))
+                    @php $dueNow = $b->payment_due_now ? max(0, round((float) $b->payment_due_now - (float) $b->paid_amount, 2)) : 0; @endphp
+                    <form method="post" action="{{ route('portal.pay', $token) }}" style="margin:10px 0 4px;display:grid;gap:8px">
+                        @csrf
+                        @if ($dueNow > 0 && $dueNow + 0.009 < $b->balance())
+                            <button class="btn" type="submit" name="what" value="due">💳 {{ __('Pay the deposit by card') }} · {{ $m($dueNow) }}</button>
+                            <button class="btn ghost" type="submit" name="what" value="all">{{ __('Pay everything') }} · {{ $m($b->balance()) }}</button>
+                        @else
+                            <button class="btn" type="submit" name="what" value="all">💳 {{ __('Pay by card') }} · {{ $m($b->balance()) }}</button>
+                        @endif
+                        <small class="muted" style="text-align:center">🔒 {{ __('Secure payment on the page of Halk Bank') }}</small>
+                    </form>
+                @endif
                 @if ($b->balance() > 0 && $agency->doc('bank_account'))
                     <div class="bank">{{ __('Bank transfer') }}: <b>{{ $agency->doc('bank_account') }}</b> {{ $agency->doc('bank_name') }}<br>{{ __('Reference') }}: <b>{{ $b->reference }}</b></div>
                 @endif

@@ -165,6 +165,7 @@ class VisaTypeResource extends Resource
                     ]),
                 Forms\Components\Tabs\Tab::make(__('Promotions'))->icon('heroicon-o-bolt')->schema([
                     CatalogFields::promotions(),
+                    CatalogFields::payment(),
                     CatalogFields::seo(),
                 ]),
             ]),

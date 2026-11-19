@@ -56,7 +56,9 @@ class MyAgency extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->form->fill($this->agency()->attributesToArray());
+        $a = $this->agency();
+        // the payment keys are hidden from arrays (API, logs) – the form still needs them
+        $this->form->fill($a->attributesToArray() + ['payment_settings' => (array) ($a->payment_settings ?? [])]);
     }
 
     public function form(Form $form): Form

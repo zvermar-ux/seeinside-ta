@@ -30,6 +30,7 @@ class Event extends Model
     protected function casts(): array
     {
         return array_fill_keys(self::TRANSLATABLE, 'array') + [
+            'payment_policy' => 'array',
             'category' => EventCategory::class,
             'status' => EventStatus::class,
             'starts_at' => 'datetime',

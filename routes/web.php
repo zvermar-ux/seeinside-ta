@@ -61,6 +61,7 @@ Route::get('/admin/docs/{type}/{id}', [\App\Http\Controllers\Admin\DocumentContr
 /* Client portal – private link of a booking (like "Manage booking") */
 Route::prefix('moja-rezervacija/{token}')->middleware('throttle:60,1')->group(function () {
     Route::get('/', [\App\Http\Controllers\PortalController::class, 'show'])->name('portal.show');
+    Route::post('/plati', [\App\Http\Controllers\PortalController::class, 'pay'])->middleware('throttle:10,10')->name('portal.pay');
     Route::post('/poraka', [\App\Http\Controllers\PortalController::class, 'message'])->middleware('throttle:10,10')->name('portal.message');
     Route::post('/otkazuvanje', [\App\Http\Controllers\PortalController::class, 'cancel'])->middleware('throttle:5,10')->name('portal.cancel');
     Route::post('/patnici', [\App\Http\Controllers\PortalController::class, 'passengers'])->middleware('throttle:10,10')->name('portal.passengers');
@@ -69,5 +70,13 @@ Route::prefix('moja-rezervacija/{token}')->middleware('throttle:60,1')->group(fu
 });
 
 /* QR code of a booking: verification page (hotel, guide, bus) and the image for e-mails */
+// online card payment (Halk Bank): our page → bank → back → result
+Route::prefix('plakanje/{token}')->middleware('throttle:30,1')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PaymentController::class, 'show'])->name('pay.show');
+    Route::match(['get', 'post'], '/povrat', [\App\Http\Controllers\PaymentController::class, 'back'])->name('pay.back');
+    Route::get('/rezultat', [\App\Http\Controllers\PaymentController::class, 'result'])->name('pay.result');
+    Route::post('/povtorno', [\App\Http\Controllers\PaymentController::class, 'retry'])->middleware('throttle:10,10')->name('pay.retry');
+});
+
 Route::get('proverka/{reference}/{sig}', [\App\Http\Controllers\VerifyController::class, 'show'])->middleware('throttle:60,1')->name('booking.verify');
 Route::get('qr/{reference}/{sig}.png', [\App\Http\Controllers\VerifyController::class, 'png'])->middleware('throttle:120,1')->name('booking.qr');

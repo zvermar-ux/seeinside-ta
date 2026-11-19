@@ -20,6 +20,7 @@ class Booking extends Model
     protected function casts(): array
     {
         return [
+            'payment_due_now' => 'decimal:2',
             'date_from' => 'date',
             'date_to' => 'date',
             'children_ages' => 'array',

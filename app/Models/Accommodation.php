@@ -32,6 +32,7 @@ class Accommodation extends Model
     protected function casts(): array
     {
         return array_fill_keys(self::TRANSLATABLE, 'array') + [
+            'payment_policy' => 'array',
             'type' => AccommodationType::class,
             'stars' => 'integer',
             'board_types' => 'array',

@@ -28,6 +28,7 @@ class VisaType extends Model
     protected function casts(): array
     {
         return array_fill_keys(self::TRANSLATABLE, 'array') + [
+            'payment_policy' => 'array',
             'category' => VisaCategory::class,
             'questionnaire' => 'array',
             'required_documents' => 'array',

@@ -196,6 +196,7 @@ class AccommodationResource extends Resource
                     CatalogFields::galleries('accommodations'),
                     CatalogFields::videos(),
                     CatalogFields::promotions(),
+                    CatalogFields::payment(),
                     CatalogFields::seo(),
                 ]),
             ]),

@@ -90,11 +90,46 @@ class AgencyResource extends Resource
                         ->placeholder('https://aviokarti.golibe.com/'),
                     Forms\Components\Textarea::make('flight_widget_code')->label(__('Flight search box code'))->rows(3)->columnSpanFull()
                         ->helperText(__('Embed code from the flight booking partner; the website shows it in the search box.')),
+                ]),
+            // online card payment on the website (Halk Bank – NestPay 3D Pay Hosting, Hash v3) and the rules per kind of offer
+            Forms\Components\Section::make(__('Online payment (Halk Bank)'))
+                ->description(__('Card payment on the website: the client pays on the secure page of the bank, the payment is registered on the booking by itself.'))
+                ->icon('heroicon-o-credit-card')->collapsible()->collapsed()
+                ->columns(3)
+                ->schema([
                     Forms\Components\Select::make('payment_provider')->label(__('Online payment'))
-                        ->options(['casys' => 'CaSys (cPay)', 'nestpay' => 'NestPay / Halkbank', 'stripe' => 'Stripe', 'paypal' => 'PayPal'])
-                        ->placeholder(__('Not enabled')),
-                    Forms\Components\KeyValue::make('payment_settings')->label(__('Payment access keys'))->columnSpanFull()
-                        ->keyLabel(__('Name'))->valueLabel(__('Value'))->helperText(__('Stored encrypted.')),
+                        ->options(['nestpay' => 'Halk Bank (NestPay)'])->placeholder(__('Not enabled'))->live(),
+                    Forms\Components\Toggle::make('payment_settings.enabled')->label(__('Card payment switched on'))->inline(false)
+                        ->visible(fn (Forms\Get $get) => $get('payment_provider') === 'nestpay'),
+                    Forms\Components\Toggle::make('payment_settings.test_mode')->label(__('Test mode (test page of the bank)'))->inline(false)
+                        ->visible(fn (Forms\Get $get) => $get('payment_provider') === 'nestpay'),
+                    Forms\Components\Grid::make(3)->columnSpanFull()
+                        ->visible(fn (Forms\Get $get) => $get('payment_provider') === 'nestpay')
+                        ->schema([
+                            Forms\Components\TextInput::make('payment_settings.client_id')->label('Client ID')->maxLength(40),
+                            Forms\Components\TextInput::make('payment_settings.store_key')->label('Store key')->password()->revealable()->maxLength(200),
+                            Forms\Components\Select::make('payment_settings.tran_type')->label(__('Transaction type'))
+                                ->options(['Auth' => __('Capture (Auth)'), 'PreAuth' => __('Authorization only (PreAuth)')])->default('Auth')->selectablePlaceholder(false),
+                            Forms\Components\TextInput::make('payment_settings.username')->label(__('API username'))->maxLength(80)
+                                ->helperText(__('For the status query after the payment.')),
+                            Forms\Components\TextInput::make('payment_settings.password')->label(__('API password'))->password()->revealable()->maxLength(120),
+                            Forms\Components\Toggle::make('payment_settings.status_query')->label(__('Status query after each payment'))->default(true)->inline(false)
+                                ->helperText(__('The bank asks for it before switching the shop to live.')),
+                            Forms\Components\TextInput::make('payment_settings.title')->label(__('Name of the payment on the website'))->placeholder('Плаќање со картичка')->maxLength(80),
+                            Forms\Components\TextInput::make('payment_settings.note')->label(__('Note under it'))->placeholder('Visa, Mastercard, Maestro · безбедно преку Halk Bank')->maxLength(200)->columnSpan(2),
+                        ]),
+                    Forms\Components\Placeholder::make('pay_rules_info')->hiddenLabel()->columnSpanFull()
+                        ->visible(fn (Forms\Get $get) => $get('payment_provider') === 'nestpay')
+                        ->content(__('How each kind of offer is paid when it is booked on the website. Every tour, apartment, event or visa can have its own rule (its "Payment" section).')),
+                    Forms\Components\Grid::make(2)->columnSpanFull()
+                        ->visible(fn (Forms\Get $get) => $get('payment_provider') === 'nestpay')
+                        ->schema(collect(\App\Services\Payments\PaymentPolicy::kindLabels())->map(fn ($label, $kind) => Forms\Components\Fieldset::make($label)->columns(3)->schema([
+                            Forms\Components\Select::make("payment_settings.rules.$kind.mode")->label(__('Payment'))->options(\App\Services\Payments\PaymentPolicy::modes())->default('none')->selectablePlaceholder(false)->live()->columnSpan(fn (Forms\Get $get) => $get("payment_settings.rules.$kind.mode") === 'deposit' ? 1 : 2),
+                            Forms\Components\TextInput::make("payment_settings.rules.$kind.percent")->label(__('Deposit'))->numeric()->minValue(1)->maxValue(100)->suffix('%')->default(30)
+                                ->visible(fn (Forms\Get $get) => $get("payment_settings.rules.$kind.mode") === 'deposit'),
+                            Forms\Components\Toggle::make("payment_settings.rules.$kind.agency")->label(__('or at the agency'))->default(true)->inline(false)
+                                ->visible(fn (Forms\Get $get) => in_array($get("payment_settings.rules.$kind.mode"), ['deposit', 'full'], true)),
+                        ]))->values()->all()),
                 ]),
             Forms\Components\Section::make(__('Contacts & social networks (website)'))
                 ->description(__('Shown on the website with [sta_contacts] and [sta_social]: tap to call, Viber and WhatsApp on phones.'))

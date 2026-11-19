@@ -113,7 +113,13 @@ class HotelController extends Controller
             'passengers.*.birth_date' => 'nullable|date',
             'message' => 'nullable|string|max:2000',
             'locale' => 'nullable|in:mk,en',
+            'payment_method' => 'nullable|in:card,agency',
+            'return_url' => 'nullable|string|max:500',
         ]);
+        $policy = \App\Services\Payments\PaymentPolicy::for(\App\Models\Agency::find($this->agencyId($request)), null, 'hotel');
+        if ($policy['online'] && ! $policy['agency'] && ($d['payment_method'] ?? 'card') !== 'card') {
+            throw \Illuminate\Validation\ValidationException::withMessages(['payment_method' => __('This offer is paid online with a card when booking.')]);
+        }
         try {
             $booking = $this->hotels->book($this->agencyId($request), $d);
         } catch (\App\Services\Hotels\PriceChanged $e) {
@@ -134,6 +140,8 @@ class HotelController extends Controller
             'currency' => $booking->currency,
             'manage_url' => \App\Http\Controllers\PortalController::url($booking),
             'qr_url' => $booking->qrPngUrl(),
+            'payment' => \App\Services\Payments\PaymentPolicy::respond($booking, $policy,
+                \App\Services\Payments\PaymentPolicy::choice($policy, $d['payment_method'] ?? null, (float) $booking->total), (float) $booking->total, $d['return_url'] ?? null),
         ]], 201);
     }
 }

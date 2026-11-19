@@ -18,6 +18,7 @@ class VisaApplication extends Model
     protected function casts(): array
     {
         return [
+            'paid_amount' => 'decimal:2',
             'answers' => 'array',
             'documents' => 'array',
             'travel_date' => 'date',

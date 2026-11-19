@@ -11,7 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // the bank posts the payment result back from its own page (no CSRF token there)
+        $middleware->validateCsrfTokens(except: ['plakanje/*/povrat']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -132,6 +132,7 @@ class EventResource extends Resource
                 Forms\Components\Tabs\Tab::make(__('Media & promotions'))->icon('heroicon-o-bolt')->schema([
                     CatalogFields::videos(),
                     CatalogFields::promotions(),
+                    CatalogFields::payment(),
                     CatalogFields::seo(),
                 ]),
             ]),

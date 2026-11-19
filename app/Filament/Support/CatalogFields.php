@@ -86,6 +86,26 @@ class CatalogFields
             ]);
     }
 
+    /** How this offer is paid on the website (own rule or the one of the agency) */
+    public static function payment(): Forms\Components\Section
+    {
+        return Forms\Components\Section::make(__('Payment on the website'))
+            ->icon('heroicon-o-credit-card')->collapsible()->collapsed()
+            ->description(__('Card online (part or all of the amount) or at the agency. "As set for the agency" = Online payment (Halk Bank) in the agency settings.'))
+            ->columns(3)
+            ->schema([
+                Forms\Components\Select::make('payment_policy.mode')->label(__('Payment'))
+                    ->options(['default' => __('As set for the agency')] + \App\Services\Payments\PaymentPolicy::modes())
+                    ->default('default')->selectablePlaceholder(false)->live(),
+                Forms\Components\TextInput::make('payment_policy.percent')->label(__('Deposit'))->numeric()->minValue(1)->maxValue(100)->suffix('%')->default(30)
+                    ->visible(fn (Get $get) => $get('payment_policy.mode') === 'deposit'),
+                Forms\Components\Select::make('payment_policy.agency')->label(__('Pay at the agency also possible'))
+                    ->options(['default' => __('As set for the agency'), 'yes' => __('Yes – the client chooses'), 'no' => __('No – only card')])
+                    ->default('default')->selectablePlaceholder(false)
+                    ->visible(fn (Get $get) => in_array($get('payment_policy.mode'), ['deposit', 'full', 'default'], true)),
+            ]);
+    }
+
     public static function publishing(bool $withBooking = true): Forms\Components\Section
     {
         return Forms\Components\Section::make(__('Publishing'))

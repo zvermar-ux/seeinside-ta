@@ -67,6 +67,8 @@ class BookingController extends Controller
             'passengers.*.title' => 'nullable|string|max:10',
             'message' => 'nullable|string|max:3000',
             'locale' => 'nullable|in:mk,en',
+            'payment_method' => 'nullable|in:card,agency',
+            'return_url' => 'nullable|string|max:500',
         ]);
 
         $agencyId = $this->agencyId($request);
@@ -224,7 +226,12 @@ class BookingController extends Controller
         }
 
         $booking->total = $total !== null ? round($total, 2) : null;
+        // how it is paid: card online (part or all) or at the agency – by the rule of the offer
+        $policy = \App\Services\Payments\PaymentPolicy::for(Agency::find($agencyId), $item);
+        $choice = \App\Services\Payments\PaymentPolicy::choice($policy, $data['payment_method'] ?? null, $booking->total !== null ? (float) $booking->total : null);
+        $booking->payment_choice = $choice;
         $booking->save();
+        $payment = \App\Services\Payments\PaymentPolicy::respond($booking, $policy, $choice, $booking->total !== null ? (float) $booking->total : null, $data['return_url'] ?? null);
 
         // e-mail / WhatsApp / Viber to the client and to the agency (after the response)
         $fresh = $booking->fresh();
@@ -238,7 +245,7 @@ class BookingController extends Controller
             'status' => $booking->status->value,
             'total' => $booking->total !== null ? (float) $booking->total : null,
             'currency' => $booking->currency,
-            'payment' => null,   // online payment link once a payment provider is configured
+            'payment' => $payment,   // card: the address of the payment page (the website opens it)
             'manage_url' => \App\Http\Controllers\PortalController::url($booking),
             'qr_url' => $booking->qrPngUrl(),
         ]], 201);
@@ -311,6 +318,8 @@ class BookingController extends Controller
             'express' => 'nullable|boolean',
             'answers' => 'nullable|array',
             'locale' => 'nullable|in:mk,en',
+            'payment_method' => 'nullable|in:card,agency',
+            'return_url' => 'nullable|string|max:500',
         ]);
 
         // name / e-mail / phone are asked once at the top of website forms; questionnaires may contain them too
@@ -369,6 +378,8 @@ class BookingController extends Controller
             'locale' => $base['locale'] ?? 'mk',
         ]);
         $application->amount = $visa->totalPrice($application->is_express);
+        $vPolicy = \App\Services\Payments\PaymentPolicy::for(Agency::find($agencyId), $visa);
+        $vChoice = \App\Services\Payments\PaymentPolicy::choice($vPolicy, $base['payment_method'] ?? null, (float) $application->amount);
         $application->save();
 
         // Files go to the private disk (never publicly reachable)
@@ -396,7 +407,7 @@ class BookingController extends Controller
             'status' => $application->status->value,
             'amount' => (float) $application->amount,
             'currency' => $application->currency,
-            'payment' => null,
+            'payment' => \App\Services\Payments\PaymentPolicy::respond($application, $vPolicy, $vChoice, (float) $application->amount, $base['return_url'] ?? null),
         ]], 201);
     }
 

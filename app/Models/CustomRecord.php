@@ -27,6 +27,7 @@ class CustomRecord extends Model
     protected function casts(): array
     {
         return array_fill_keys(self::TRANSLATABLE, 'array') + [
+            'payment_policy' => 'array',
             'gallery' => 'array', 'data' => 'array', 'price_from' => 'decimal:2',
             'booking_enabled' => 'boolean', 'is_active' => 'boolean', 'is_featured' => 'boolean',
         ];

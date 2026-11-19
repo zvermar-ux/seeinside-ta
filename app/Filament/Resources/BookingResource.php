@@ -111,6 +111,27 @@ class BookingResource extends Resource
                         Forms\Components\Placeholder::make('supplier_info')->label(__('Hotel from a booking system'))
                             ->visible(fn (?Booking $record) => $record?->isSupplierHotel())
                             ->content(fn (?Booking $record) => static::supplierInfo($record)),
+                        // card payments on the website (Halk Bank)
+                        Forms\Components\Placeholder::make('online_info')->label(__('Online payment'))
+                            ->visible(fn (?Booking $record) => $record && ($record->payment_choice || \App\Models\OnlinePayment::withoutGlobalScopes()->where('payable_type', $record->getMorphClass())->where('payable_id', $record->id)->exists()))
+                            ->content(function (?Booking $record) {
+                                $rows = \App\Services\Payments\OnlinePayments::of($record);
+                                $head = match ($record->payment_choice) {
+                                    'card' => '💳 '.e(__('The client chose: card online')).($record->payment_due_now ? ' · '.e(__('due with the booking')).' <b>'.number_format((float) $record->payment_due_now, 2, ',', '.').' '.e($record->currency).'</b>' : ''),
+                                    'agency' => e(__('The client chose: payment at the agency')),
+                                    default => '',
+                                };
+                                $list = $rows->map(fn ($p) => '<div style="margin-top:4px">'.match ($p->status) {
+                                    'approved' => '<b style="color:#16a34a">✓ '.e(__('Paid')).'</b>',
+                                    'pending' => '<span style="color:#d97706">… '.e(__('Not finished')).'</span>',
+                                    default => '<span style="color:#dc2626">✕ '.e(__('Not approved')).'</span>',
+                                }.' · '.number_format((float) $p->amount, 2, ',', '.').' '.e($p->currency).' · '.e($p->oid)
+                                    .($p->auth_code ? ' · Auth '.e($p->auth_code) : '').($p->card_mask ? ' · '.e($p->card_mask) : '')
+                                    .' · '.($p->paid_at ?? $p->created_at)->format('d.m.Y H:i').($p->message && $p->status !== 'approved' ? ' · '.e($p->message) : '').'</div>')->implode('');
+
+                                return new \Illuminate\Support\HtmlString($head.$list);
+                            })
+                            ->columnSpanFull(),
                         // copy in the old Aries system (while both systems are used)
                         Forms\Components\Placeholder::make('legacy_info')->label(__('Old Aries system'))
                             ->visible(fn (?Booking $record) => $record && ($record->legacy_status || \App\Services\Mcs\McsService::connectionFor($record)))
@@ -120,6 +141,12 @@ class BookingResource extends Resource
                                     'not_available' => '<b style="color:#dc2626">'.e(__('Not available in the old system')).'</b>',
                                     'failed' => '<b style="color:#dc2626">'.e(__('Not sent to the old system')).'</b>',
                                 ][$record->legacy_status] ?? e(__('Waiting to be sent…'));
+
+                                $online = (float) $record->payments()->withoutGlobalScopes()->where('method', 'online')->sum('amount');
+                                if ($online > 0) {
+                                    // the old system has no field for payments: here it says what to enter there
+                                    $st .= '<br><b style="color:#0e7490">💳 '.e(__('Paid online by card: :a – enter the payment in the old system too.', ['a' => number_format($online, 2, ',', '.').' '.$record->currency])).'</b>';
+                                }
 
                                 return new \Illuminate\Support\HtmlString($st.($record->legacy_sent_at ? ' · '.$record->legacy_sent_at->format('d.m.Y H:i') : '')
                                     .($record->legacy_error && $record->legacy_status !== 'sent' ? '<br><span style="color:#dc2626">'.e($record->legacy_error).'</span>' : ''));
@@ -421,8 +448,6 @@ class BookingResource extends Resource
             ->modifyQueryUsing(fn ($query) => $query->with(['bookable', 'departure'])
                 ->withCount(['messages as unread_count' => fn ($q) => $q->withoutGlobalScopes()->where('direction', 'in')->whereNull('read_at')]))
             ->columns([
-                Tables\Columns\TextColumn::make('agency.name')->label(__('Agency'))->toggleable()
-                    ->visible(fn () => Auth::user()?->isSuperAdmin()),
                 Tables\Columns\TextColumn::make('reference')->label(__('Reference'))->searchable()->weight('semibold')->copyable()
                     ->description(fn (Booking $r) => $r->created_at?->format('d.m.Y H:i'))
                     ->icon(fn (Booking $r) => $r->cancel_requested_at && $r->status !== BookingStatus::Cancelled ? 'heroicon-m-exclamation-triangle' : ($r->unread_count ? 'heroicon-m-chat-bubble-left-ellipsis' : null))
@@ -443,7 +468,12 @@ class BookingResource extends Resource
                 Tables\Columns\TextColumn::make('total')->label(__('Total'))
                     ->formatStateUsing(fn ($state, Booking $r) => $state ? number_format((float) $state, 2, ',', '.').' '.$r->currency : '—'),
                 Tables\Columns\TextColumn::make('status')->label(__('Status'))->badge(),
-                Tables\Columns\TextColumn::make('payment_status')->label(__('Payment'))->badge(),
+                Tables\Columns\TextColumn::make('payment_status')->label(__('Payment'))->badge()
+                    ->description(fn (Booking $r) => match ($r->payment_choice) {
+                        'card' => '💳 '.__('Card online').((float) $r->paid_amount > 0 ? '' : ' · '.__('not paid yet')),
+                        'agency' => __('At the agency'),
+                        default => null,
+                    }),
                 Tables\Columns\TextColumn::make('source')->label(__('Source'))->badge()->color('gray')->toggleable(isToggledHiddenByDefault: true),
                 AgencyField::column()->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -451,11 +481,11 @@ class BookingResource extends Resource
                 AgencyField::filter(),
                 Tables\Filters\SelectFilter::make('status')->label(__('Status'))->options(BookingStatus::class)->multiple(),
                 Tables\Filters\SelectFilter::make('payment_status')->label(__('Payment'))->options(PaymentStatus::class),
+                Tables\Filters\SelectFilter::make('payment_choice')->label(__('Payment method (website)'))
+                    ->options(['card' => __('Card online'), 'agency' => __('At the agency')]),
                 Tables\Filters\SelectFilter::make('bookable_type')->label(__('Type'))
                     ->options(fn () => array_filter(['tour' => __('Organized tour'), 'event' => __('Event'), 'accommodation' => __('Apartment / villa'), 'charter' => __('Charter')] + static::customTypeOptions(),
                     fn ($label, $key) => $key === 'custom' || \App\Models\Agency::moduleOn(\App\Http\Middleware\AgencyModule::BY_TYPE[$key] ?? $key), ARRAY_FILTER_USE_BOTH)),
-                Tables\Filters\SelectFilter::make('agency_id')->label(__('Agency'))->relationship('agency', 'name')
-                    ->visible(fn () => Auth::user()?->isSuperAdmin()),
                 Tables\Filters\SelectFilter::make('legacy_status')->label(__('Old Aries system'))
                     ->options(['sent' => __('Booked in the old system'), 'failed' => __('Not sent to the old system'), 'not_available' => __('Not available in the old system')]),
                 // hotels from booking systems (Hotelbeds…) are separate from the own apartments

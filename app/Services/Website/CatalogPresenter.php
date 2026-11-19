@@ -159,8 +159,17 @@ class CatalogPresenter
             'program_pdf' => static::url($t->program_pdf),
             'gallery' => static::gallery($t),
             'booking' => ['enabled' => $t->booking_enabled, 'mode' => $t->booking_mode],
+            'payment_policy' => static::payPolicy($t),
             'seo' => ['title' => $t->trAll('seo_title'), 'description' => $t->trAll('seo_description')],
         ];
+    }
+
+    /** The own payment rule of an offer (mode default = the rule of the agency, sent in meta.payment) */
+    public static function payPolicy($m): array
+    {
+        $p = (array) ($m->payment_policy ?? []);
+
+        return ['mode' => $p['mode'] ?? 'default', 'percent' => isset($p['percent']) ? (int) $p['percent'] : null, 'agency' => $p['agency'] ?? 'default'];
     }
 
     /* ---------------- events ---------------- */
@@ -193,6 +202,7 @@ class CatalogPresenter
     public static function event(Event $e): array
     {
         return static::eventSummary($e) + [
+            'payment_policy' => static::payPolicy($e),
             'description' => $e->trAll('description'),
             'included' => $e->trAll('included', true),
             'not_included' => $e->trAll('not_included', true),
@@ -265,6 +275,7 @@ class CatalogPresenter
     public static function accommodation(Accommodation $a): array
     {
         return static::accommodationSummary($a) + [
+            'payment_policy' => static::payPolicy($a),
             'overview' => $a->trAll('overview'),
             'house_rules' => $a->trAll('house_rules'),
             'notes' => $a->trAll('notes'),
@@ -355,6 +366,7 @@ class CatalogPresenter
     public static function custom(\App\Models\CustomRecord $r): array
     {
         return static::customSummary($r) + [
+            'payment_policy' => static::payPolicy($r),
             'description' => $r->trAll('description'),
             'fields' => $r->displayFields(),
             'gallery' => collect((array) $r->gallery)->filter()->map(fn ($p) => ['url' => static::url($p), 'caption' => ['mk' => null, 'en' => null], 'is_main' => false])->values()->all(),
@@ -395,6 +407,7 @@ class CatalogPresenter
                 'service' => (float) $v->service_fee, 'consular' => (float) $v->consular_fee, 'express' => (float) $v->express_fee,
             ],
             'online_payment' => $v->online_payment,
+            'payment_policy' => static::payPolicy($v),
             'questionnaire' => array_values($v->questionnaire ?? []),
             'required_documents' => array_values($v->required_documents ?? []),
             'info_cards' => collect($v->info_cards ?? [])->map(fn ($c) => [

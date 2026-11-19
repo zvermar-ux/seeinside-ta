@@ -334,6 +334,10 @@ class McsService
         $id = $b->id;
         app()->terminating(function () use ($id) {
             $b = Booking::withoutGlobalScopes()->find($id);
+            // card chosen on the website: it goes to the old system only after the bank took the money
+            if ($b && $b->payment_choice === 'card' && (float) $b->paid_amount <= 0) {
+                return;
+            }
             if ($b && ! $b->legacy_ref && self::connectionFor($b)) {
                 self::push($b);
             }

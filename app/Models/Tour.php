@@ -33,6 +33,7 @@ class Tour extends Model
     protected function casts(): array
     {
         return array_fill_keys(self::TRANSLATABLE, 'array') + [
+            'payment_policy' => 'array',
             'tour_type' => TourType::class,
             'video_urls' => 'array',
             'galleries' => 'array',
