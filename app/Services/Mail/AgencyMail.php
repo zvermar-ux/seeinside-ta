@@ -28,6 +28,8 @@ class AgencyMail
                     'host' => $agency->mail_host,
                     'port' => (int) ($agency->mail_port ?: 587),
                     'encryption' => $agency->mail_encryption ?: null,
+                    // 465 / SSL = encrypted from the start (smtps), otherwise STARTTLS when the server offers it (587)
+                    'scheme' => ((int) $agency->mail_port === 465 || $agency->mail_encryption === 'ssl') ? 'smtps' : 'smtp',
                     'username' => $agency->mail_username,
                     'password' => $agency->mail_password,
                     'timeout' => 20,

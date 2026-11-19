@@ -2048,5 +2048,16 @@
     "Created until (empty = all)": "Креирани до (празно = сите)",
     "Bookings to delete": "Резервации за бришење",
     "Type DELETE to confirm": "Напишете ИЗБРИШИ за потврда",
-    "Deleted bookings: :n": "Избришани резервации: :n"
+    "Deleted bookings: :n": "Избришани резервации: :n",
+    "Send test e-mail": "Испрати тест е-пошта",
+    "Send to": "Испрати до",
+    "Fill in the SMTP server, username and password.": "Пополнете SMTP сервер, корисничко име и лозинка.",
+    "Test e-mail": "Тест е-пошта",
+    "The SMTP settings work. This e-mail was sent through :h.": "SMTP поставките работат. Оваа порака е испратена преку :h.",
+    "Test e-mail sent to :to": "Тест пораката е испратена на :to",
+    "Check the inbox (and Spam). Do not forget to save the settings.": "Проверете го сандачето (и Spam). Не заборавајте да ги зачувате поставките.",
+    "The server refused the username or password. Gmail: use an App Password (16 letters), not the normal password.": "Серверот ги одби корисничкото име или лозинката. Gmail: користете App Password (16 букви), не обичната лозинка.",
+    "No connection to the server: check the server name and port (587 with TLS or 465 with SSL).": "Нема врска со серверот: проверете го серверот и портата (587 со TLS или 465 со SSL).",
+    "Encryption problem: try 587 with TLS or 465 with SSL.": "Проблем со енкрипцијата: пробајте 587 со TLS или 465 со SSL.",
+    "The test e-mail was not sent": "Тест пораката не е испратена"
 }

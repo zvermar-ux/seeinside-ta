@@ -143,6 +143,49 @@ class AgencyResource extends Resource
                         ->password()->revealable()
                         ->dehydrated(fn ($state) => filled($state))
                         ->helperText(__('Leave empty to keep the current password.')),
+                ])
+                ->footerActions([
+                    // a test e-mail with the values in the form (also before saving)
+                    Forms\Components\Actions\Action::make('smtpTest')->label(__('Send test e-mail'))->icon('heroicon-o-paper-airplane')->color('gray')
+                        ->form([
+                            Forms\Components\TextInput::make('to')->label(__('Send to'))->email()->required()
+                                ->default(fn () => \Illuminate\Support\Facades\Auth::user()?->email),
+                        ])
+                        ->action(function (array $data, Forms\Get $get, $record) {
+                            $saved = $record instanceof Agency ? $record : (\Illuminate\Support\Facades\Auth::user()?->agency);
+                            $a = new Agency();
+                            $a->forceFill([
+                                'name' => $get('name') ?: $saved?->name,
+                                'email' => $get('email') ?: $saved?->email,
+                                'mail_from_address' => $get('mail_from_address'),
+                                'mail_host' => trim((string) $get('mail_host')),
+                                'mail_port' => $get('mail_port'),
+                                'mail_encryption' => $get('mail_encryption'),
+                                'mail_username' => trim((string) $get('mail_username')),
+                                'mail_password' => filled($get('mail_password')) ? $get('mail_password') : $saved?->mail_password,
+                            ]);
+                            if (blank($a->mail_host) || blank($a->mail_username) || blank($a->mail_password)) {
+                                \Filament\Notifications\Notification::make()->title(__('Fill in the SMTP server, username and password.'))->warning()->send();
+
+                                return;
+                            }
+                            $err = \App\Services\Mail\AgencyMail::send($a, $data['to'], __('Test e-mail').' – '.$a->name,
+                                '<p>'.e(__('The SMTP settings work. This e-mail was sent through :h.', ['h' => $a->mail_host.':'.($a->mail_port ?: 587)])).'</p><p style="color:#64748b;font-size:12px">'.now()->format('d.m.Y H:i').'</p>');
+                            if ($err === null) {
+                                \Filament\Notifications\Notification::make()->title(__('Test e-mail sent to :to', ['to' => $data['to']]))
+                                    ->body(__('Check the inbox (and Spam). Do not forget to save the settings.'))->success()->persistent()->send();
+
+                                return;
+                            }
+                            $hint = match (true) {
+                                str_contains($err, '535') || stripos($err, 'Username and Password not accepted') !== false => __('The server refused the username or password. Gmail: use an App Password (16 letters), not the normal password.'),
+                                stripos($err, 'timed out') !== false || stripos($err, 'Connection could not be established') !== false => __('No connection to the server: check the server name and port (587 with TLS or 465 with SSL).'),
+                                stripos($err, 'certificate') !== false || stripos($err, 'SSL') !== false || stripos($err, 'TLS') !== false => __('Encryption problem: try 587 with TLS or 465 with SSL.'),
+                                default => null,
+                            };
+                            \Filament\Notifications\Notification::make()->title(__('The test e-mail was not sent'))
+                                ->body(trim(($hint ? $hint.' ' : '').'('.mb_substr($err, 0, 300).')'))->danger()->persistent()->send();
+                        }),
                 ]),
         ];
     }
