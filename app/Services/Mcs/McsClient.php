@@ -201,7 +201,14 @@ class McsClient
     /** @return string the booking number in the old system, or "NotAvailable" */
     public function book(array $p): string
     {
+        // the documentation names the operation "BookRequest" (path) and "Book" (table of contents):
+        // an empty page means the server did not know the path – then the other name
         $r = $this->call('BookRequest', $p, 90);
+        if (is_string($r) && trim($r, " \t\n\r\0\x0B\"") === '') {
+            $first = self::$last;
+            $r = $this->call('Book', $p, 90);
+            self::$last['tried'] = ['BookRequest' => $first, 'Book' => ['status' => self::$last['status'] ?? null, 'body' => self::$last['body'] ?? null]];
+        }
         if (is_array($r)) {
             foreach (['reference', 'Reference', 'referent', 'booking', 'BookingReference', 'id', 'result', 'status'] as $k) {
                 if (! empty($r[$k]) && is_scalar($r[$k])) {
