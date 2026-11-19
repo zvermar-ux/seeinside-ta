@@ -3553,3 +3553,30 @@ msgstr "Целиот износ (100%) сега со картичка:"
 
 msgid "Deposit %d%% now by card, the rest at the agency:"
 msgstr "Аванс %d%% сега со картичка, остатокот во агенцијата:"
+
+msgid "Search tours, apartments, hotels, destinations…"
+msgstr "Пребарај тури, апартмани, хотели, дестинации…"
+
+msgid "Type a name, a place or a country – e.g. Lefkada, Istanbul, Nidri."
+msgstr "Напишете име, место или држава – на пр. Лефкада, Истанбул, Нидри."
+
+msgid "Or search with dates"
+msgstr "Или пребарајте со датуми"
+
+msgid "Nothing found – try another word or the search with dates below."
+msgstr "Ништо не е пронајдено – пробајте со друг збор или со пребарувањето со датуми подолу."
+
+msgid "Travel: search button (header)"
+msgstr "Travel: копче за пребарување (хедер)"
+
+msgid "Look"
+msgstr "Изглед"
+
+msgid "Magnifier only"
+msgstr "Само лупа"
+
+msgid "Button with text"
+msgstr "Копче со текст"
+
+msgid "Search field"
+msgstr "Поле за пребарување"

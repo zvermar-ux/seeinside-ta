@@ -1065,6 +1065,54 @@
     });
   });
 
+  /* ---------- quick search from anywhere: [sta_search_button] → window with search as you type + the search form ---------- */
+  (function () {
+    var dlg = $('[data-sta-qs]'); if (!dlg) return;
+    var input = $('[data-sta-qs-q]', dlg), res = $('[data-sta-qs-res]', dlg), hint = res.innerHTML, timer, seq = 0;
+    function open() { if (dlg.open) return; if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); document.documentElement.classList.add('sta-qs-on'); setTimeout(function () { input.focus(); input.select(); }, 30); }
+    function close() { if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); }
+    dlg.addEventListener('close', function () { document.documentElement.classList.remove('sta-qs-on'); });
+    $$('[data-sta-qs-open]').forEach(function (b) { b.addEventListener('click', open); });
+    dlg.addEventListener('click', function (e) { if (e.target === dlg || e.target.closest('[data-sta-qs-close]')) close(); });
+    document.addEventListener('keydown', function (e) {
+      var typing = /INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '') || (e.target && e.target.isContentEditable);
+      if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K'))) { e.preventDefault(); open(); }
+    });
+    function item(it, hotel) {
+      return '<a class="sta-qs-item" href="' + esc(it.url) + '">' + (it.image ? '<img src="' + esc(it.image) + '" alt="" loading="lazy">' : '<span class="sta-qs-noimg">' + (hotel ? '🏨' : '📍') + '</span>')
+        + '<span><b>' + esc(it.title) + '</b>' + (it.meta ? '<small>' + esc(it.meta) + '</small>' : '') + '</span></a>';
+    }
+    function search() {
+      var q = input.value.trim(), my = ++seq;
+      if (q.length < 2) { res.innerHTML = hint; return; }
+      res.classList.add('is-loading');
+      fetch(C.rest + 'quick?q=' + encodeURIComponent(q) + '&lang=' + (C.lang || 'mk')).then(function (r) { return r.json(); }).then(function (d) {
+        if (my !== seq) return;
+        var html = (d.groups || []).map(function (g) {
+          return '<div class="sta-qs-g"><h4>' + esc(g.label) + (g.more ? ' <small>+' + g.more + '</small>' : '') + '</h4>' + g.items.map(function (it) { return item(it); }).join('') + '</div>';
+        }).join('');
+        res.innerHTML = html || '<p class="sta-qs-hint">' + esc(T.qsNone || 'Nothing found.') + '</p>';
+        res.classList.remove('is-loading');
+        // hotels of the booking systems (when the agency has them)
+        // hotel names are in Latin letters: лефкада → lefkada
+        var CY = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', ѓ: 'gj', е: 'e', ж: 'zh', з: 'z', ѕ: 'dz', и: 'i', ј: 'j', к: 'k', л: 'l', љ: 'lj', м: 'm', н: 'n', њ: 'nj', о: 'o', п: 'p', р: 'r', с: 's', т: 't', ќ: 'kj', у: 'u', ф: 'f', х: 'h', ц: 'c', ч: 'ch', џ: 'dz', ш: 'sh' };
+        var lq = q.toLowerCase().replace(/[а-шѓѕјљњќџ]/g, function (ch) { return CY[ch] != null ? CY[ch] : ch; });
+        if (d.hotels) api('hotels/suggest?q=' + encodeURIComponent(lq)).then(function (r) {
+          if (my !== seq) return;
+          var list = (r.body && r.body.data) || [];
+          if (!list.length) return;
+          var base = d.hotels_url || '';
+          var g = '<div class="sta-qs-g"><h4>' + esc(T.qsHotels || 'Hotels') + '</h4>' + list.slice(0, 6).map(function (h) {
+            return item({ title: h.name + (h.stars ? ' ' + new Array(+h.stars + 1).join('★') : ''), meta: h.place || '', url: base + (base.indexOf('?') > -1 ? '&' : '?') + 'h=' + encodeURIComponent(h.id) }, true);
+          }).join('') + '</div>';
+          if (res.querySelector('.sta-qs-hint')) res.innerHTML = g; else res.insertAdjacentHTML('beforeend', g);
+        });
+      }).catch(function () { res.classList.remove('is-loading'); });
+    }
+    input.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(search, 250); });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var first = $('.sta-qs-item', res); if (first) location.href = first.href; } });
+  })();
+
   // shared with hotels.js (hotel results, hotel page and booking)
   window.staCore = { api: api, money: money, esc: esc, t: t, $: $, $$: $$, validate: validate, msg: msg, errors: errors, T: T, C: C };
 })();

@@ -392,6 +392,25 @@ class STA_Widget_Search extends STA_Simple_Widget
     protected function html(array $s): string { return STA_Frontend::sc_search(['types' => $s['types'] ?? 'tour,accommodation,event']); }
 }
 
+/** Search button for the header: opens the quick search + the search form from anywhere */
+class STA_Widget_Search_Button extends STA_Simple_Widget
+{
+    public function get_name(): string { return 'sta-search-button'; }
+    public function get_title(): string { return __('Travel: search button (header)', 'seeinside-travel'); }
+    public function get_icon(): string { return 'eicon-search'; }
+    protected function extra_controls(): void
+    {
+        $this->add_control('style_btn', ['label' => __('Look', 'seeinside-travel'), 'type' => Controls_Manager::SELECT, 'default' => 'icon',
+            'options' => ['icon' => __('Magnifier only', 'seeinside-travel'), 'button' => __('Button with text', 'seeinside-travel'), 'pill' => __('Search field', 'seeinside-travel')]]);
+        $this->add_control('label', ['label' => __('Text', 'seeinside-travel'), 'type' => Controls_Manager::TEXT, 'default' => '']);
+        $this->add_control('btn_color', ['label' => __('Colour', 'seeinside-travel'), 'type' => Controls_Manager::COLOR, 'default' => '']);
+    }
+    protected function html(array $s): string
+    {
+        return STA_Quick_Search::button(['style' => $s['style_btn'] ?? 'icon', 'label' => $s['label'] ?? '', 'color' => $s['btn_color'] ?? '']);
+    }
+}
+
 class STA_Widget_Flights extends STA_Simple_Widget
 {
     public function get_name(): string { return 'sta-flights'; }
@@ -636,5 +655,5 @@ function sta_term_page_taxonomies(): array
 
 function sta_elementor_widget_classes(): array
 {
-    return [STA_Widget_Search_Box::class, STA_Widget_Term_Header::class, STA_Widget_Term_Offers::class, STA_Widget_Section::class, STA_Widget_List::class, STA_Widget_Slider::class, STA_Widget_Listing::class, STA_Widget_Reviews::class, STA_Widget_Search::class, STA_Widget_Flights::class, STA_Widget_Charters::class, STA_Widget_Status::class, STA_Widget_Destinations::class];
+    return [STA_Widget_Search_Box::class, STA_Widget_Term_Header::class, STA_Widget_Term_Offers::class, STA_Widget_Section::class, STA_Widget_List::class, STA_Widget_Slider::class, STA_Widget_Listing::class, STA_Widget_Reviews::class, STA_Widget_Search::class, STA_Widget_Search_Button::class, STA_Widget_Flights::class, STA_Widget_Charters::class, STA_Widget_Status::class, STA_Widget_Destinations::class];
 }
