@@ -24,9 +24,9 @@ class ListPhotoStories extends ListRecords
 
         return [
             'pending' => Tab::make(__('Waiting for approval'))->icon('heroicon-o-clock')->badge($count(PhotoStory::PENDING) ?: null)->badgeColor('warning')
-                ->modifyQueryUsing(fn (Builder $q) => $q->where('status', PhotoStory::PENDING)),
-            'approved' => Tab::make(__('Approved'))->icon('heroicon-o-check-circle')->modifyQueryUsing(fn (Builder $q) => $q->where('status', PhotoStory::APPROVED)),
-            'rejected' => Tab::make(__('Rejected'))->icon('heroicon-o-x-circle')->modifyQueryUsing(fn (Builder $q) => $q->where('status', PhotoStory::REJECTED)),
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', PhotoStory::PENDING)),
+            'approved' => Tab::make(__('Approved'))->icon('heroicon-o-check-circle')->modifyQueryUsing(fn (Builder $query) => $query->where('status', PhotoStory::APPROVED)),
+            'rejected' => Tab::make(__('Rejected'))->icon('heroicon-o-x-circle')->modifyQueryUsing(fn (Builder $query) => $query->where('status', PhotoStory::REJECTED)),
             'all' => Tab::make(__('All')),
         ];
     }
