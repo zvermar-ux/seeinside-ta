@@ -84,20 +84,29 @@ class STA_Photo_Stories
         return '<div class="sta-ps-mosaic" data-n="'.count($cols).'">'.implode('', $cols).'</div>';
     }
 
+    private const EYEBROW = 'Вашите патувања, вашите приказни';
+    private const TITLE = 'Во Фотогалерија';
+    private const TEXT = 'Споделете ги најубавите моменти од вашите патувања со нас! Прикачете фотографии и споделете ги впечатоците од посетените дестинации. Вашите приказни нека бидат инспирација за нови авантури.';
+
+    /** Script eyebrow, title, text and the share button (homepage slider and the page) */
+    private static function head(array $a): string
+    {
+        return '<div class="sta-ps-head">'
+            .($a['eyebrow'] !== '' ? '<p class="sta-ps-eyebrow">'.esc_html($a['eyebrow']).'</p>' : '')
+            .($a['title'] !== '' ? '<h2 class="sta-ps-title">'.esc_html($a['title']).'</h2>' : '')
+            .($a['text'] !== '' ? '<p class="sta-ps-text">'.esc_html($a['text']).'</p>' : '')
+            .($a['button'] !== '' ? self::share_button(['label' => $a['button']]) : '').'</div>';
+    }
+
     public static function slider($atts = []): string
     {
-        $a = shortcode_atts(['count' => 5, 'eyebrow' => 'Вашите патувања, вашите приказни', 'title' => 'Во Фотогалерија',
-            'text' => 'Споделете ги најубавите моменти од вашите патувања со нас! Прикачете фотографии и споделете ги впечатоците од посетените дестинации. Вашите приказни нека бидат инспирација за нови авантури.',
+        $a = shortcode_atts(['count' => 5, 'eyebrow' => self::EYEBROW, 'title' => self::TITLE, 'text' => self::TEXT,
             'button' => 'Сподели го твоето патување', 'autoplay' => 7, 'link' => ''], $atts, 'sta_photo_stories_slider');
         self::assets();
         $all = self::all();
         $featured = array_values(array_filter($all, fn ($s) => ! empty($s['is_featured'])));
         $list = array_slice($featured ?: $all, 0, max(1, min(10, (int) $a['count'])));
-        $head = '<div class="sta-ps-head">'
-            .($a['eyebrow'] !== '' ? '<p class="sta-ps-eyebrow">'.esc_html($a['eyebrow']).'</p>' : '')
-            .($a['title'] !== '' ? '<h2 class="sta-ps-title">'.esc_html($a['title']).'</h2>' : '')
-            .($a['text'] !== '' ? '<p class="sta-ps-text">'.esc_html($a['text']).'</p>' : '')
-            .($a['button'] !== '' ? self::share_button(['label' => $a['button']]) : '').'</div>';
+        $head = self::head($a);
         if (! $list) {
             return '<section class="sta sta-ps">'.$head.'</section>';
         }
@@ -117,26 +126,26 @@ class STA_Photo_Stories
 
     public static function page($atts = []): string
     {
-        $a = shortcode_atts(['button' => 'Сподели го твоето патување', 'per_page' => 24], $atts, 'sta_photo_stories');
+        $a = shortcode_atts(['eyebrow' => self::EYEBROW, 'title' => self::TITLE, 'text' => self::TEXT, 'button' => 'Сподели го твоето патување', 'per_page' => 24], $atts, 'sta_photo_stories');
         self::assets();
         $all = self::all();
-        $html = '<section class="sta sta-ps-page">';
-        if ($a['button'] !== '') {
-            $html .= '<div class="sta-ps-page-top">'.self::share_button(['label' => $a['button']]).'</div>';
-        }
+        $html = '<section class="sta sta-ps-page">'.self::head($a);
         if (! $all) {
             return $html.'<p class="sta-empty">'.esc_html__('No photo stories yet – be the first to share your trip!', 'seeinside-travel').'</p></section>';
         }
         $html .= '<div class="sta-ps-grid" data-sta-ps-grid data-per="'.max(6, (int) $a['per_page']).'">';
         foreach ($all as $i => $s) {
-            $ph = array_slice($s['photos'], 0, 4);
+            $ph = array_slice($s['photos'], 0, 5);
+            $rest = count($s['photos']) - count($ph);
             $tiles = '';
             foreach ($ph as $k => $p) {
-                $tiles .= '<span class="sta-ps-t t'.$k.'"><img src="'.esc_url($p['thumb'] ?? $p['url']).'" alt="" loading="lazy"></span>';
+                $tiles .= '<button type="button" class="sta-ps-t t'.$k.'" data-sta-ps-open="'.$k.'" aria-label="'.esc_attr(self::caption($s)).'">'
+                    .'<img src="'.esc_url($p['thumb'] ?? $p['url']).'" alt="" loading="lazy">'
+                    .($rest > 0 && $k === count($ph) - 1 ? '<i>+'.$rest.'</i>' : '').'</button>';
             }
             $html .= '<article class="sta-ps-card" data-sta-ps-gallery="'.esc_attr(self::gallery_json($s)).'"'.($i >= (int) $a['per_page'] ? ' hidden' : '').'>'
-                .'<button type="button" class="sta-ps-tiles n'.count($ph).'" data-sta-ps-open="0" aria-label="'.esc_attr(self::caption($s)).'">'.$tiles
-                .'<em>'.esc_html(sprintf(_n('%d photo', '%d photos', count($s['photos']), 'seeinside-travel'), count($s['photos']))).'</em></button>'
+                .'<div class="sta-ps-tiles n'.count($ph).'">'.$tiles
+                .'<em>'.esc_html(sprintf(_n('%d photo', '%d photos', count($s['photos']), 'seeinside-travel'), count($s['photos']))).'</em></div>'
                 .'<div class="sta-ps-card-b"><b>'.esc_html($s['name']).'</b>'.(! empty($s['destination']) ? '<span>'.esc_html($s['destination']).'</span>' : '')
                 .(! empty($s['trip_date']) ? '<small>'.esc_html($s['trip_date']).'</small>' : '')
                 .(! empty($s['story']) ? '<p>'.esc_html(wp_trim_words($s['story'], 26)).'</p>' : '').'</div></article>';

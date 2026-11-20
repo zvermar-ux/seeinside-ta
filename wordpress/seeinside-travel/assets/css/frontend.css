@@ -1028,15 +1028,20 @@ dialog.sta-qs::backdrop { background: rgba(15, 23, 42, .55); backdrop-filter: bl
   .sta-ps-share { padding: .9rem 1.4rem; font-size: .9rem; }
 }
 /* page */
-.sta-ps-page-top { text-align: center; margin-bottom: 26px; }
-.sta-ps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 26px; }
+.sta-ps-page .sta-ps-head { margin-bottom: 30px; text-align: center; }
+.sta-ps-page .sta-ps-text { margin-left: auto; margin-right: auto; }
+.sta-ps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 26px; }
 .sta-ps-card { background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 10px 30px rgba(15, 23, 42, .08); text-align: left; }
-.sta-ps-tiles { position: relative; display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr 1fr; gap: 4px; width: 100%; aspect-ratio: 4 / 3; padding: 0 !important; border: 0 !important; background: #fff !important; cursor: zoom-in; border-radius: 0 !important; }
-.sta-ps-tiles .sta-ps-t { position: relative; overflow: hidden; min-height: 0; }
-.sta-ps-tiles .t0 { grid-row: 1 / 4; }
-.sta-ps-tiles.n1 { grid-template-columns: 1fr; } .sta-ps-tiles.n2 .t1 { grid-row: 1 / 4; } .sta-ps-tiles.n3 .t1 { grid-row: 1 / 3; }
-.sta-ps-tiles:hover img { transform: scale(1.05); }
-.sta-ps-tiles em { position: absolute; right: 10px; bottom: 10px; background: rgba(15, 23, 42, .75); color: #fff; font-style: normal; font-size: .8rem; padding: .25rem .6rem; border-radius: 99px; }
+.sta-ps-tiles { position: relative; display: grid; gap: 3px; width: 100%; aspect-ratio: 4 / 3; background: #fff; grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.sta-ps-tiles .sta-ps-t { position: relative; display: block; overflow: hidden; min-width: 0; min-height: 0; width: 100%; height: 100%; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: #e2e8f0 !important; box-shadow: none !important; cursor: zoom-in; }
+.sta-ps-tiles .sta-ps-t:hover img { transform: scale(1.06); }
+.sta-ps-tiles .sta-ps-t i { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(15, 23, 42, .45); color: #fff; font-style: normal; font-weight: 700; font-size: 1.5rem; }
+/* 2: halves · 3: big left + 2 · 4: big top + 3 · 5: big left + 2×2 */
+.sta-ps-tiles.n2 { grid-template-columns: 1fr 1fr; }
+.sta-ps-tiles.n3 { grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; } .sta-ps-tiles.n3 .t0 { grid-row: 1 / 3; }
+.sta-ps-tiles.n4 { grid-template-columns: repeat(3, 1fr); grid-template-rows: 2fr 1fr; } .sta-ps-tiles.n4 .t0 { grid-column: 1 / 4; }
+.sta-ps-tiles.n5 { grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 1fr 1fr; } .sta-ps-tiles.n5 .t0 { grid-row: 1 / 3; }
+.sta-ps-tiles em { position: absolute; left: 10px; top: 10px; pointer-events: none; background: rgba(15, 23, 42, .75); color: #fff; font-style: normal; font-size: .8rem; padding: .25rem .6rem; border-radius: 99px; }
 .sta-ps-card-b { padding: 14px 18px 18px; display: grid; gap: 2px; }
 .sta-ps-card-b b { font-size: 1.08rem; color: #0f172a; }
 .sta-ps-card-b span { color: var(--sta-primary, #0e7490); font-weight: 600; }
