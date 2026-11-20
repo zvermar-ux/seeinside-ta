@@ -1084,16 +1084,17 @@ dialog.sta-qs::backdrop { background: rgba(15, 23, 42, .55); backdrop-filter: bl
 .sta-psg-cap { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sta-psg-n { opacity: .75; font-size: .9rem; }
 .sta-psg-x { width: 42px; height: 42px; border: 0 !important; background: rgba(255, 255, 255, .12) !important; color: #fff !important; border-radius: 50% !important; font-size: 26px; line-height: 1; cursor: pointer; padding: 0 !important; }
-.sta-psg figure { margin: 0; display: grid; place-items: center; min-height: 0; padding: 0 70px; }
-.sta-psg-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
+.sta-psg figure { position: relative; margin: 0 70px !important; min-height: 0; min-width: 0; overflow: hidden; }
+/* whole photo always visible – vertical or horizontal – never cropped or stretched (also against theme img rules) */
+.sta-psg .sta-psg-img { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important; margin: 0 !important; object-fit: contain !important; object-position: center !important; border-radius: 0 !important; box-shadow: none !important; filter: drop-shadow(0 20px 40px rgba(0, 0, 0, .45)); }
 .sta-psg-prev, .sta-psg-next { position: absolute; top: 50%; transform: translateY(-50%); width: 52px; height: 52px; border: 0 !important; border-radius: 50% !important; background: rgba(255, 255, 255, .12) !important; color: #fff !important; font-size: 34px; line-height: 1; cursor: pointer; padding: 0 !important; z-index: 2; }
 .sta-psg-prev { left: 12px; } .sta-psg-next { right: 12px; }
 .sta-psg-prev:hover, .sta-psg-next:hover { background: rgba(255, 255, 255, .25) !important; }
 .sta-psg-th { display: flex; gap: 6px; padding: 10px 14px 14px; overflow-x: auto; justify-content: safe center; }
 .sta-psg-th button { flex: none; width: 64px; height: 46px; border: 2px solid transparent !important; border-radius: 6px !important; overflow: hidden; padding: 0 !important; background: none !important; cursor: pointer; opacity: .55; }
 .sta-psg-th button.is-on { border-color: #fff !important; opacity: 1; }
-.sta-psg-th img { width: 100%; height: 100%; object-fit: cover; display: block; }
-@media (max-width: 640px) { .sta-psg figure { padding: 0 6px; } .sta-psg-prev, .sta-psg-next { width: 40px; height: 40px; font-size: 26px; background: rgba(0, 0, 0, .35) !important; } }
+.sta-psg-th img { width: 100% !important; height: 100% !important; max-width: none !important; object-fit: cover !important; display: block; margin: 0 !important; }
+@media (max-width: 640px) { .sta-psg figure { margin: 0 6px !important; } .sta-psg-prev, .sta-psg-next { width: 40px; height: 40px; font-size: 26px; background: rgba(0, 0, 0, .35) !important; } }
 /* share window */
 dialog.sta-psd { border: 0; padding: 0; width: min(680px, calc(100% - 24px)); max-height: 92vh; border-radius: 18px; box-shadow: 0 30px 80px rgba(15, 23, 42, .35); overflow: auto; }
 dialog.sta-psd::backdrop { background: rgba(15, 23, 42, .55); }
