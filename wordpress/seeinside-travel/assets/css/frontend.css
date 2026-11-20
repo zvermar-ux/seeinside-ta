@@ -1018,6 +1018,10 @@ dialog.sta-qs::backdrop { background: rgba(15, 23, 42, .55); backdrop-filter: bl
 .sta-ps-dot.is-on { width: 28px; border-radius: 99px !important; background: #12404d !important; }
 .sta-ps-arr { width: 40px; height: 40px; border-radius: 50% !important; border: 1px solid #cbd5e1 !important; background: #fff !important; color: #12404d !important; font-size: 22px; line-height: 1; cursor: pointer; padding: 0 !important; }
 .sta-ps-more { margin-top: 18px; }
+.sta-ps .sta-ps-more { margin-top: 26px; text-align: center; }
+.sta-ps-allbtn { display: inline-flex; align-items: center; gap: 10px; padding: .85rem 1.9rem; border-radius: 99px; border: 2px solid #12404d; color: #12404d !important; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; text-decoration: none !important; font-size: .92rem; transition: .2s; }
+.sta-ps-allbtn:hover { background: #12404d; color: #fff !important; }
+.sta-ps-allbtn span { transition: transform .2s; } .sta-ps-allbtn:hover span { transform: translateX(4px); }
 @media (max-width: 1024px) { .sta-ps-col.is-low { display: none; } }
 @media (max-width: 640px) {
   .sta-ps-mosaic { gap: 10px; }

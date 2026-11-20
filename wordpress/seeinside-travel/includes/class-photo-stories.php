@@ -98,10 +98,23 @@ class STA_Photo_Stories
             .($a['button'] !== '' ? self::share_button(['label' => $a['button']]) : '').'</div>';
     }
 
+    /** URL of the published page with [sta_photo_stories] (for the "All photo stories" button) */
+    private static function page_url(): string
+    {
+        $id = get_transient('sta_ps_page');
+        if ($id === false) {
+            global $wpdb;
+            $id = (int) $wpdb->get_var("SELECT ID FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_type = 'page' AND (post_content LIKE '%[sta_photo_stories]%' OR post_content LIKE '%[sta_photo_stories %' OR ID IN (SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_elementor_data' AND meta_value LIKE '%[sta_photo_stories]%')) ORDER BY ID LIMIT 1");
+            set_transient('sta_ps_page', $id, $id ? DAY_IN_SECONDS : HOUR_IN_SECONDS);
+        }
+
+        return $id ? (string) get_permalink($id) : '';
+    }
+
     public static function slider($atts = []): string
     {
         $a = shortcode_atts(['count' => 5, 'eyebrow' => self::EYEBROW, 'title' => self::TITLE, 'text' => self::TEXT,
-            'button' => 'Сподели го твоето патување', 'autoplay' => 7, 'link' => ''], $atts, 'sta_photo_stories_slider');
+            'button' => 'Сподели го твоето патување', 'autoplay' => 7, 'link' => '', 'all' => ''], $atts, 'sta_photo_stories_slider');
         self::assets();
         $all = self::all();
         $featured = array_values(array_filter($all, fn ($s) => ! empty($s['is_featured'])));
@@ -119,7 +132,9 @@ class STA_Photo_Stories
         $dots = count($list) > 1 ? '<div class="sta-ps-nav"><button type="button" class="sta-ps-arr" data-sta-ps-prev aria-label="‹">‹</button>'
             .implode('', array_map(fn ($i) => '<button type="button" class="sta-ps-dot'.($i === 0 ? ' is-on' : '').'" data-sta-ps-dot="'.$i.'" aria-label="'.($i + 1).'"></button>', array_keys($list)))
             .'<button type="button" class="sta-ps-arr" data-sta-ps-next aria-label="›">›</button></div>' : '';
-        $more = $a['link'] !== '' ? '<p class="sta-ps-more"><a href="'.esc_url($a['link']).'">'.esc_html__('All photo stories', 'seeinside-travel').' →</a></p>' : '';
+        $link = $a['link'] !== '' ? $a['link'] : self::page_url();
+        $label = $a['all'] !== '' ? $a['all'] : __('All photo stories', 'seeinside-travel');
+        $more = $link && $a['link'] !== 'no' ? '<p class="sta-ps-more"><a class="sta-ps-allbtn" href="'.esc_url($link).'">'.esc_html($label).' <span aria-hidden="true">→</span></a></p>' : '';
 
         return '<section class="sta sta-ps" data-sta-ps-slider data-autoplay="'.(int) $a['autoplay'].'">'.$head.'<div class="sta-ps-stage">'.$slides.'</div>'.$dots.$more.'</section>';
     }
