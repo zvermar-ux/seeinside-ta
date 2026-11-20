@@ -25,10 +25,10 @@ class ListInvoices extends ListRecords
     {
         return [
             'all' => Tab::make(__('All')),
-            'invoice' => Tab::make(__('Invoices'))->modifyQueryUsing(fn (Builder $q) => $q->where('type', 'invoice')),
-            'proforma' => Tab::make(__('Proformas'))->modifyQueryUsing(fn (Builder $q) => $q->where('type', 'proforma')),
+            'invoice' => Tab::make(__('Invoices'))->modifyQueryUsing(fn (Builder $query) => $query->where('type', 'invoice')),
+            'proforma' => Tab::make(__('Proformas'))->modifyQueryUsing(fn (Builder $query) => $query->where('type', 'proforma')),
             'unpaid' => Tab::make(__('Unpaid'))->badge(fn () => Invoice::where('type', 'invoice')->whereIn('status', ['issued', 'partial'])->count() ?: null)->badgeColor('danger')
-                ->modifyQueryUsing(fn (Builder $q) => $q->where('type', 'invoice')->whereIn('status', ['issued', 'partial'])),
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('type', 'invoice')->whereIn('status', ['issued', 'partial'])),
         ];
     }
 }

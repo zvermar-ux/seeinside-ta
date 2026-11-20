@@ -124,8 +124,8 @@ class SupplierInvoiceResource extends Resource
                 AgencyField::column(),
             ])
             ->filters([
-                Tables\Filters\Filter::make('unpaid')->label(__('Unpaid'))->query(fn (Builder $q) => $q->whereColumn('paid_amount', '<', 'amount')),
-                Tables\Filters\Filter::make('overdue')->label(__('Overdue'))->query(fn (Builder $q) => $q->whereColumn('paid_amount', '<', 'amount')->whereDate('due_date', '<', today())),
+                Tables\Filters\Filter::make('unpaid')->label(__('Unpaid'))->query(fn (Builder $query) => $query->whereColumn('paid_amount', '<', 'amount')),
+                Tables\Filters\Filter::make('overdue')->label(__('Overdue'))->query(fn (Builder $query) => $query->whereColumn('paid_amount', '<', 'amount')->whereDate('due_date', '<', today())),
                 Tables\Filters\SelectFilter::make('category')->label(__('Cost type'))->options(static::categories()),
                 Tables\Filters\SelectFilter::make('tour_operator_id')->label(__('Supplier'))->relationship('tourOperator', 'name')->searchable()->preload(),
                 AgencyField::filter(),

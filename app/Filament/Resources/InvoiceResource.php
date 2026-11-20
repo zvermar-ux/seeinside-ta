@@ -187,8 +187,8 @@ class InvoiceResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('type')->label(__('Type'))->options(['proforma' => __('Proformas'), 'invoice' => __('Invoices')]),
                 Tables\Filters\SelectFilter::make('status')->label(__('Status'))->options(Invoice::statuses())->multiple(),
-                Tables\Filters\Filter::make('unpaid')->label(__('Unpaid'))->query(fn (Builder $q) => $q->where('type', 'invoice')->whereIn('status', ['issued', 'partial'])),
-                Tables\Filters\Filter::make('overdue')->label(__('Overdue'))->query(fn (Builder $q) => $q->where('type', 'invoice')->whereIn('status', ['issued', 'partial'])->whereDate('due_date', '<', today())),
+                Tables\Filters\Filter::make('unpaid')->label(__('Unpaid'))->query(fn (Builder $query) => $query->where('type', 'invoice')->whereIn('status', ['issued', 'partial'])),
+                Tables\Filters\Filter::make('overdue')->label(__('Overdue'))->query(fn (Builder $query) => $query->where('type', 'invoice')->whereIn('status', ['issued', 'partial'])->whereDate('due_date', '<', today())),
                 Tables\Filters\Filter::make('period')->form([
                     Forms\Components\DatePicker::make('from')->label(__('From'))->native(false)->displayFormat('d.m.Y'),
                     Forms\Components\DatePicker::make('to')->label(__('To'))->native(false)->displayFormat('d.m.Y'),
