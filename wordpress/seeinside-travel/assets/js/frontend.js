@@ -91,6 +91,8 @@
       var hb = JSON.parse(opts.body || '{}'); hb.locale = C.lang; hb.message = ((hb.message || '') + '\n\n[' + C.site + ']').trim();
       return [C.direct + 'hotels/book', Object.assign({}, opts, { body: JSON.stringify(hb), headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })];
     }
+    if (name === 'photo-story/verify') { var pv = JSON.parse(opts.body || '{}'); return [C.direct + 'photo-stories/verify', Object.assign({}, opts, { body: JSON.stringify(pv), headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })]; }
+    if (name === 'photo-story') { opts.body.append('locale', C.lang); return [C.direct + 'photo-stories', Object.assign({}, opts, { headers: { Accept: 'application/json' } })]; }
     if (name === 'hotels/hotel') { var hid = q.get('id'); q.delete('id'); return [C.direct + 'hotels/' + encodeURIComponent(hid) + '?' + q, { headers: { Accept: 'application/json' } }]; }
     if (name.indexOf('hotels/') === 0) return [C.direct + name + '?' + q, { headers: { Accept: 'application/json' } }];
     var slug = q.get('slug'); q.delete('slug'); q.delete('website'); q.delete('sta_ts');
@@ -1164,6 +1166,132 @@
     var t; addEventListener('resize', function () { clearTimeout(t); t = setTimeout(fit, 120); });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     addEventListener('load', fit); fit();
+  })();
+
+  /* ---------- photo stories: gallery, homepage slider, page, share window ---------- */
+  var psBox = null, psData = null, psI = 0, psX = null;
+  function psShow() {
+    var p = psData.photos[psI]; if (!p) return;
+    $('.sta-psg-img', psBox).src = p.url;
+    $('.sta-psg-n', psBox).textContent = (psI + 1) + ' / ' + psData.photos.length;
+    $$('.sta-psg-th button', psBox).forEach(function (b, k) { b.classList.toggle('is-on', k === psI); if (k === psI) b.scrollIntoView({ block: 'nearest', inline: 'center' }); });
+    // the next one is ready when it is wanted
+    var nx = psData.photos[psI + 1]; if (nx) { var im = new Image(); im.src = nx.url; }
+  }
+  function psGallery(data, i) {
+    psData = data; psI = i || 0;
+    if (!psBox) {
+      psBox = document.createElement('div'); psBox.className = 'sta-psg'; psBox.setAttribute('role', 'dialog');
+      psBox.innerHTML = '<div class="sta-psg-top"><span class="sta-psg-cap"></span><span class="sta-psg-n"></span><button type="button" class="sta-psg-x" aria-label="×">×</button></div>'
+        + '<button type="button" class="sta-psg-prev" aria-label="‹">‹</button><figure><img class="sta-psg-img" alt=""></figure><button type="button" class="sta-psg-next" aria-label="›">›</button>'
+        + '<div class="sta-psg-th"></div>';
+      document.body.appendChild(psBox);
+      psBox.addEventListener('click', function (e) {
+        if (e.target.closest('.sta-psg-x') || e.target === psBox || e.target.tagName === 'FIGURE') return psClose();
+        if (e.target.closest('.sta-psg-prev')) { psI = (psI - 1 + psData.photos.length) % psData.photos.length; psShow(); }
+        if (e.target.closest('.sta-psg-next')) { psI = (psI + 1) % psData.photos.length; psShow(); }
+        var t = e.target.closest('.sta-psg-th button'); if (t) { psI = +t.dataset.i; psShow(); }
+      });
+      psBox.addEventListener('touchstart', function (e) { psX = e.touches[0].clientX; }, { passive: true });
+      psBox.addEventListener('touchend', function (e) { if (psX === null) return; var dx = e.changedTouches[0].clientX - psX; psX = null; if (Math.abs(dx) > 40) { psI = (psI + (dx < 0 ? 1 : -1) + psData.photos.length) % psData.photos.length; psShow(); } });
+      document.addEventListener('keydown', function (e) {
+        if (!psBox || psBox.hidden) return;
+        if (e.key === 'Escape') psClose();
+        if (e.key === 'ArrowRight') { psI = (psI + 1) % psData.photos.length; psShow(); }
+        if (e.key === 'ArrowLeft') { psI = (psI - 1 + psData.photos.length) % psData.photos.length; psShow(); }
+      });
+    }
+    $('.sta-psg-cap', psBox).innerHTML = '<b>' + esc(data.title) + '</b>' + (data.date ? ' · ' + esc(data.date) : '');
+    $('.sta-psg-th', psBox).innerHTML = data.photos.length > 1 ? data.photos.map(function (p, k) { return '<button type="button" data-i="' + k + '"><img src="' + esc(p.url) + '" alt="" loading="lazy"></button>'; }).join('') : '';
+    psBox.hidden = false; document.documentElement.classList.add('sta-qs-on');
+    psShow();
+  }
+  function psClose() { if (psBox) psBox.hidden = true; document.documentElement.classList.remove('sta-qs-on'); }
+  document.addEventListener('click', function (e) {
+    var o = e.target.closest('[data-sta-ps-open]'); if (!o) return;
+    var g = o.closest('[data-sta-ps-gallery]'); if (!g) return;
+    e.preventDefault();
+    try { psGallery(JSON.parse(g.dataset.staPsGallery), +o.dataset.staPsOpen || 0); } catch (err) {}
+  });
+  // homepage slider: one client at a time, up to 5 change by themselves
+  $$('[data-sta-ps-slider]').forEach(function (root) {
+    var slides = $$('.sta-ps-slide', root), dots = $$('[data-sta-ps-dot]', root), i = 0, timer;
+    if (slides.length < 2) return;
+    function go(n) { i = (n + slides.length) % slides.length; slides.forEach(function (s, k) { s.classList.toggle('is-on', k === i); }); dots.forEach(function (d, k) { d.classList.toggle('is-on', k === i); }); auto(); }
+    function auto() { clearInterval(timer); var sec = +root.dataset.autoplay; if (sec > 0) timer = setInterval(function () { go(i + 1); }, sec * 1000); }
+    var p = $('[data-sta-ps-prev]', root), n = $('[data-sta-ps-next]', root);
+    if (p) p.addEventListener('click', function () { go(i - 1); });
+    if (n) n.addEventListener('click', function () { go(i + 1); });
+    dots.forEach(function (d) { d.addEventListener('click', function () { go(+d.dataset.staPsDot); }); });
+    root.addEventListener('mouseenter', function () { clearInterval(timer); });
+    root.addEventListener('mouseleave', auto);
+    auto();
+  });
+  // page: more clients
+  $$('[data-sta-ps-more]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var grid = $('[data-sta-ps-grid]'), per = +(grid && grid.dataset.per) || 24, hid = $$('.sta-ps-card[hidden]', grid);
+      hid.slice(0, per).forEach(function (c) { c.hidden = false; });
+      if (hid.length <= per) b.remove();
+    });
+  });
+  // share: 1) booking number + e-mail  2) photos (made smaller in the browser before sending)
+  (function () {
+    var dlg = $('[data-sta-psd]'); if (!dlg) return;
+    var f1 = $('[data-sta-psd-1]', dlg), f2 = $('[data-sta-psd-2]', dlg), files = [], proof = {}, input = $('[data-sta-psd-files]', dlg), prev = $('[data-sta-psd-prev]', dlg), opened = 0;
+    $$('[data-sta-ps-share]').forEach(function (b) { b.addEventListener('click', function () { opened = Date.now(); dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', ''); var r = $('[name="reference"]', f1); if (r) setTimeout(function () { r.focus(); }, 30); }); });
+    dlg.addEventListener('click', function (e) { if (e.target === dlg || e.target.closest('[data-sta-psd-close]')) dlg.close(); });
+    f1.addEventListener('submit', function (e) {
+      e.preventDefault(); if (!validate(f1)) return;
+      var btn = $('[type="submit"]', f1), label = btn.textContent; btn.disabled = true; btn.textContent = T.sending;
+      proof = { reference: $('[name="reference"]', f1).value.trim().toUpperCase(), email: $('[name="email"]', f1).value.trim() };
+      api('photo-story/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ website: $('[name="website"]', f1).value, sta_ts: opened }, proof)) }).then(function (r) {
+        if (!r.ok) { msg(f1, errors(r.body), false); return; }
+        var d = r.body.data || {};
+        $('[name="name"]', f2).value = d.name || ''; $('[name="destination"]', f2).value = d.destination || ''; $('[name="trip_date"]', f2).value = d.trip_date || '';
+        f1.hidden = true; f2.hidden = false;
+      }).catch(function () { msg(f1, esc(T.error), false); }).then(function () { btn.disabled = false; btn.textContent = label; });
+    });
+    function shrink(file) {
+      return new Promise(function (ok) {
+        if (!/^image\/(jpeg|png|webp)/.test(file.type)) return ok(file);
+        var img = new Image(), url = URL.createObjectURL(file);
+        img.onload = function () {
+          var k = Math.min(1, 2200 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+          c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+          c.toBlob(function (b) { ok(b ? new File([b], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file); }, 'image/jpeg', 0.86);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); ok(file); };
+        img.src = url;
+      });
+    }
+    function draw() {
+      prev.innerHTML = files.map(function (f, k) { return '<span><img src="' + URL.createObjectURL(f) + '" alt=""><button type="button" data-k="' + k + '" aria-label="×">×</button></span>'; }).join('');
+    }
+    function add(list) { Array.prototype.forEach.call(list, function (f) { if (files.length < 15 && /^image\//.test(f.type)) files.push(f); }); draw(); }
+    input.addEventListener('change', function () { add(input.files); input.value = ''; });
+    prev.addEventListener('click', function (e) { var b = e.target.closest('[data-k]'); if (b) { files.splice(+b.dataset.k, 1); draw(); } });
+    var drop = $('[data-sta-psd-drop]', dlg);
+    ['dragover', 'dragenter'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('is-over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('is-over'); if (ev === 'drop') add(e.dataTransfer.files); }); });
+    f2.addEventListener('submit', function (e) {
+      e.preventDefault(); if (!validate(f2)) return;
+      if (!files.length) { msg(f2, esc(T.psNoPhotos || 'Choose at least one photo.'), false); return; }
+      var btn = $('[type="submit"]', f2), label = btn.textContent; btn.disabled = true; btn.textContent = T.sending;
+      Promise.all(files.map(shrink)).then(function (small) {
+        var fd = new FormData();
+        Object.keys(proof).forEach(function (k) { fd.append(k, proof[k]); });
+        ['name', 'destination', 'trip_date', 'story'].forEach(function (k) { fd.append(k, $('[name="' + k + '"]', f2).value); });
+        fd.append('sta_ts', opened); fd.append('website', '');
+        small.forEach(function (f) { fd.append('photos[]', f, f.name); });
+        return api('photo-story', { method: 'POST', body: fd });
+      }).then(function (r) {
+        if (!r.ok) { msg(f2, errors(r.body), false); return; }
+        f2.innerHTML = '<div class="sta-ht-done"><div class="sta-ht-check">✓</div><h3>' + esc(T.psThanks || 'Thank you!') + '</h3><p class="sta-muted">' + esc(T.psThanksNote || '') + '</p></div>';
+        files = [];
+      }).catch(function () { msg(f2, esc(T.error), false); }).then(function () { btn.disabled = false; btn.textContent = label; });
+    });
   })();
 
   // shared with hotels.js (hotel results, hotel page and booking)

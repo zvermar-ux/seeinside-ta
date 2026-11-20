@@ -47,6 +47,7 @@ class WebsitePush
                 'meta' => $c->meta($request),
                 'reviews' => $c->reviews($request),
                 'chat' => $c->chat($request),
+                'photo_stories' => response()->json(['data' => \App\Http\Controllers\Api\PhotoStoryController::items($agencyId)]),
                 default => null,
             };
         } catch (ModelNotFoundException|NotFoundHttpException) {
@@ -150,7 +151,7 @@ class WebsitePush
         }
 
         return (int) WebsiteNotifier::send($client, [
-            'event' => $type.'.'.($action === 'deleted' ? 'deleted' : ($data === null && ! in_array($type, ['slider', 'charter', 'meta', 'reviews', 'chat'], true) ? 'unpublished' : 'updated')),
+            'event' => $type.'.'.($action === 'deleted' ? 'deleted' : ($data === null && ! in_array($type, ['slider', 'charter', 'meta', 'reviews', 'chat', 'photo_stories'], true) ? 'unpublished' : 'updated')),
             'type' => $type,
             'id' => $id,
             'slug' => $slug,
@@ -163,7 +164,7 @@ class WebsitePush
     public static function pushAll(ApiClient $client): array
     {
         @set_time_limit(0);
-        $stats = ['meta' => static::pushItem($client, 'meta', 0, null), 'slider' => static::pushItem($client, 'slider', 0, null), 'charter' => static::pushItem($client, 'charter', 0, null), 'reviews' => static::pushItem($client, 'reviews', 0, null), 'chat' => static::pushItem($client, 'chat', 0, null)];
+        $stats = ['meta' => static::pushItem($client, 'meta', 0, null), 'slider' => static::pushItem($client, 'slider', 0, null), 'charter' => static::pushItem($client, 'charter', 0, null), 'reviews' => static::pushItem($client, 'reviews', 0, null), 'chat' => static::pushItem($client, 'chat', 0, null), 'photo_stories' => static::pushItem($client, 'photo_stories', 0, null)];
         foreach (['tour' => Tour::class, 'event' => Event::class, 'accommodation' => Accommodation::class, 'visa' => VisaType::class, 'custom' => \App\Models\CustomRecord::class] as $type => $class) {
             $ok = 0;
             foreach ($class::withoutGlobalScopes()->where('agency_id', $client->agency_id)->where('is_active', true)->get(['id', 'slug']) as $m) {

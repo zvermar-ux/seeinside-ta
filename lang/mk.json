@@ -2149,5 +2149,18 @@
     "The old system gave an empty answer to the booking (no number, no \"NotAvailable\").": "Старата апликација врати празен одговор на резервацијата (ниту број, ниту „NotAvailable“).",
     "This room has just been booked for this term. Please choose another room or term.": "Оваа соба штотуку е резервирана за овој термин. Изберете друга соба или термин.",
     "This departure has just been sold out. Please choose another date.": "Ова поаѓање штотуку е распродадено. Изберете друг датум.",
-    "Fixed terms: a click on any night of a term picks the whole term (the blue line = start of a term).": "Фиксни термини: клик на која било ноќ од терминот го избира целиот термин (сината линија = почеток на термин)."
+    "Fixed terms: a click on any night of a term picks the whole term (the blue line = start of a term).": "Фиксни термини: клик на која било ноќ од терминот го избира целиот термин (сината линија = почеток на термин).",
+    ":name sent :n photos (:dest, booking :ref). Approve them in Photo stories.": ":name испрати :n фотографии (:dest, резервација :ref). Одобрете ги во Фотоприказни.",
+    "Drag to change the order – the first ones are the big photos of the slider. Remove the ones that should not be shown.": "Влечете за да го смените редоследот – првите се големите фотографии во слајдерот. Отстранете ги тие што не треба да се прикажат.",
+    "Name and surname": "Име и презиме",
+    "New travel photos to approve": "Нови фотографии од патување за одобрување",
+    "No booking with this number and e-mail. Check the booking number (e.g. R2611-ABCDE) and the e-mail used when booking.": "Нема резервација со овој број и е-пошта. Проверете го бројот на резервацијата (пр. R2611-ABCDE) и е-поштата користена при резервирање.",
+    "On the homepage slider": "Во слајдерот на насловна",
+    "Photo stories": "Фотоприказни",
+    "Photo story": "Фотоприказна",
+    "Photos of this booking were already sent – the agency will publish them after checking.": "Фотографиите од оваа резервација се веќе испратени – агенцијата ќе ги објави по проверка.",
+    "Their story": "Нивната приказна",
+    "Up to 5 – otherwise the newest ones.": "До 5 – инаку најновите.",
+    "When": "Кога",
+    "Where they travelled / stayed": "Каде патувале / престојувале"
 }

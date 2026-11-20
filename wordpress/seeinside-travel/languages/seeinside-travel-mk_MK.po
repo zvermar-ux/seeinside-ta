@@ -3601,3 +3601,68 @@ msgstr "Никогаш да не се крши во два реда: ставк�
 
 msgid "Also: at most 10 px between the buttons in the header."
 msgstr "Исто така: најмногу 10 px растојание меѓу копчињата во хедерот."
+
+msgid "A few words about the trip"
+msgstr "Неколку зборови за патувањето"
+
+msgid "All %d photos"
+msgstr "Сите %d фотографии"
+
+msgid "All photo stories"
+msgstr "Сите фотоприказни"
+
+msgid "Booking number"
+msgstr "Број на резервација"
+
+msgid "Choose photos"
+msgstr "Изберете фотографии"
+
+msgid "Continue"
+msgstr "Продолжи"
+
+msgid "E-mail of the booking"
+msgstr "Е-пошта од резервацијата"
+
+msgid "I agree that the photos and my name are published on the website after approval (%s)."
+msgstr "Се согласувам фотографиите и моето име да се објават на сајтот по одобрување (%s)."
+
+msgid "I am not a robot"
+msgstr "Не сум робот"
+
+msgid "Name and surname (shown under the photos)"
+msgstr "Име и презиме (се прикажува под фотографиите)"
+
+msgid "No photo stories yet – be the first to share your trip!"
+msgstr "Сè уште нема фотоприказни – бидете први што ќе го споделат своето патување!"
+
+msgid "Photos can be shared by clients who travelled with us: enter the booking number and the e-mail of the booking."
+msgstr "Фотографии можат да споделат клиентите што патувале со нас: внесете го бројот на резервацијата и е-поштата од резервацијата."
+
+msgid "Send the photos"
+msgstr "Испрати ги фотографиите"
+
+msgid "Share your trip"
+msgstr "Сподели го твоето патување"
+
+msgid "When"
+msgstr "Кога"
+
+msgid "Where you travelled / stayed"
+msgstr "Каде патувавте / престојувавте"
+
+msgid "or drag them here · up to 15 photos"
+msgstr "или повлечете ги тука · до 15 фотографии"
+
+msgid "Choose at least one photo."
+msgstr "Изберете најмалку една фотографија."
+
+msgid "Thank you for sharing!"
+msgstr "Ви благодариме што споделивте!"
+
+msgid "The photos are published on the website after the agency approves them."
+msgstr "Фотографиите се објавуваат на сајтот откако агенцијата ќе ги одобри."
+
+msgid "%d photo"
+msgid_plural "%d photos"
+msgstr[0] "%d фотографија"
+msgstr[1] "%d фотографии"

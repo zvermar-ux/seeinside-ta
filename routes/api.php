@@ -27,6 +27,8 @@ Route::prefix('public/{site}')->middleware([\App\Http\Middleware\AuthenticatePub
     Route::get('bookings/{reference}', [BookingController::class, 'status']);
     Route::get('visa-applications/{reference}', [BookingController::class, 'visaStatus']);
     Route::post('reviews', [ReviewController::class, 'store']);
+    Route::post('photo-stories/verify', [\App\Http\Controllers\Api\PhotoStoryController::class, 'verify'])->middleware('throttle:10,1');
+    Route::post('photo-stories', [\App\Http\Controllers\Api\PhotoStoryController::class, 'store'])->middleware('throttle:5,10');
 
     // hotels from booking systems (Hotelbeds…): live prices, so own limits
     Route::get('hotels/destinations', [HotelController::class, 'destinations']);
@@ -56,6 +58,9 @@ Route::middleware([AuthenticateApiClient::class, 'throttle:website'])->group(fun
     Route::get('slider', [CatalogController::class, 'slider']);
     Route::get('charters', [CatalogController::class, 'charters'])->middleware(\App\Http\Middleware\AgencyModule::class.':charters');
     Route::get('reviews', [ReviewController::class, 'index'])->middleware(\App\Http\Middleware\AgencyModule::class.':reviews');
+    Route::get('photo-stories', [\App\Http\Controllers\Api\PhotoStoryController::class, 'index']);
+    Route::post('photo-stories/verify', [\App\Http\Controllers\Api\PhotoStoryController::class, 'verify'])->middleware('throttle:website-forms');
+    Route::post('photo-stories', [\App\Http\Controllers\Api\PhotoStoryController::class, 'store'])->middleware('throttle:website-forms');
     Route::get('chat', [CatalogController::class, 'chat']);
     Route::post('reviews', [ReviewController::class, 'store'])->middleware('throttle:website-forms');
     Route::get('bookings/{reference}', [BookingController::class, 'status'])->middleware('throttle:website-forms');

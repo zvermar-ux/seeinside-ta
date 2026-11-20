@@ -712,6 +712,7 @@ class STA_Sync
     public const LISTS = [
         'reviews' => ['reviews', 'sta_reviews'],
         'chat' => ['chat', 'sta_chat'],
+        'photo_stories' => ['photo-stories', 'sta_photo_stories'],
     ];
 
     public static function sync_list(string $type): void
