@@ -85,10 +85,12 @@ class HotelService
                 ->map(fn ($d) => ['id' => $d->supplier_connection_id.':'.$d->code, 'name' => $d->name, 'country' => $d->country_name ?: $d->country_code, 'country_code' => $d->country_code, 'hotels' => $counts[$d->supplier_connection_id.':'.$d->code] ?? 0])
                 ->filter(fn ($d) => $d['hotels'] > 0)   // destinations without imported hotels are not offered
                 ->map(function ($d) use ($agencyId) {
-                    // areas of the destination (Kassandra, Sithonia…) for the menu
-                    $zones = collect(self::index($agencyId))->where('dest', $d['id'])->countBy('zone')->forget('')->sortDesc()->take(15);
+                    // areas of the destination (Kassandra, Sithonia…) for the menu; a photo of its best hotel for the page header
+                    $rows = collect(self::index($agencyId))->where('dest', $d['id']);
+                    $zones = $rows->countBy('zone')->forget('')->sortDesc()->take(15);
+                    $photo = fn ($list) => optional($list->filter(fn ($r) => ! empty($r['image']))->sortByDesc(fn ($r) => [(int) ! empty($r['featured']), (int) ($r['stars'] ?? 0)])->first())['image'];
 
-                    return $d + ['zones' => $zones->map(fn ($n, $z) => ['name' => $z, 'hotels' => $n])->values()->all()];
+                    return $d + ['image' => $photo($rows), 'zones' => $zones->map(fn ($n, $z) => ['name' => $z, 'hotels' => $n, 'image' => $photo($rows->where('zone', $z))])->values()->all()];
                 })
                 ->values()->all();
         });

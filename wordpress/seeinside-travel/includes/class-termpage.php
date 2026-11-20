@@ -120,7 +120,7 @@ class STA_Term_Page
     protected static function page_header(array $a): string
     {
         if ($a['page_type'] === 'hotels') {
-            return '';   // the hotels page has no header: the list starts at the top
+            return self::hotels_header($a);
         }
         wp_enqueue_style('sta');
         $type = $a['page_type'];
@@ -150,6 +150,86 @@ class STA_Term_Page
             .($a['count'] && $n ? '<span class="sta-term-count">'.esc_html(sprintf(_n('%d offer', '%d offers', $n, 'seeinside-travel'), $n)).'</span>' : '')
             .'</div></header>'
             .($desc && $a['desc'] ? '<div class="sta sta-term-desc sta-prose">'.wp_kses_post(wpautop($desc)).'</div>' : '');
+    }
+
+    /**
+     * Header of the hotels page opened from the menu (?country= / ?destination= / ?zone=): like a destination page –
+     * Hotels badge, Greece › Halkidiki, the name, how many hotels, a photo of its best hotel. The plain hotels page stays without a header.
+     */
+    protected static function hotels_header(array $a): string
+    {
+        $country = strtoupper(sanitize_text_field(wp_unslash($_GET['country'] ?? '')));
+        $destId = sanitize_text_field(wp_unslash($_GET['destination'] ?? ''));
+        $zone = sanitize_text_field(rawurldecode(wp_unslash($_GET['zone'] ?? '')));
+        $all = STA_Hotels::destinations();
+        // in the Elementor editor: preview with the first region, so the header can be designed
+        $editing = class_exists('\Elementor\Plugin') && isset(\Elementor\Plugin::$instance->preview) && \Elementor\Plugin::$instance->preview->is_preview_mode();
+        if ($country === '' && $destId === '' && $editing && $all) {
+            $destId = (string) ($all[0]['id'] ?? '');
+        }
+        if ($country === '' && $destId === '') {
+            return '';
+        }
+        $base = STA_Hotels::page_url();
+        $crumbs = [];
+        $img = '';
+        if ($destId !== '') {
+            $d = null;
+            foreach ($all as $x) {
+                if ((string) ($x['id'] ?? '') === $destId) {
+                    $d = $x;
+                    break;
+                }
+            }
+            if (! $d) {
+                return '';
+            }
+            if (! empty($d['country_code'])) {
+                $crumbs[] = '<a href="'.esc_url(add_query_arg('country', $d['country_code'], $base)).'">'.esc_html($d['country'] ?? $d['country_code']).'</a>';
+            }
+            $title = (string) $d['name'];
+            $n = (int) ($d['hotels'] ?? 0);
+            $img = (string) ($d['image'] ?? '');
+            if ($zone !== '') {
+                foreach ((array) ($d['zones'] ?? []) as $z) {
+                    if (strcasecmp((string) $z['name'], $zone) === 0) {
+                        $crumbs[] = '<a href="'.esc_url(add_query_arg('destination', $destId, $base)).'">'.esc_html($title).'</a>';
+                        $title = (string) $z['name'];
+                        $n = (int) ($z['hotels'] ?? 0);
+                        $img = (string) ($z['image'] ?? '') ?: $img;
+                        break;
+                    }
+                }
+            }
+        } else {
+            $list = array_values(array_filter($all, fn ($x) => strtoupper((string) ($x['country_code'] ?? '')) === $country));
+            if (! $list) {
+                return '';
+            }
+            $title = (string) ($list[0]['country'] ?? $country);
+            $n = array_sum(array_map(fn ($x) => (int) ($x['hotels'] ?? 0), $list));
+            usort($list, fn ($x, $y) => ((int) ($y['hotels'] ?? 0)) <=> ((int) ($x['hotels'] ?? 0)));
+            foreach ($list as $x) {
+                if (! empty($x['image'])) {
+                    $img = (string) $x['image'];
+                    break;
+                }
+            }
+        }
+        // a photo chosen in Elementor / on the page wins when "always"; otherwise the page photo is the fallback
+        if ($a['image_mode'] === 'always' && $a['image']) {
+            $img = $a['image'];
+        }
+        $img = $img ?: ((string) get_the_post_thumbnail_url((int) get_queried_object_id() ?: null, 'full') ?: (string) $a['image']);
+        wp_enqueue_style('sta');
+
+        return '<header class="sta sta-term-head'.($img ? ' has-img' : '').'" style="--th-h:'.max(160, (int) $a['height']).'px'.($img ? ';background-image:url(\''.esc_url($img).'\')' : '').'">'
+            .'<div class="sta-term-head-in">'
+            .($a['kind'] ? '<span class="sta-term-kind">'.esc_html($a['label'] ?: __('Hotels', 'seeinside-travel')).'</span>' : '')
+            .($crumbs && $a['crumbs'] ? '<nav class="sta-term-crumbs"><a href="'.esc_url($base).'">'.esc_html__('Hotels', 'seeinside-travel').'</a> › '.implode(' › ', $crumbs).'</nav>' : '')
+            .'<h1>'.esc_html($title).'</h1>'
+            .($a['count'] && $n ? '<span class="sta-term-count">'.esc_html(sprintf(_n('%d hotel', '%d hotels', $n, 'seeinside-travel'), $n)).'</span>' : '')
+            .'</div></header>';
     }
 
     /** List of a listing page: tours / events / apartments with the filters, hotels with the hotel search */
