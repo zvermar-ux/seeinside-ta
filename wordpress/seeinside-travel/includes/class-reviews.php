@@ -17,6 +17,7 @@ class STA_Reviews
         });
         add_action('rest_api_init', function () {
             register_rest_route('seeinside-travel/v1', '/review', ['methods' => 'POST', 'callback' => [self::class, 'r_review'], 'permission_callback' => '__return_true']);
+            register_rest_route('seeinside-travel/v1', '/review/verify', ['methods' => 'POST', 'callback' => [self::class, 'r_verify'], 'permission_callback' => '__return_true']);
         });
         add_action('wp_head', [self::class, 'schema'], 30);
     }
@@ -90,7 +91,10 @@ class STA_Reviews
             if ($title) {
                 $item = '<div class="sta-review-item">'.($postId && get_post_status($postId) === 'publish' ? '<a href="'.esc_url(get_permalink($postId)).'">'.esc_html($title).'</a>' : esc_html($title)).'</div>';
             }
+        } elseif ($showItem && ! empty($r['item_label'])) {
+            $item = '<div class="sta-review-item">'.esc_html($r['item_label']).'</div>';
         }
+        $item .= self::verified_badge($r);
         $initial = mb_strtoupper(mb_substr(trim((string) $r['name']), 0, 1));
 
         return '<article class="sta-review">'
@@ -108,10 +112,7 @@ class STA_Reviews
     /** Testimonial card: avatar, name, who / what, stars, quote and the round quote mark at the bottom */
     public static function testimonial_html(array $r, bool $showItem = true, string $role = ''): string
     {
-        $sub = '';
-        if ($showItem && ! empty($r['item'])) {
-            $sub = sta_t($r['item']['title'] ?? null);
-        }
+        $sub = $showItem ? self::item_title($r) : '';
         $sub = $sub ?: implode(' · ', array_filter([$r['city'] ?? null, $r['trip_date'] ?? null])) ?: $role;
         $name = trim((string) $r['name']);
         $parts = preg_split('/\s+/u', $name) ?: [];
@@ -122,10 +123,11 @@ class STA_Reviews
         return '<article class="sta-tm-card">'
             .'<header class="sta-tm-head">'
             .'<span class="sta-tm-avatar" style="--h:'.(int) $hue.'" aria-hidden="true">'.esc_html($initials).'</span>'
-            .'<div class="sta-tm-who"><b>'.esc_html($name).'</b>'.($sub ? '<small>'.esc_html($sub).'</small>' : '').'</div>'
+            .'<div class="sta-tm-who"><b>'.esc_html($name).'</b>'.($sub ? '<small>'.self::item_link($r, $sub).'</small>' : '').'</div>'
             .sta_stars((float) $r['rating'], 'sta-tm-stars')
             .'</header>'
             .(! empty($r['title']) ? '<h4 class="sta-tm-title">'.esc_html($r['title']).'</h4>' : '')
+            .self::verified_badge($r)
             .'<blockquote class="sta-tm-text">“'.esc_html($body).'”</blockquote>'
             .'<span class="sta-tm-quote" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M9.6 6C6.5 7.3 4.5 9.9 4.5 13.4V18h6v-6H7.6c.2-1.9 1.4-3.3 3.3-4.1L9.6 6Zm9 0c-3.1 1.3-5.1 3.9-5.1 7.4V18h6v-6h-2.9c.2-1.9 1.4-3.3 3.3-4.1L18.6 6Z"/></svg></span>'
             .'</article>';
@@ -206,6 +208,11 @@ class STA_Reviews
         return $html;
     }
 
+    /**
+     * Review form in two steps (like the photo stories):
+     *  1) booking number + e-mail of the booking + "I am not a robot" – proof that the client travelled with us
+     *  2) the review fields, already for the exact tour / apartment / event / visa of that booking
+     */
     public static function form(string $type = '', string $slug = '', bool $open = true): string
     {
         $stars = '';
@@ -214,22 +221,56 @@ class STA_Reviews
         }
         $uid = wp_unique_id();
 
-        return '<form class="sta-form sta-review-form'.($open ? '' : ' is-collapsed').'" data-sta-review novalidate>'
+        return '<div class="sta-review-form'.($open ? '' : ' is-collapsed').'" data-sta-review>'
             .'<h4 class="sta-h4">'.esc_html__('Write a review', 'seeinside-travel').'</h4>'
+            // step 1
+            .'<form class="sta-form" data-sta-rv-1 novalidate>'
+            .'<p class="sta-muted">'.esc_html__('Reviews can be written by clients who travelled with us: enter the booking number and the e-mail of the booking.', 'seeinside-travel').'</p>'
             .'<input type="text" name="website" value="" tabindex="-1" autocomplete="off" class="sta-hp" aria-hidden="true">'
-            .'<input type="hidden" name="type" value="'.esc_attr($type).'"><input type="hidden" name="slug" value="'.esc_attr($slug).'">'
+            .'<div class="sta-row"><label class="sta-field"><span>'.esc_html__('Booking number', 'seeinside-travel').' *</span><input name="reference" required maxlength="40" placeholder="R2611-ABCDE" autocomplete="off" style="text-transform:uppercase"></label>'
+            .'<label class="sta-field"><span>'.esc_html__('E-mail of the booking', 'seeinside-travel').' *</span><input type="email" name="email" required maxlength="150" autocomplete="email"></label></div>'
+            .'<label class="sta-check sta-consent"><input type="checkbox" required> <span>'.esc_html__('I am not a robot', 'seeinside-travel').'</span></label>'
+            .'<div data-sta-msg></div><button type="submit" class="sta-btn">'.esc_html__('Continue', 'seeinside-travel').'</button>'
+            .'</form>'
+            // step 2
+            .'<form class="sta-form" data-sta-rv-2 novalidate hidden>'
+            .'<div class="sta-rv-about"><small>'.esc_html__('Review for', 'seeinside-travel').'</small><b data-sta-rv-item></b><span data-sta-rv-ref></span></div>'
             .'<div class="sta-field"><span>'.esc_html__('Your rating', 'seeinside-travel').' *</span><div class="sta-rate">'.sprintf($stars, $uid).'</div></div>'
             .'<div class="sta-row">'
             .'<label class="sta-field"><span>'.esc_html__('Your name', 'seeinside-travel').' *</span><input name="name" required maxlength="120" autocomplete="name"></label>'
-            .'<label class="sta-field"><span>'.esc_html__('E-mail', 'seeinside-travel').' *</span><input type="email" name="email" required maxlength="150" autocomplete="email"><small class="sta-muted">'.esc_html__('Not published.', 'seeinside-travel').'</small></label>'
             .'<label class="sta-field"><span>'.esc_html__('City', 'seeinside-travel').'</span><input name="city" maxlength="100" autocomplete="address-level2"></label>'
             .'<label class="sta-field"><span>'.esc_html__('When did you travel?', 'seeinside-travel').'</span><input name="trip_date" maxlength="40" placeholder="'.esc_attr__('e.g. August 2026', 'seeinside-travel').'"></label>'
-            .'<label class="sta-field sta-col-2"><span>'.esc_html__('Title', 'seeinside-travel').'</span><input name="title" maxlength="200"></label>'
+            .'<label class="sta-field"><span>'.esc_html__('Title', 'seeinside-travel').'</span><input name="title" maxlength="200"></label>'
             .'<label class="sta-field sta-col-2"><span>'.esc_html__('Your experience', 'seeinside-travel').' *</span><textarea name="body" rows="5" required minlength="10" maxlength="5000"></textarea></label>'
             .'</div>'
             .'<p class="sta-muted">'.esc_html__('Reviews are published after the agency checks them.', 'seeinside-travel').'</p>'
-            .'<div data-sta-msg></div><button type="submit" class="sta-btn">'.esc_html__('Send review', 'seeinside-travel').'</button>'
-            .'</form>';
+            .'<div data-sta-msg></div><button type="submit" class="sta-btn">'.esc_html__('Send review', 'seeinside-travel').'</button> '
+            .'<button type="button" class="sta-btn sta-btn-ghost" data-sta-rv-back>'.esc_html__('Other booking', 'seeinside-travel').'</button>'
+            .'</form></div>';
+    }
+
+    /** "Хотел Акрополис 3*" – the offer of the review (own record or the label of a booking-system hotel) */
+    public static function item_title(array $r): string
+    {
+        return (string) (sta_t($r['item']['title'] ?? null) ?: ($r['item_label'] ?? ''));
+    }
+
+    /** Item title as a link to its page on this site (when there is one) */
+    protected static function item_link(array $r, string $title): string
+    {
+        if (! empty($r['item']['type'])) {
+            $postId = sta_find_post(STA_Schema::post_type($r['item']['type']) ?: '', (int) $r['item']['id']);
+            if ($postId && get_post_status($postId) === 'publish') {
+                return '<a href="'.esc_url(get_permalink($postId)).'">'.esc_html($title).'</a>';
+            }
+        }
+
+        return esc_html($title);
+    }
+
+    public static function verified_badge(array $r): string
+    {
+        return ! empty($r['verified']) ? '<span class="sta-review-verified" title="'.esc_attr__('Written with a booking number', 'seeinside-travel').'">✓ '.esc_html__('Verified trip', 'seeinside-travel').'</span>' : '';
     }
 
     /** [sta_reviews type="tour|event|accommodation|visa|agency" slug="" limit="6" layout="grid|list|slider" form="no" featured="no" title=""] */
@@ -288,6 +329,24 @@ class STA_Reviews
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).'</script>'."\n";
     }
 
+    public static function r_verify(WP_REST_Request $r): WP_REST_Response
+    {
+        $p = $r->get_json_params() ?: $r->get_body_params();
+        $fake = new WP_REST_Request('POST');
+        foreach (['website', 'sta_ts'] as $k) {
+            $fake->set_param($k, $p[$k] ?? null);
+        }
+        if ($blocked = STA_Frontend::check($fake)) {
+            return $blocked;
+        }
+
+        return STA_Frontend::pass(STA_Api::post('reviews/verify', [
+            'reference' => sanitize_text_field((string) ($p['reference'] ?? '')),
+            'email' => sanitize_email((string) ($p['email'] ?? '')),
+            'locale' => sta_lang(),
+        ]));
+    }
+
     public static function r_review(WP_REST_Request $r): WP_REST_Response
     {
         $p = $r->get_json_params() ?: $r->get_body_params();
@@ -299,7 +358,7 @@ class STA_Reviews
             return $blocked;
         }
         $data = ['locale' => sta_lang(), 'page_url' => esc_url_raw(wp_get_referer() ?: home_url('/'))];
-        foreach (['type', 'slug', 'name', 'email', 'city', 'title', 'body', 'trip_date'] as $k) {
+        foreach (['reference', 'email', 'name', 'city', 'title', 'body', 'trip_date'] as $k) {
             if (isset($p[$k]) && $p[$k] !== '') {
                 $data[$k] = $k === 'body' ? sanitize_textarea_field((string) $p[$k]) : sanitize_text_field((string) $p[$k]);
             }

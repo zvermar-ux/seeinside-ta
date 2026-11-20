@@ -298,6 +298,14 @@ button.sta-gs-nav { position: absolute !important; top: 50%; transform: translat
 .sta-center { text-align: center; margin-top: 1rem; }
 .sta-review-form { margin-top: 1.25rem; }
 .sta-review-form.is-collapsed { display: none; }
+.sta-review-form [hidden] { display: none !important; }
+.sta-rv-about { display: grid; gap: 2px; padding: .8rem 1rem; margin-bottom: 1rem; border-radius: 12px; background: color-mix(in srgb, var(--sta-primary, #0e7490) 7%, #fff); border-left: 4px solid var(--sta-primary, #0e7490); }
+.sta-rv-about small { color: var(--sta-muted, #64748b); font-size: .8rem; }
+.sta-rv-about b { font-size: 1.05rem; }
+.sta-rv-about span { color: var(--sta-muted, #64748b); font-size: .85rem; }
+.sta-review-verified { display: inline-block; margin: .3rem 0; font-size: .75rem; font-weight: 600; color: #15803d; background: #dcfce7; border-radius: 99px; padding: .15rem .6rem; }
+.sta-review-verified { align-self: flex-start; justify-self: start; width: max-content; max-width: 100%; }
+.sta-tm-who small a { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); }
 .sta-rate { display: inline-flex !important; flex-direction: row-reverse; justify-content: flex-end; gap: .15rem; width: auto !important; }
 .sta-rate input { position: absolute; opacity: 0; pointer-events: none; }
 .sta-form .sta-rate label, .sta-rate label { display: inline-block !important; width: auto !important; margin: 0 !important; padding: 0 .05rem !important; font-size: 1.9rem; line-height: 1; color: #d6dbe1; cursor: pointer; transition: color .15s, transform .15s; }

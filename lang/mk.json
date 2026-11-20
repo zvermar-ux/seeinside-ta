@@ -2162,5 +2162,10 @@
     "Their story": "Нивната приказна",
     "Up to 5 – otherwise the newest ones.": "До 5 – инаку најновите.",
     "When": "Кога",
-    "Where they travelled / stayed": "Каде патувале / престојувале"
+    "Where they travelled / stayed": "Каде патувале / престојувале",
+    "On the homepage": "На насловна",
+    "Shown in [sta_reviews featured=\"yes\"] and first everywhere.": "Се прикажува во [sta_reviews featured=\"yes\"] и прва насекаде.",
+    "Verified trip": "Потврдено патување",
+    "This booking was cancelled – a review can be written only for a trip that took place.": "Оваа резервација е откажана – рецензија може да се напише само за патување што се реализирало.",
+    "You already wrote a review for this booking – thank you!": "Веќе напишавте рецензија за оваа резервација – ви благодариме!"
 }

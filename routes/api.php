@@ -26,7 +26,8 @@ Route::prefix('public/{site}')->middleware([\App\Http\Middleware\AuthenticatePub
     Route::post('visa-applications', [BookingController::class, 'visaApplication'])->middleware(\App\Http\Middleware\AgencyModule::class.':visas');
     Route::get('bookings/{reference}', [BookingController::class, 'status']);
     Route::get('visa-applications/{reference}', [BookingController::class, 'visaStatus']);
-    Route::post('reviews', [ReviewController::class, 'store']);
+    Route::post('reviews/verify', [ReviewController::class, 'verify'])->middleware('throttle:10,1');
+    Route::post('reviews', [ReviewController::class, 'store'])->middleware('throttle:10,10');
     Route::post('photo-stories/verify', [\App\Http\Controllers\Api\PhotoStoryController::class, 'verify'])->middleware('throttle:10,1');
     Route::post('photo-stories', [\App\Http\Controllers\Api\PhotoStoryController::class, 'store'])->middleware('throttle:5,10');
 
@@ -62,6 +63,7 @@ Route::middleware([AuthenticateApiClient::class, 'throttle:website'])->group(fun
     Route::post('photo-stories/verify', [\App\Http\Controllers\Api\PhotoStoryController::class, 'verify'])->middleware('throttle:website-forms');
     Route::post('photo-stories', [\App\Http\Controllers\Api\PhotoStoryController::class, 'store'])->middleware('throttle:website-forms');
     Route::get('chat', [CatalogController::class, 'chat']);
+    Route::post('reviews/verify', [ReviewController::class, 'verify'])->middleware('throttle:website-forms');
     Route::post('reviews', [ReviewController::class, 'store'])->middleware('throttle:website-forms');
     Route::get('bookings/{reference}', [BookingController::class, 'status'])->middleware('throttle:website-forms');
     Route::get('visa-applications/{reference}', [BookingController::class, 'visaStatus'])->middleware('throttle:website-forms');

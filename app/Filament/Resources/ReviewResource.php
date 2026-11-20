@@ -107,7 +107,13 @@ class ReviewResource extends Resource
                     ->colors([Review::PENDING => 'warning', Review::APPROVED => 'success', Review::REJECTED => 'danger'])
                     ->icons([Review::PENDING => 'heroicon-o-clock', Review::APPROVED => 'heroicon-o-check-circle', Review::REJECTED => 'heroicon-o-x-circle'])
                     ->columnSpan(2),
-                Forms\Components\Toggle::make('is_featured')->label(__('Featured (shown first)'))->inline(false),
+                Forms\Components\Toggle::make('is_featured')->label(__('On the homepage'))->inline(false)
+                    ->helperText(__('Shown in [sta_reviews featured="yes"] and first everywhere.')),
+                Forms\Components\Placeholder::make('proof')->label(__('Booking'))->columnSpanFull()
+                    ->visible(fn (?Review $record) => (bool) $record?->proofReference())
+                    ->content(fn (?Review $record) => new \Illuminate\Support\HtmlString(e($record->proofReference()).($record->booking_id
+                        ? ' · <a class="text-primary-600 underline" href="'.e(BookingResource::getUrl('edit', ['record' => $record->booking_id])).'">'.e(__('Open')).'</a>' : '')
+                        .($record->verified ? ' · ✓ '.e(__('Verified trip')) : ''))),
             ]),
         ]);
     }
@@ -140,7 +146,7 @@ class ReviewResource extends Resource
     {
         return $table
             ->defaultSort('created_at', 'desc')
-            ->modifyQueryUsing(fn (Builder $query) => $query->with('reviewable'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['reviewable', 'booking', 'visaApplication']))
             ->columns([
                 Tables\Columns\TextColumn::make('rating')->label(__('Rating'))->sortable()
                     ->formatStateUsing(fn (int $state) => str_repeat('★', $state).str_repeat('☆', 5 - $state))
@@ -148,16 +154,39 @@ class ReviewResource extends Resource
                 Tables\Columns\TextColumn::make('body')->label(__('Review'))->wrap()->limit(160)->searchable(['body', 'title', 'name'])
                     ->description(fn (Review $r) => trim($r->name.($r->city ? ', '.$r->city : '').' · '.$r->created_at->format('d.m.Y')), 'above'),
                 Tables\Columns\TextColumn::make('item')->label(__('About'))->state(fn (Review $r) => $r->itemTitle() ?? __('Agency'))
-                    ->badge()->color('gray')->wrap(),
+                    ->badge()->color(fn (Review $r) => $r->reviewable_id || $r->item_label ? 'info' : 'gray')->wrap()
+                    ->description(fn (Review $r) => trim(implode(' · ', array_filter([
+                        ['tour' => __('Tour'), 'event' => __('Event'), 'accommodation' => __('Accommodation'), 'visa' => __('Visa')][$r->websiteItemType()] ?? ($r->item_label ? __('Hotel') : null),
+                        $r->proofReference(),
+                        $r->verified ? '✓ '.__('Verified trip') : null,
+                    ]))) ?: null),
                 Tables\Columns\TextColumn::make('status')->label(__('Status'))->badge()
                     ->formatStateUsing(fn (string $state) => Review::statuses()[$state] ?? $state)
                     ->color(fn (string $state) => [Review::PENDING => 'warning', Review::APPROVED => 'success', Review::REJECTED => 'danger'][$state] ?? 'gray'),
                 Tables\Columns\IconColumn::make('reply')->label(__('Reply'))->boolean()->falseIcon('heroicon-o-minus')->falseColor('gray')->state(fn (Review $r) => filled($r->reply))->toggleable(),
-                Tables\Columns\IconColumn::make('is_featured')->label(__('Featured'))->boolean()->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\ToggleColumn::make('is_featured')->label(__('Homepage'))
+                    ->disabled(fn (?Review $record) => ! $record || ! static::can('edit', $record)),
                 AgencyField::column(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->label(__('Status'))->options(Review::statuses()),
+                Tables\Filters\TernaryFilter::make('is_featured')->label(__('On the homepage')),
+                Tables\Filters\SelectFilter::make('about')->label(__('About'))
+                    ->options(['tour' => __('Tour'), 'accommodation' => __('Accommodation'), 'event' => __('Event'), 'visa' => __('Visa'), 'hotel' => __('Hotel'), 'agency' => __('Agency')])
+                    ->query(function (Builder $query, array $data) {
+                        $v = $data['value'] ?? null;
+                        if (! $v) {
+                            return $query;
+                        }
+                        if ($v === 'agency') {
+                            return $query->whereNull('reviewable_id')->whereNull('item_label');
+                        }
+                        if ($v === 'hotel') {
+                            return $query->whereNull('reviewable_id')->whereNotNull('item_label');
+                        }
+
+                        return $query->where('reviewable_type', (new (Review::TYPES[$v]))->getMorphClass());
+                    }),
                 Tables\Filters\SelectFilter::make('rating')->label(__('Rating'))->options([5 => '5', 4 => '4', 3 => '3', 2 => '2', 1 => '1']),
                 AgencyField::filter(),
             ])

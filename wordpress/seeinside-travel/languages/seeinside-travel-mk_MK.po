@@ -3855,3 +3855,18 @@ msgstr "Страна со сите фотоприказни – клик ги о
 
 msgid "Only the button \"Share your trip\" (booking number + e-mail, then the photos)"
 msgstr "Само копчето „Сподели го твоето патување“ (број на резервација + е-пошта, потоа фотографиите)"
+
+msgid "Reviews can be written by clients who travelled with us: enter the booking number and the e-mail of the booking."
+msgstr "Рецензија можат да напишат клиентите што патувале со нас: внесете го бројот на резервацијата и е-поштата од резервацијата."
+
+msgid "Review for"
+msgstr "Рецензија за"
+
+msgid "Other booking"
+msgstr "Друга резервација"
+
+msgid "Written with a booking number"
+msgstr "Напишана со број на резервација"
+
+msgid "Verified trip"
+msgstr "Потврдено патување"

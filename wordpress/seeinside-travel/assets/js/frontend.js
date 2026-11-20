@@ -91,6 +91,7 @@
       var hb = JSON.parse(opts.body || '{}'); hb.locale = C.lang; hb.message = ((hb.message || '') + '\n\n[' + C.site + ']').trim();
       return [C.direct + 'hotels/book', Object.assign({}, opts, { body: JSON.stringify(hb), headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })];
     }
+    if (name === 'review/verify') { var vv = JSON.parse(opts.body || '{}'); vv.locale = C.lang; return [C.direct + 'reviews/verify', Object.assign({}, opts, { body: JSON.stringify(vv), headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })]; }
     if (name === 'photo-story/verify') { var pv = JSON.parse(opts.body || '{}'); return [C.direct + 'photo-stories/verify', Object.assign({}, opts, { body: JSON.stringify(pv), headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })]; }
     if (name === 'photo-story') { opts.body.append('locale', C.lang); return [C.direct + 'photo-stories', Object.assign({}, opts, { headers: { Accept: 'application/json' } })]; }
     if (name === 'hotels/hotel') { var hid = q.get('id'); q.delete('id'); return [C.direct + 'hotels/' + encodeURIComponent(hid) + '?' + q, { headers: { Accept: 'application/json' } }]; }
@@ -671,20 +672,39 @@
   });
 
   /* ---------- reviews ---------- */
-  $$('[data-sta-review]').forEach(function (form) {
-    var opener = form.parentNode && $('[data-sta-review-open]', form.parentNode);
-    opener && opener.addEventListener('click', function () { form.classList.remove('is-collapsed'); form.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-    form.addEventListener('submit', function (e) {
+  // two steps: 1) booking number + e-mail  2) the review of exactly that tour / apartment / event / visa
+  $$('[data-sta-review]').forEach(function (box) {
+    var f1 = $('[data-sta-rv-1]', box), f2 = $('[data-sta-rv-2]', box), proof = {}, opened = 0;
+    var opener = box.parentNode && $('[data-sta-review-open]', box.parentNode);
+    opener && opener.addEventListener('click', function () { box.classList.remove('is-collapsed'); box.scrollIntoView({ behavior: 'smooth', block: 'start' }); var r = $('[name="reference"]', f1); r && setTimeout(function () { r.focus(); }, 300); });
+    box.addEventListener('focusin', function () { if (!opened) opened = Date.now(); });
+    f1.addEventListener('submit', function (e) {
+      e.preventDefault(); if (!validate(f1)) return;
+      var btn = $('[type=submit]', f1), label = btn.textContent; btn.disabled = true; btn.textContent = T.sending;
+      proof = { reference: $('[name="reference"]', f1).value.trim().toUpperCase(), email: $('[name="email"]', f1).value.trim() };
+      api('review/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ website: $('[name="website"]', f1).value, sta_ts: opened || started }, proof)) }).then(function (r) {
+        if (!r.ok) { msg(f1, errors(r.body), false); return; }
+        var d = r.body.data || {};
+        $('[data-sta-rv-item]', f2).textContent = d.item || '—';
+        $('[data-sta-rv-ref]', f2).textContent = proof.reference + (d.trip_date ? ' · ' + d.trip_date : '');
+        if (!$('[name="name"]', f2).value) $('[name="name"]', f2).value = d.name || '';
+        if (!$('[name="trip_date"]', f2).value) $('[name="trip_date"]', f2).value = d.trip_date || '';
+        var mb = $('[data-sta-msg]', f1); if (mb) { mb.className = ''; mb.innerHTML = ''; } f1.hidden = true; f2.hidden = false;
+        var star = $('.sta-rate input', f2); star && star.focus();
+      }).catch(function () { msg(f1, esc(T.error), false); }).then(function () { btn.disabled = false; btn.textContent = label; });
+    });
+    $('[data-sta-rv-back]', f2).addEventListener('click', function () { f2.hidden = true; f1.hidden = false; });
+    f2.addEventListener('submit', function (e) {
       e.preventDefault();
-      if (!$('[name="rating"]:checked', form)) { msg(form, esc(T.chooseRating), false); return; }
-      if (!validate(form)) return;
-      var data = {}; new FormData(form).forEach(function (v, k) { data[k] = v; });
-      data.rating = +data.rating; data.sta_ts = started;
-      var btn = $('[type=submit]', form), label = btn.textContent; btn.disabled = true; btn.textContent = T.sending;
+      if (!$('[name="rating"]:checked', f2)) { msg(f2, esc(T.chooseRating), false); return; }
+      if (!validate(f2)) return;
+      var data = {}; new FormData(f2).forEach(function (v, k) { data[k] = v; });
+      data.rating = +data.rating; data.sta_ts = opened || started; data.reference = proof.reference; data.email = proof.email;
+      var btn = $('[type=submit]', f2), label = btn.textContent; btn.disabled = true; btn.textContent = T.sending;
       api('review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function (r) {
-        if (r.ok) { form.reset(); $$('.sta-field, .sta-row, .sta-rate', form).forEach(function (el) { el.style.display = 'none'; }); btn.style.display = 'none'; msg(form, esc(T.reviewThanks), true); }
-        else msg(form, errors(r.body), false);
-      }).catch(function () { msg(form, esc(T.error), false); }).then(function () { btn.disabled = false; btn.textContent = label; });
+        if (r.ok) { f2.reset(); $$('.sta-field, .sta-row, .sta-rate, .sta-muted, [data-sta-rv-back]', f2).forEach(function (el) { el.style.display = 'none'; }); btn.style.display = 'none'; msg(f2, esc(T.reviewThanks), true); }
+        else msg(f2, errors(r.body), false);
+      }).catch(function () { msg(f2, esc(T.error), false); }).then(function () { btn.disabled = false; btn.textContent = label; });
     });
   });
   $$('[data-sta-reviews-more]').forEach(function (b) {

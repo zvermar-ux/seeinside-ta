@@ -29,7 +29,7 @@ class Review extends Model
 
     protected function casts(): array
     {
-        return ['rating' => 'integer', 'is_featured' => 'boolean', 'approved_at' => 'datetime'];
+        return ['rating' => 'integer', 'is_featured' => 'boolean', 'verified' => 'boolean', 'approved_at' => 'datetime'];
     }
 
     protected static function booted(): void
@@ -46,6 +46,22 @@ class Review extends Model
     public function reviewable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function booking(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Booking::class)->withoutGlobalScopes();
+    }
+
+    public function visaApplication(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(VisaApplication::class)->withoutGlobalScopes();
+    }
+
+    /** Booking / visa application number the review was written with */
+    public function proofReference(): ?string
+    {
+        return $this->booking?->reference ?? $this->visaApplication?->reference;
     }
 
     public function scopeApproved(Builder $q): Builder
@@ -72,7 +88,7 @@ class Review extends Model
     {
         $m = $this->reviewable;
         if (! $m) {
-            return null;
+            return $this->item_label ?: null;
         }
         $v = $m->title ?? $m->name ?? null;
 
