@@ -322,7 +322,14 @@ class HotelService
                     if ((int) $cid !== $c->id || ! $code) {
                         continue;
                     }
-                    $query['destination'] = $code;
+                    // only the hotels imported in the app (and not hidden) – asked by their codes, not the whole destination
+                    $codes = SupplierHotel::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('destination_code', $code)
+                        ->where('is_active', true)->orderByDesc('is_featured')->orderByDesc('ranking')->limit(2000)->pluck('code')->all();
+                    if (! $codes) {
+                        continue;
+                    }
+                    $query['hotels'] = $codes;
+                    $query['max_hotels'] = min(2000, count($codes));
                 }
                 try {
                     $found = self::driver($c)->search($c, $query);
@@ -336,8 +343,8 @@ class HotelService
                     ->whereIn('code', array_column($found, 'code'))->get()->keyBy('code');
                 foreach ($found as $h) {
                     $local = $content[$h['code']] ?? null;
-                    if ($local && ! $local->is_active) {
-                        continue;
+                    if (! $local || ! $local->is_active) {
+                        continue;   // not imported in the app, or hidden
                     }
                     foreach ($h['rooms'] as &$room) {
                         foreach ($room['rates'] as &$rate) {
