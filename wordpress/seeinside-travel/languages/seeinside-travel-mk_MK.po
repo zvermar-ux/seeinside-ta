@@ -3870,3 +3870,21 @@ msgstr "Напишана со број на резервација"
 
 msgid "Verified trip"
 msgstr "Потврдено патување"
+
+msgid "Update main menu (add only new)"
+msgstr "Ажурирај го главното мени (додај само нови)"
+
+msgid "Your arrangement of \"SeeInside – main menu\" stays; only new groups, destinations and types are added, and hotel areas without hotels are removed. Continue?"
+msgstr "Твојот распоред на „SeeInside – главно мени“ останува; се додаваат само нови групи, дестинации и типови, а хотелските области без хотели се бришат. Продолжи?"
+
+msgid "Create the menu again from the beginning"
+msgstr "Креирај го менито одново од почеток"
+
+msgid "ALL changes you made in \"SeeInside – main menu\" (order, names, moved or deleted items) are lost and it is created again. Continue?"
+msgstr "СИТЕ твои промени во „SeeInside – главно мени“ (редослед, имиња, преместени или избришани ставки) ќе се изгубат и менито ќе се креира одново. Продолжи?"
+
+msgid "Update keeps the order, names and places of the items as you arranged them in Appearance → Menus, and items you deleted do not come back. New groups, destinations, hotel regions and types are added at the end of their parent – move them where you want. Run it after adding new offers or importing hotels."
+msgstr "Ажурирањето ги задржува редоследот, имињата и местата на ставките како што ги наредивте во Изглед → Менија, а избришаните ставки не се враќаат. Новите групи, дестинации, хотелски региони и типови се додаваат на крајот од нивниот родител – преместете ги каде сакате. Користете го по додавање нови понуди или увоз на хотели."
+
+msgid "Menu \"%1$s\": %2$d new, %3$d removed, %4$d items in total. Check it in Appearance → Menus."
+msgstr "Мени „%1$s“: %2$d нови, %3$d отстранети, вкупно %4$d ставки. Проверете го во Изглед → Менија."

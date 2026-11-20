@@ -269,10 +269,13 @@ class STA_Site
     /* ======================== main menu ======================== */
 
     /**
-     * Creates (or rebuilds) the menu "SeeInside – главно мени":
-     * Аранжмани → groups, Сместување → destinations (with sub-destinations), Настани, Визи, other offers, Last minute, Авио карти, Контакт.
+     * Menu "SeeInside – главно мени": Аранжмани → groups, Хотели → countries/regions/areas, Апартмани → types/destinations, Настани, Визи, other offers, Last minute, Авио карти.
+     *
+     * $fresh = false (the button "Update"): the menu as you arranged it stays – order, names, moved and deleted items –
+     *   only items that never existed are added (under the right parent); hotel/destination links that have no hotels any more are removed.
+     * $fresh = true: everything is created again from the beginning.
      */
-    public static function build_menu(): array
+    public static function build_menu(bool $fresh = false): array
     {
         $name = __('SeeInside – main menu', 'seeinside-travel');
         $menu = wp_get_nav_menu_object($name);
@@ -280,14 +283,40 @@ class STA_Site
         if (! $menuId || is_wp_error($menuId)) {
             return ['error' => __('The menu could not be created.', 'seeinside-travel')];
         }
-        foreach ((array) wp_get_nav_menu_items($menuId) as $it) {
-            wp_delete_post($it->ID, true);
+        $existing = (array) wp_get_nav_menu_items($menuId, ['post_status' => 'any']);
+        $histKey = 'sta_menu_keys_'.$menuId;
+        $history = $fresh ? [] : array_flip((array) get_option($histKey, []));
+        if ($fresh) {
+            foreach ($existing as $it) {
+                wp_delete_post($it->ID, true);
+            }
+            $existing = [];
         }
+        $keyOf = fn (string $type, string $object, int $oid, string $url) => $type === 'custom' ? 'u:'.self::menu_url_key($url) : $type.':'.$object.':'.$oid;
+        $byKey = [];
+        foreach ($existing as $it) {
+            $byKey[$keyOf((string) $it->type, (string) $it->object, (int) $it->object_id, (string) $it->url)] ??= (int) $it->ID;
+        }
+        $produced = [];
+        $added = 0;
         $pages = get_option('sta_pages', []);
-        $add = function (string $title, array $args, int $parent = 0) use ($menuId): int {
+        // -1 = skip (deleted by you earlier) – its sub-items are skipped too
+        $add = function (string $title, array $args, int $parent = 0) use ($menuId, $keyOf, &$byKey, $history, &$produced, &$added): int {
+            $k = $keyOf((string) ($args['menu-item-type'] ?? 'custom'), (string) ($args['menu-item-object'] ?? ''), (int) ($args['menu-item-object-id'] ?? 0), (string) ($args['menu-item-url'] ?? ''));
+            $produced[$k] = true;
+            if (isset($byKey[$k])) {
+                return $byKey[$k];          // already in the menu – stays where and how you put it
+            }
+            if ($parent < 0 || isset($history[$k])) {
+                return -1;                  // you removed it (or its parent) – not added again
+            }
             $id = wp_update_nav_menu_item($menuId, 0, array_merge(['menu-item-title' => $title, 'menu-item-status' => 'publish', 'menu-item-parent-id' => $parent], $args));
+            if (is_wp_error($id)) {
+                return -1;
+            }
+            $added++;
 
-            return is_wp_error($id) ? 0 : (int) $id;
+            return $byKey[$k] = (int) $id;
         };
         $page = fn ($slug) => ! empty($pages[$slug]) && get_post_status($pages[$slug]) === 'publish' ? (int) $pages[$slug] : 0;
         $link = fn ($slug, $pt) => $page($slug) ? ['menu-item-type' => 'post_type', 'menu-item-object' => 'page', 'menu-item-object-id' => $page($slug)]
@@ -418,9 +447,23 @@ class STA_Site
         if ($page('avio-karti')) {
             $add(__('Flights', 'seeinside-travel'), $link('avio-karti', ''));
         }
-        if ($page('kontakt')) {
-            $add(__('Contact', 'seeinside-travel'), $link('kontakt', ''));
+        // hotel / destination links that have no hotels any more (e.g. areas without imported hotels) go away
+        $removed = 0;
+        if (! $fresh) {
+            foreach ($existing as $it) {
+                if ($it->type !== 'custom') {
+                    continue;
+                }
+                $k = 'u:'.self::menu_url_key((string) $it->url);
+                parse_str((string) wp_parse_url((string) $it->url, PHP_URL_QUERY), $qs);
+                $hotelLink = (bool) array_intersect(array_keys($qs), ['destination', 'zone', 'country']);
+                if (! isset($produced[$k]) && (isset($history[$k]) || (! $history && $hotelLink)) && ($hotelLink || array_intersect(array_keys($qs), ['f_dest', 'f_place']))) {
+                    wp_delete_post($it->ID, true);
+                    $removed++;
+                }
+            }
         }
+        update_option($histKey, array_keys($history + $produced), false);
 
         // put it in the theme's main location when that one is empty
         $locs = get_nav_menu_locations();
@@ -431,6 +474,16 @@ class STA_Site
             set_theme_mod('nav_menu_locations', $locs);
         }
 
-        return ['id' => $menuId, 'name' => $name, 'items' => count((array) wp_get_nav_menu_items($menuId))];
+        return ['id' => $menuId, 'name' => $name, 'items' => count((array) wp_get_nav_menu_items($menuId)), 'added' => $added, 'removed' => $removed];
+    }
+
+    /** Same link = same item, whatever the domain, order of the parameters or the last slash */
+    protected static function menu_url_key(string $url): string
+    {
+        $path = untrailingslashit((string) wp_parse_url($url, PHP_URL_PATH));
+        parse_str((string) wp_parse_url($url, PHP_URL_QUERY), $q);
+        ksort($q);
+
+        return strtolower(rawurldecode($path)).($q ? '?'.http_build_query($q) : '');
     }
 }

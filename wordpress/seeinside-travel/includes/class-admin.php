@@ -186,8 +186,9 @@ class STA_Admin
                 .' '.self::button('restore_pages', __('Undo on the 4 pages', 'seeinside-travel'), 'button-link', __('The pages Organized tours, Hotels, Apartments and Events go back to how they were. Continue?', 'seeinside-travel')).'<br><span class="description">'
                 .esc_html__('All lists then use one template: "Page: lists – SeeInside" (Templates → Theme Builder → Archive). Changes there show on every destination, group and type at once; click here again to copy them to the 4 pages. A page photo: the featured image of the page, or "Background photo" in its header. Other pages are not changed.', 'seeinside-travel').'</span></p>';
         }
-        echo '<p>'.self::button('menu', __('Create main menu (groups & destinations)', 'seeinside-travel'), 'button', __('The menu "SeeInside – main menu" is rebuilt from the groups, destinations and types. Continue?', 'seeinside-travel')).' <span class="description">'
-            .esc_html__('Organized tours → groups, Accommodation → types and destinations, Events, Visas, Last minute, Flights, Contact. Run it again after adding new groups or destinations.', 'seeinside-travel').'</span></p></div>';
+        echo '<p>'.self::button('menu', __('Update main menu (add only new)', 'seeinside-travel'), 'button button-primary', __('Your arrangement of "SeeInside – main menu" stays; only new groups, destinations and types are added, and hotel areas without hotels are removed. Continue?', 'seeinside-travel'))
+            .' '.self::button('menu_fresh', __('Create the menu again from the beginning', 'seeinside-travel'), 'button-link', __('ALL changes you made in "SeeInside – main menu" (order, names, moved or deleted items) are lost and it is created again. Continue?', 'seeinside-travel')).'<br><span class="description">'
+            .esc_html__('Update keeps the order, names and places of the items as you arranged them in Appearance → Menus, and items you deleted do not come back. New groups, destinations, hotel regions and types are added at the end of their parent – move them where you want. Run it after adding new offers or importing hotels.', 'seeinside-travel').'</span></p></div>';
 
         $layout = $s['layout_mode'] ?? 'auto';
         echo '<div class="sta-card"><h2>'.esc_html__('Layout', 'seeinside-travel').'</h2><table class="form-table">';
@@ -463,9 +464,10 @@ class STA_Admin
                 self::back('display', isset($r['error']) ? $r['error'] : sprintf(__('Templates ready: %s', 'seeinside-travel'), $r['made'] ? implode(', ', $r['made']) : __('already existed', 'seeinside-travel')), ! isset($r['error']));
                 // no break
             case 'menu':
+            case 'menu_fresh':
                 STA_Templates::create_pages();
-                $r = STA_Site::build_menu();
-                self::back('display', isset($r['error']) ? $r['error'] : sprintf(__('Menu "%1$s" ready (%2$d items). Check it in Appearance → Menus.', 'seeinside-travel'), $r['name'], $r['items']), ! isset($r['error']));
+                $r = STA_Site::build_menu($_GET['do'] === 'menu_fresh');
+                self::back('display', isset($r['error']) ? $r['error'] : sprintf(__('Menu "%1$s": %2$d new, %3$d removed, %4$d items in total. Check it in Appearance → Menus.', 'seeinside-travel'), $r['name'], $r['added'], $r['removed'], $r['items']), ! isset($r['error']));
                 // no break
             case 'unify':
                 STA_Templates::create_pages();
