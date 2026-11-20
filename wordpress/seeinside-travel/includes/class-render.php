@@ -464,15 +464,17 @@ class STA_Render
         $name = sta_t($r['name']);
         $h = '<dialog class="sta-dialog sta-room-dlg" data-sta-room-dlg="'.$rid.'" aria-label="'.esc_attr($name).'"><button type="button" class="sta-dialog-close" data-close aria-label="'.esc_attr__('Close', 'seeinside-travel').'">×</button>';
         if ($imgs) {
-            $h .= '<div class="sta-rg" data-sta-rg><div class="sta-rg-main"><img src="'.esc_url($imgs[0]).'" alt="'.esc_attr($name).'" data-sta-rg-img>'
-                .(count($imgs) > 1 ? '<button type="button" class="sta-rg-nav sta-rg-prev" data-sta-rg-step="-1" aria-label="‹">‹</button><button type="button" class="sta-rg-nav sta-rg-next" data-sta-rg-step="1" aria-label="›">›</button><span class="sta-rg-n" data-sta-rg-n>1 / '.count($imgs).'</span>' : '')
-                .'</div>';
-            if (count($imgs) > 1) {
-                $h .= '<div class="sta-rg-thumbs">';
-                foreach ($imgs as $i => $u) {
-                    $h .= '<button type="button" data-sta-rg-i="'.$i.'"'.($i === 0 ? ' class="is-on"' : '').'><img src="'.esc_url($u).'" alt="" loading="lazy"></button>';
-                }
-                $h .= '</div>';
+            // main photo big, then the gallery of the room next to it; a click opens all photos in full size
+            $n = count($imgs);
+            $show = array_slice($imgs, 0, 5);
+            $gal = ['title' => $name, 'date' => '', 'photos' => array_map(fn ($u) => ['url' => $u], $imgs)];
+            $h .= '<div class="sta-rc n'.count($show).'" data-sta-ps-gallery="'.esc_attr(wp_json_encode($gal)).'">';
+            foreach ($show as $i => $u) {
+                $more = $i === count($show) - 1 && $n > count($show) ? '<i>+'.($n - count($show)).'</i>' : '';
+                $h .= '<button type="button" class="sta-rc-t t'.$i.'" data-sta-ps-open="'.$i.'" aria-label="'.esc_attr(sprintf(__('Photo %1$d of %2$d', 'seeinside-travel'), $i + 1, $n)).'"><img src="'.esc_url($u).'" alt="'.esc_attr($name).'"'.($i ? ' loading="lazy"' : '').'>'.$more.'</button>';
+            }
+            if ($n > 1) {
+                $h .= '<button type="button" class="sta-rc-all" data-sta-ps-open="0">'.sta_icon('camera').' '.esc_html(sprintf(__('All %d photos', 'seeinside-travel'), $n)).'</button>';
             }
             $h .= '</div>';
         }

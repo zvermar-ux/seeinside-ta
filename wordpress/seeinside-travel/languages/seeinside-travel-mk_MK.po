@@ -3888,3 +3888,6 @@ msgstr "Ажурирањето ги задржува редоследот, им�
 
 msgid "Menu \"%1$s\": %2$d new, %3$d removed, %4$d items in total. Check it in Appearance → Menus."
 msgstr "Мени „%1$s“: %2$d нови, %3$d отстранети, вкупно %4$d ставки. Проверете го во Изглед → Менија."
+
+msgid "Photo %1$d of %2$d"
+msgstr "Фотографија %1$d од %2$d"

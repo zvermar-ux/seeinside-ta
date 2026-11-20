@@ -1201,7 +1201,8 @@
   function psGallery(data, i) {
     psData = data; psI = i || 0;
     if (!psBox) {
-      psBox = document.createElement('div'); psBox.className = 'sta-psg'; psBox.setAttribute('role', 'dialog');
+      // a <dialog> in the top layer, so it opens also above another open window (room details)
+      psBox = document.createElement('dialog'); psBox.className = 'sta-psg';
       psBox.innerHTML = '<div class="sta-psg-top"><span class="sta-psg-cap"></span><span class="sta-psg-n"></span><button type="button" class="sta-psg-x" aria-label="×">×</button></div>'
         + '<button type="button" class="sta-psg-prev" aria-label="‹">‹</button><figure><img class="sta-psg-img" alt=""></figure><button type="button" class="sta-psg-next" aria-label="›">›</button>'
         + '<div class="sta-psg-th"></div>';
@@ -1214,19 +1215,23 @@
       });
       psBox.addEventListener('touchstart', function (e) { psX = e.touches[0].clientX; }, { passive: true });
       psBox.addEventListener('touchend', function (e) { if (psX === null) return; var dx = e.changedTouches[0].clientX - psX; psX = null; if (Math.abs(dx) > 40) { psI = (psI + (dx < 0 ? 1 : -1) + psData.photos.length) % psData.photos.length; psShow(); } });
+      psBox.addEventListener('cancel', function (e) { e.preventDefault(); psClose(); });
       document.addEventListener('keydown', function (e) {
-        if (!psBox || psBox.hidden) return;
-        if (e.key === 'Escape') psClose();
+        if (!psBox || !psBox.open) return;
         if (e.key === 'ArrowRight') { psI = (psI + 1) % psData.photos.length; psShow(); }
         if (e.key === 'ArrowLeft') { psI = (psI - 1 + psData.photos.length) % psData.photos.length; psShow(); }
       });
     }
     $('.sta-psg-cap', psBox).innerHTML = '<b>' + esc(data.title) + '</b>' + (data.date ? ' · ' + esc(data.date) : '');
     $('.sta-psg-th', psBox).innerHTML = data.photos.length > 1 ? data.photos.map(function (p, k) { return '<button type="button" data-i="' + k + '"><img src="' + esc(p.url) + '" alt="" loading="lazy"></button>'; }).join('') : '';
-    psBox.hidden = false; document.documentElement.classList.add('sta-qs-on');
+    if (!psBox.open) { try { psBox.showModal(); } catch (err) { psBox.setAttribute('open', ''); } }
+    document.documentElement.classList.add('sta-qs-on');
     psShow();
   }
-  function psClose() { if (psBox) psBox.hidden = true; document.documentElement.classList.remove('sta-qs-on'); }
+  function psClose() {
+    if (psBox && psBox.open) { try { psBox.close(); } catch (err) { psBox.removeAttribute('open'); } }
+    if (!document.querySelector('dialog[open]')) document.documentElement.classList.remove('sta-qs-on');
+  }
   document.addEventListener('click', function (e) {
     var o = e.target.closest('[data-sta-ps-open]'); if (!o) return;
     var g = o.closest('[data-sta-ps-gallery]'); if (!g) return;
