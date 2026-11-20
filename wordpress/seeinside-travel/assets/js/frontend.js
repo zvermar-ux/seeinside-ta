@@ -548,6 +548,7 @@
       if (!dl) return;
       e.preventDefault();
       dl.showModal ? dl.showModal() : dl.setAttribute('open', '');
+      document.documentElement.classList.add('sta-noscroll');
       var c = $('[data-sta-calendar][data-lazy]', dl); if (c) initCal(c);
       return;
     }
@@ -723,7 +724,10 @@
     if (c) { c.closest('dialog').close(); return; }
     if (e.target.tagName === 'DIALOG' && e.target.classList.contains('sta-dialog')) e.target.close();   // click on the backdrop
   });
-  $$('dialog.sta-dialog').forEach(function (d) { d.addEventListener('close', function () { document.documentElement.classList.remove('sta-noscroll'); }); });
+  // when the last window closes (room, gallery, visa card, search…) the page scrolls again
+  document.addEventListener('close', function () {
+    setTimeout(function () { if (!document.querySelector('dialog[open]')) document.documentElement.classList.remove('sta-noscroll', 'sta-qs-on'); }, 0);
+  }, true);
 
   /* ---------- hotel finder: filters on the left, free places for the dates ---------- */
   $$('[data-sta-finder]').forEach(function (box) {
