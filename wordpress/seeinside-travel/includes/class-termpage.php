@@ -160,7 +160,7 @@ class STA_Term_Page
 
     public static function hotels_header(array $a): string
     {
-        $a += ['height' => 340, 'image' => '', 'image_mode' => 'fallback', 'kind' => '1', 'crumbs' => '1', 'count' => '1', 'label' => ''];
+        $a += ['height' => 340, 'image' => '', 'image_mode' => 'fallback', 'kind' => '1', 'crumbs' => '1', 'count' => '1', 'label' => '', 'title' => ''];
         $country = strtoupper(sanitize_text_field(wp_unslash($_GET['country'] ?? '')));
         $destId = sanitize_text_field(wp_unslash($_GET['destination'] ?? ''));
         $zone = sanitize_text_field(rawurldecode(wp_unslash($_GET['zone'] ?? '')));
@@ -170,13 +170,14 @@ class STA_Term_Page
         if ($country === '' && $destId === '' && $editing && $all) {
             $destId = (string) ($all[0]['id'] ?? '');
         }
-        if ($country === '' && $destId === '') {
-            return '';
-        }
         $base = STA_Hotels::page_url();
         $crumbs = [];
         $img = '';
-        if ($destId !== '') {
+        if ($country === '' && $destId === '') {
+            // the hotels page itself: all hotels
+            $title = (string) ($a['title'] ?? '') ?: __('Hotels', 'seeinside-travel');
+            $n = array_sum(array_map(fn ($x) => (int) ($x['hotels'] ?? 0), $all));
+        } elseif ($destId !== '') {
             $d = null;
             foreach ($all as $x) {
                 if ((string) ($x['id'] ?? '') === $destId) {
@@ -185,7 +186,9 @@ class STA_Term_Page
                 }
             }
             if (! $d) {
-                return '';
+                $title = __('Hotels', 'seeinside-travel');
+                $n = 0;
+                $d = ['name' => $title, 'hotels' => 0];
             }
             if (! empty($d['country_code'])) {
                 $crumbs[] = '<a href="'.esc_url(add_query_arg('country', $d['country_code'], $base)).'">'.esc_html($d['country'] ?? $d['country_code']).'</a>';
@@ -206,10 +209,7 @@ class STA_Term_Page
             }
         } else {
             $list = array_values(array_filter($all, fn ($x) => strtoupper((string) ($x['country_code'] ?? '')) === $country));
-            if (! $list) {
-                return '';
-            }
-            $title = (string) ($list[0]['country'] ?? $country);
+            $title = (string) ($list[0]['country'] ?? '') ?: __('Hotels', 'seeinside-travel');
             $n = array_sum(array_map(fn ($x) => (int) ($x['hotels'] ?? 0), $list));
             usort($list, fn ($x, $y) => ((int) ($y['hotels'] ?? 0)) <=> ((int) ($x['hotels'] ?? 0)));
             foreach ($list as $x) {
@@ -223,7 +223,19 @@ class STA_Term_Page
         if ($a['image_mode'] === 'always' && $a['image']) {
             $img = $a['image'];
         }
+        // no photo of its own: the photo of the page, then any hotel photo (the cover of the hotels, any region)
         $img = $img ?: ((string) get_the_post_thumbnail_url((int) get_queried_object_id() ?: null, 'full') ?: (string) $a['image']);
+        if (! $img) {
+            $img = (string) (get_option('sta_meta', [])['hotels']['cover'] ?? '');
+        }
+        if (! $img) {
+            foreach ($all as $x) {
+                if (! empty($x['image'])) {
+                    $img = (string) $x['image'];
+                    break;
+                }
+            }
+        }
         wp_enqueue_style('sta');
         self::$hotels_head = true;
 
