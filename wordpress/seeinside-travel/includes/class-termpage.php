@@ -156,8 +156,11 @@ class STA_Term_Page
      * Header of the hotels page opened from the menu (?country= / ?destination= / ?zone=): like a destination page –
      * Hotels badge, Greece › Halkidiki, the name, how many hotels, a photo of its best hotel. The plain hotels page stays without a header.
      */
-    protected static function hotels_header(array $a): string
+    public static bool $hotels_head = false;
+
+    public static function hotels_header(array $a): string
     {
+        $a += ['height' => 340, 'image' => '', 'image_mode' => 'fallback', 'kind' => '1', 'crumbs' => '1', 'count' => '1', 'label' => ''];
         $country = strtoupper(sanitize_text_field(wp_unslash($_GET['country'] ?? '')));
         $destId = sanitize_text_field(wp_unslash($_GET['destination'] ?? ''));
         $zone = sanitize_text_field(rawurldecode(wp_unslash($_GET['zone'] ?? '')));
@@ -222,6 +225,7 @@ class STA_Term_Page
         }
         $img = $img ?: ((string) get_the_post_thumbnail_url((int) get_queried_object_id() ?: null, 'full') ?: (string) $a['image']);
         wp_enqueue_style('sta');
+        self::$hotels_head = true;
 
         return '<header class="sta sta-term-head'.($img ? ' has-img' : '').'" style="--th-h:'.max(160, (int) $a['height']).'px'.($img ? ';background-image:url(\''.esc_url($img).'\')' : '').'">'
             .'<div class="sta-term-head-in">'

@@ -36,7 +36,8 @@ class STA_Hotels
     public static function page_url(): string
     {
         $pages = get_option('sta_pages', []);
-        if (! empty($pages['hoteli']) && get_post_status($pages['hoteli']) === 'publish' && has_shortcode((string) get_post_field('post_content', $pages['hoteli']), 'sta_hotels')) {
+        $pc = ! empty($pages['hoteli']) ? (string) get_post_field('post_content', $pages['hoteli']) : '';
+        if (! empty($pages['hoteli']) && get_post_status($pages['hoteli']) === 'publish' && (has_shortcode($pc, 'sta_hotels') || str_contains($pc, 'page_type="hotels"'))) {
             return (string) get_permalink($pages['hoteli']);
         }
         foreach (get_posts(['post_type' => 'page', 'post_status' => 'publish', 's' => '[sta_hotels', 'numberposts' => 1]) as $p) {
@@ -196,7 +197,9 @@ class STA_Hotels
                 : '';
         }
         self::enqueue();
-        $h = '<div class="sta sta-hotels" data-sta-hotels data-per-page="'.(int) $a['per_page'].'" data-columns="'.max(1, (int) $a['columns']).'">';
+        // opened for a country / region / area (menu): the header of the destination pages, when the page has none of its own
+        $head = class_exists('STA_Term_Page') && ! STA_Term_Page::$hotels_head ? STA_Term_Page::hotels_header([]) : '';
+        $h = $head.'<div class="sta sta-hotels" data-sta-hotels data-per-page="'.(int) $a['per_page'].'" data-columns="'.max(1, (int) $a['columns']).'">';
         if ($a['search']) {
             $h .= '<div class="sta-hotels-search">'.STA_Search_Box::shortcode(['tabs' => 'hotels', 'compact' => '1']).'</div>';
         }
