@@ -3666,3 +3666,192 @@ msgid "%d photo"
 msgid_plural "%d photos"
 msgstr[0] "%d фотографија"
 msgstr[1] "%d фотографии"
+
+msgid "0 = full width"
+msgstr "0 = цела ширина"
+
+msgid "0 = only with the arrows"
+msgstr "0 = само со стрелките"
+
+msgid "1–10; the ones marked \"Homepage\" in the app first"
+msgstr "1–10; прво тие означени „Насловна“ во апликацијата"
+
+msgid "999 = pill, 0 = square"
+msgstr "999 = заоблено, 0 = квадратно"
+
+msgid "Background of the block"
+msgstr "Позадина на блокот"
+
+msgid "Bring back the default texts and design?"
+msgstr "Да се вратат стандардните текстови и дизајн?"
+
+msgid "Button rounding"
+msgstr "Заобленост на копчињата"
+
+msgid "Button text size"
+msgstr "Големина на текстот на копчињата"
+
+msgid "Button to all stories"
+msgstr "Копче до сите приказни"
+
+msgid "Button to all stories (outline)"
+msgstr "Копче до сите приказни (со рамка)"
+
+msgid "Button to all stories under the slider"
+msgstr "Копче до сите приказни под слајдерот"
+
+msgid "CAPITAL LETTERS"
+msgstr "ГОЛЕМИ БУКВИ"
+
+msgid "Change every"
+msgstr "Менување на секои"
+
+msgid "Classes: .sta-ps (slider), .sta-ps-page (page), .sta-ps-eyebrow, .sta-ps-title, .sta-ps-text, .sta-ps-share, .sta-ps-allbtn, .sta-ps-ph (photo), .sta-ps-card"
+msgstr "Класи: .sta-ps (слајдер), .sta-ps-page (страна), .sta-ps-eyebrow, .sta-ps-title, .sta-ps-text, .sta-ps-share, .sta-ps-allbtn, .sta-ps-ph (фотографија), .sta-ps-card"
+
+msgid "Clients in the slider"
+msgstr "Клиенти во слајдерот"
+
+msgid "Clients per page"
+msgstr "Клиенти по страна"
+
+msgid "Default design"
+msgstr "Стандарден дизајн"
+
+msgid "Dots and arrows"
+msgstr "Точки и стрелки"
+
+msgid "Empty = not shown"
+msgstr "Празно = не се прикажува"
+
+msgid "Empty = the page with [sta_photo_stories] is found automatically"
+msgstr "Празно = страната со [sta_photo_stories] се наоѓа автоматски"
+
+msgid "Empty = transparent"
+msgstr "Празно = проѕирна"
+
+msgid "Font of the small title"
+msgstr "Фонт на малиот наслов"
+
+msgid "Font of the theme"
+msgstr "Фонтот на темата"
+
+msgid "Font of the title"
+msgstr "Фонт на насловот"
+
+msgid "Fonts and sizes"
+msgstr "Фонтови и големини"
+
+msgid "Homepage: <code>[sta_photo_stories_slider]</code> · Page with all stories: <code>[sta_photo_stories]</code> · Only the button: <code>[sta_photo_story_share]</code>. The settings below apply everywhere; an attribute in a shortcode (e.g. <code>title=\"…\"</code>) still overrides them for that place."
+msgstr "Насловна: <code>[sta_photo_stories_slider]</code> · Страна со сите приказни: <code>[sta_photo_stories]</code> · Само копчето: <code>[sta_photo_story_share]</code>. Поставките подолу важат насекаде; атрибут во шорткодот (пр. <code>title=\"…\"</code>) сепак ги менува за тоа место."
+
+msgid "Link \"All N photos\" next to the name"
+msgstr "Линк „Сите N фотографии“ до името"
+
+msgid "Link of that button"
+msgstr "Линк на тоа копче"
+
+msgid "Links and destinations"
+msgstr "Линкови и дестинации"
+
+msgid "Maximal width"
+msgstr "Максимална ширина"
+
+msgid "Minimal card width"
+msgstr "Минимална ширина на картичка"
+
+msgid "Mosaic height"
+msgstr "Висина на мозаикот"
+
+msgid "Name and destination under the photos"
+msgstr "Име и дестинација под фотографиите"
+
+msgid "Open the homepage"
+msgstr "Отвори ја насловната"
+
+msgid "Open the photo stories page"
+msgstr "Отвори ја страната со фотоприказни"
+
+msgid "Own CSS"
+msgstr "Сопствен CSS"
+
+msgid "Photo rounding"
+msgstr "Заобленост на фотографиите"
+
+msgid "Photos and layout"
+msgstr "Фотографии и распоред"
+
+msgid "Photos in the mosaic"
+msgstr "Фотографии во мозаикот"
+
+msgid "Share button"
+msgstr "Копче за споделување"
+
+msgid "Share button on the photo stories page"
+msgstr "Копче за споделување на страната со фотоприказни"
+
+msgid "Share button – background"
+msgstr "Копче за споделување – позадина"
+
+msgid "Share button – text"
+msgstr "Копче за споделување – текст"
+
+msgid "Show the text of the client on the card"
+msgstr "Прикажи го текстот на клиентот на картичката"
+
+msgid "Slider and page"
+msgstr "Слајдер и страна"
+
+msgid "Small title"
+msgstr "Мал наслов"
+
+msgid "Small title (handwritten)"
+msgstr "Мал наслов (ракопис)"
+
+msgid "Small title size"
+msgstr "Големина на малиот наслов"
+
+msgid "Small title, title and text also on the photo stories page"
+msgstr "Мал наслов, наслов и текст и на страната со фотоприказни"
+
+msgid "Text size"
+msgstr "Големина на текстот"
+
+msgid "Texts and buttons"
+msgstr "Текстови и копчиња"
+
+msgid "Title thickness"
+msgstr "Дебелина на насловот"
+
+msgid "Titles, buttons, dots – when not set separately"
+msgstr "Наслови, копчиња, точки – кога не се поставени посебно"
+
+msgid "default: %s"
+msgstr "стандардно: %s"
+
+msgid "on the phone 64% of it"
+msgstr "на телефон 64% од тоа"
+
+msgid "seconds"
+msgstr "секунди"
+
+msgid "smaller = more cards in a row"
+msgstr "помало = повеќе картички во ред"
+
+msgid "then \"Show more\""
+msgstr "потоа „Прикажи повеќе“"
+
+msgid "Photo stories"
+msgstr "Фотоприказни"
+
+msgid "The default design is back."
+msgstr "Стандардниот дизајн е вратен."
+
+msgid "Photo stories of clients on the homepage: mosaic, up to 5 clients change. Texts and design: tab Photo stories"
+msgstr "Фотоприказни на клиенти на насловна: мозаик, се менуваат до 5 клиенти. Текстови и дизајн: таб Фотоприказни"
+
+msgid "Page with all photo stories – a click opens all photos of a client"
+msgstr "Страна со сите фотоприказни – клик ги отвора сите фотографии на клиентот"
+
+msgid "Only the button \"Share your trip\" (booking number + e-mail, then the photos)"
+msgstr "Само копчето „Сподели го твоето патување“ (број на резервација + е-пошта, потоа фотографиите)"

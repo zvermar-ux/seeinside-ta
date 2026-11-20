@@ -27,8 +27,9 @@ class STA_Admin
         if ($hook !== 'toplevel_page_seeinside-travel') {
             return;
         }
-        wp_enqueue_style('sta-admin', STA_URL.'assets/css/admin.css', [], STA_VERSION);
-        wp_enqueue_script('sta-admin', STA_URL.'assets/js/admin.js', [], STA_VERSION, true);
+        wp_enqueue_style('sta-admin', STA_URL.'assets/css/admin.css', ['wp-color-picker'], STA_VERSION);
+        wp_enqueue_script('sta-admin', STA_URL.'assets/js/admin.js', ['wp-color-picker'], STA_VERSION, true);
+        wp_add_inline_script('sta-admin', 'jQuery(function($){$(".sta-color").wpColorPicker();});');
         wp_localize_script('sta-admin', 'STA_ADMIN', [
             'ajax' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('sta_admin'),
@@ -54,6 +55,7 @@ class STA_Admin
             'connection' => __('Connection', 'seeinside-travel'),
             'sync' => __('Sync', 'seeinside-travel'),
             'display' => __('Display & templates', 'seeinside-travel'),
+            'photos' => __('Photo stories', 'seeinside-travel'),
             'help' => __('Shortcodes & help', 'seeinside-travel'),
         ];
     }
@@ -232,6 +234,92 @@ class STA_Admin
         echo '</div></form>';
     }
 
+    /** Photo stories: texts, buttons and design of [sta_photo_stories_slider] / [sta_photo_stories] */
+    protected static function tab_photos(array $s): void
+    {
+        $o = STA_Photo_Stories::opt();
+        $d = STA_Photo_Stories::defaults();
+        $txt = fn ($k, $label, $help = '') => '<tr><th><label for="ps-'.$k.'">'.esc_html($label).'</label></th><td><input type="text" class="large-text" id="ps-'.$k.'" name="'.$k.'" value="'.esc_attr($o[$k]).'">'.($help ? '<p class="description">'.esc_html($help).'</p>' : '').'</td></tr>';
+        $num = fn ($k, $label, $unit = 'px', $help = '') => '<tr><th><label for="ps-'.$k.'">'.esc_html($label).'</label></th><td><input type="number" min="0" class="small-text" id="ps-'.$k.'" name="'.$k.'" value="'.esc_attr((string) $o[$k]).'"> '.esc_html($unit)
+            .' <span class="description">'.esc_html(sprintf(__('default: %s', 'seeinside-travel'), $d[$k] ?: '—')).($help ? ' · '.esc_html($help) : '').'</span></td></tr>';
+        $chk = fn ($k, $label) => '<label style="display:block;margin:2px 0"><input type="checkbox" name="'.$k.'" value="1"'.checked($o[$k], '1', false).'> '.esc_html($label).'</label>';
+        $col = fn ($k, $label, $help = '') => '<tr><th>'.esc_html($label).'</th><td><input type="text" class="sta-color" name="'.$k.'" value="'.esc_attr($o[$k]).'" data-default-color="'.esc_attr($d[$k]).'">'.($help ? '<p class="description">'.esc_html($help).'</p>' : '').'</td></tr>';
+        $font = function ($k, $label) use ($o) {
+            $h = '<tr><th><label for="ps-'.$k.'">'.esc_html($label).'</label></th><td><select id="ps-'.$k.'" name="'.$k.'">';
+            foreach (STA_Photo_Stories::FONTS as $slug => $name) {
+                $h .= '<option value="'.esc_attr($slug).'"'.selected($o[$k], $slug, false).($name ? ' style="font-family:\''.esc_attr($name).'\'"' : '').'>'.esc_html($name ?: __('Font of the theme', 'seeinside-travel')).'</option>';
+            }
+
+            return $h.'</select></td></tr>';
+        };
+        $page = STA_Photo_Stories::page_url();
+        echo '<link rel="stylesheet" href="https://fonts.bunny.net/css?family='.esc_attr(implode('|', array_filter(array_keys(STA_Photo_Stories::FONTS), fn ($f) => $f !== 'theme'))).'&display=swap">';
+        echo '<div class="sta-card"><p>'.wp_kses_post(__('Homepage: <code>[sta_photo_stories_slider]</code> · Page with all stories: <code>[sta_photo_stories]</code> · Only the button: <code>[sta_photo_story_share]</code>. The settings below apply everywhere; an attribute in a shortcode (e.g. <code>title="…"</code>) still overrides them for that place.', 'seeinside-travel')).'</p>'
+            .'<p><a class="button" href="'.esc_url(home_url('/')).'" target="_blank">'.esc_html__('Open the homepage', 'seeinside-travel').'</a> '.($page ? '<a class="button" href="'.esc_url($page).'" target="_blank">'.esc_html__('Open the photo stories page', 'seeinside-travel').'</a>' : '').'</p></div>';
+        self::form_start('photos');
+        echo '<div class="sta-grid2"><div>';
+        echo '<div class="sta-card"><h2>'.esc_html__('Texts and buttons', 'seeinside-travel').'</h2><table class="form-table">'
+            .$txt('eyebrow', __('Small title (handwritten)', 'seeinside-travel'), __('Empty = not shown', 'seeinside-travel'))
+            .$txt('title', __('Title', 'seeinside-travel'))
+            .'<tr><th><label for="ps-text">'.esc_html__('Text', 'seeinside-travel').'</label></th><td><textarea class="large-text" rows="4" id="ps-text" name="text">'.esc_textarea($o['text']).'</textarea></td></tr>'
+            .$txt('share_label', __('Share button', 'seeinside-travel'))
+            .$txt('all_label', __('Button to all stories', 'seeinside-travel'))
+            .$txt('all_link', __('Link of that button', 'seeinside-travel'), __('Empty = the page with [sta_photo_stories] is found automatically', 'seeinside-travel'))
+            .'<tr><th>'.esc_html__('Show', 'seeinside-travel').'</th><td>'
+            .$chk('all_show', __('Button to all stories under the slider', 'seeinside-travel'))
+            .$chk('page_head', __('Small title, title and text also on the photo stories page', 'seeinside-travel'))
+            .$chk('page_share', __('Share button on the photo stories page', 'seeinside-travel'))
+            .'</td></tr></table></div>';
+        echo '<div class="sta-card"><h2>'.esc_html__('Slider and page', 'seeinside-travel').'</h2><table class="form-table">'
+            .$num('count', __('Clients in the slider', 'seeinside-travel'), '', __('1–10; the ones marked "Homepage" in the app first', 'seeinside-travel'))
+            .$num('autoplay', __('Change every', 'seeinside-travel'), __('seconds', 'seeinside-travel'), __('0 = only with the arrows', 'seeinside-travel'))
+            .$num('max_photos', __('Photos in the mosaic', 'seeinside-travel'), '', '3–7')
+            .'<tr><th>'.esc_html__('Slider', 'seeinside-travel').'</th><td>'
+            .$chk('show_caption', __('Name and destination under the photos', 'seeinside-travel'))
+            .$chk('show_all_photos', __('Link "All N photos" next to the name', 'seeinside-travel'))
+            .$chk('show_dots', __('Dots and arrows', 'seeinside-travel'))
+            .'</td></tr>'
+            .$num('per_page', __('Clients per page', 'seeinside-travel'), '', __('then "Show more"', 'seeinside-travel'))
+            .$num('card_min', __('Minimal card width', 'seeinside-travel'), 'px', __('smaller = more cards in a row', 'seeinside-travel'))
+            .'<tr><th>'.esc_html__('Cards', 'seeinside-travel').'</th><td>'.$chk('card_story', __('Show the text of the client on the card', 'seeinside-travel')).'</td></tr>'
+            .'</table></div>';
+        echo '</div><div>';
+        echo '<div class="sta-card"><h2>'.esc_html__('Colours', 'seeinside-travel').'</h2><table class="form-table">'
+            .$col('c_main', __('Main colour', 'seeinside-travel'), __('Titles, buttons, dots – when not set separately', 'seeinside-travel'))
+            .$col('c_eyebrow', __('Small title', 'seeinside-travel'))
+            .$col('c_title', __('Title', 'seeinside-travel'))
+            .$col('c_text', __('Text', 'seeinside-travel'))
+            .$col('c_btn_bg', __('Share button – background', 'seeinside-travel'))
+            .$col('c_btn_text', __('Share button – text', 'seeinside-travel'))
+            .$col('c_all', __('Button to all stories (outline)', 'seeinside-travel'))
+            .$col('c_link', __('Links and destinations', 'seeinside-travel'))
+            .$col('c_bg', __('Background of the block', 'seeinside-travel'), __('Empty = transparent', 'seeinside-travel'))
+            .'</table></div>';
+        echo '<div class="sta-card"><h2>'.esc_html__('Fonts and sizes', 'seeinside-travel').'</h2><table class="form-table">'
+            .$font('f_eyebrow', __('Font of the small title', 'seeinside-travel'))
+            .$font('f_title', __('Font of the title', 'seeinside-travel'))
+            .$num('s_eyebrow', __('Small title size', 'seeinside-travel'))
+            .$num('s_title', __('Title size', 'seeinside-travel'))
+            .$num('w_title', __('Title thickness', 'seeinside-travel'), '', '400 / 500 / 600 / 700 / 800')
+            .$num('s_text', __('Text size', 'seeinside-travel'))
+            .$num('s_btn', __('Button text size', 'seeinside-travel'))
+            .$num('btn_radius', __('Button rounding', 'seeinside-travel'), 'px', __('999 = pill, 0 = square', 'seeinside-travel'))
+            .'<tr><th>'.esc_html__('Buttons', 'seeinside-travel').'</th><td>'.$chk('btn_upper', __('CAPITAL LETTERS', 'seeinside-travel')).$chk('btn_shadow', __('Shadow', 'seeinside-travel')).'</td></tr>'
+            .'</table></div>';
+        echo '<div class="sta-card"><h2>'.esc_html__('Photos and layout', 'seeinside-travel').'</h2><table class="form-table">'
+            .$num('mosaic_h', __('Mosaic height', 'seeinside-travel'), 'px', __('on the phone 64% of it', 'seeinside-travel'))
+            .$num('gap', __('Space between photos', 'seeinside-travel'))
+            .$num('photo_radius', __('Photo rounding', 'seeinside-travel'))
+            .$num('width', __('Maximal width', 'seeinside-travel'), 'px', __('0 = full width', 'seeinside-travel'))
+            .'<tr><th>'.esc_html__('Alignment', 'seeinside-travel').'</th><td><label><input type="radio" name="align" value="center"'.checked($o['align'], 'center', false).'> '.esc_html__('Centre', 'seeinside-travel').'</label> &nbsp; <label><input type="radio" name="align" value="left"'.checked($o['align'], 'left', false).'> '.esc_html__('Left', 'seeinside-travel').'</label></td></tr>'
+            .'<tr><th><label for="ps-css">'.esc_html__('Own CSS', 'seeinside-travel').'</label></th><td><textarea class="large-text code" rows="5" id="ps-css" name="css" placeholder=".sta-ps-title { letter-spacing: -1px; }">'.esc_textarea($o['css']).'</textarea>'
+            .'<p class="description">'.esc_html__('Classes: .sta-ps (slider), .sta-ps-page (page), .sta-ps-eyebrow, .sta-ps-title, .sta-ps-text, .sta-ps-share, .sta-ps-allbtn, .sta-ps-ph (photo), .sta-ps-card', 'seeinside-travel').'</p></td></tr>'
+            .'</table></div>';
+        echo '</div></div>';
+        submit_button(__('Save', 'seeinside-travel'), 'primary', 'submit', false);
+        echo ' <button type="submit" name="sta_ps_reset" value="1" class="button" onclick="return confirm(\''.esc_js(__('Bring back the default texts and design?', 'seeinside-travel')).'\')">'.esc_html__('Default design', 'seeinside-travel').'</button></form>';
+    }
+
     protected static function tab_help(array $s): void
     {
         $sections = implode(', ', array_map(fn ($k) => '<code>'.$k.'</code>', array_keys(STA_Render::SECTIONS)));
@@ -244,6 +332,9 @@ class STA_Admin
             ['[sta_charters]', __('Charter seats with booking', 'seeinside-travel')],
             ['[sta_reviews limit="6" layout="grid" form="yes"]', __('Reviews. type: tour, event, accommodation, visa, agency · layout: grid, slider, list · featured="yes" · on an offer page: that offer', 'seeinside-travel')],
             ['[sta_reviews layout="testimonials" subtitle="Рецензии" title="Што велат нашите патници" limit="9" min_rating="4"]', __('Testimonials carousel: the middle card is raised; per_view="3", autoplay="6" (0 = off), role="Patnik" (text under the name), featured="yes"', 'seeinside-travel')],
+            ['[sta_photo_stories_slider]', __('Photo stories of clients on the homepage: mosaic, up to 5 clients change. Texts and design: tab Photo stories', 'seeinside-travel')],
+            ['[sta_photo_stories]', __('Page with all photo stories – a click opens all photos of a client', 'seeinside-travel')],
+            ['[sta_photo_story_share label="…"]', __('Only the button "Share your trip" (booking number + e-mail, then the photos)', 'seeinside-travel')],
             ['[sta_review_form]', __('Only the form for a new review', 'seeinside-travel')],
             ['[sta_flight_search]', __('Flight search: the official "GOL IBE Search Form" plugin when installed, otherwise the GOL IBE code / link from SeeInside', 'seeinside-travel')],
             ['[sta_hotels]', __('Hotels with live prices from the booking system (Hotelbeds): results with filters, hotel page with rooms, booking', 'seeinside-travel')],
@@ -300,6 +391,13 @@ class STA_Admin
                     $s[$k] = $v;
                 }
             }
+        } elseif ($tab === 'photos') {
+            if (! empty($_POST['sta_ps_reset'])) {
+                delete_option('sta_ps');
+                self::back($tab, __('The default design is back.', 'seeinside-travel'));
+            }
+            STA_Photo_Stories::save_settings($_POST);
+            self::back($tab, __('Saved.', 'seeinside-travel'));
         } elseif ($tab === 'display') {
             $old = (array) ($s['slugs'] ?? []);
             $s['layout_mode'] = in_array($_POST['layout_mode'] ?? '', ['auto', 'off'], true) ? $_POST['layout_mode'] : 'auto';
