@@ -5,6 +5,7 @@ namespace App\Services\Mcs;
 use App\Enums\DepartureStatus;
 use App\Enums\SupplierProvider;
 use App\Models\Accommodation;
+use App\Models\AccommodationRoom;
 use App\Models\Booking;
 use App\Models\StayTerm;
 use App\Models\SupplierConnection;
@@ -257,6 +258,31 @@ class McsService
         return ['adults' => $n ?: 2];
     }
 
+    /**
+     * Persons a room of the new app is asked with. Several rooms on the same room of the old system (one room priced by
+     * occupancy – "2 adults", "3 adults"…): each one with its own number ("Aries: persons" on the room, else its max. adults).
+     */
+    public static function guestsFor(AccommodationRoom $room, ?SupplierProduct $p, ?Collection $siblings = null): int
+    {
+        if ((int) $room->provider_guests > 0) {
+            return (int) $room->provider_guests;
+        }
+        $shared = $siblings && $siblings->filter(fn ($r) => (string) $r->provider_code === (string) $room->provider_code)->count() > 1;
+        if ($shared && (int) $room->max_adults > 0) {
+            return (int) $room->max_adults;
+        }
+
+        return (int) self::roomGuests($p, (string) $room->provider_code)['adults'];
+    }
+
+    /** Key of a room in the answers: the Room-Id, or Room-Id@persons when it is asked with its own number of persons */
+    public static function askKey(AccommodationRoom $room, ?SupplierProduct $p, Collection $siblings): string
+    {
+        $shared = (int) $room->provider_guests > 0 || $siblings->filter(fn ($r) => (string) $r->provider_code === (string) $room->provider_code)->count() > 1;
+
+        return (string) $room->provider_code.($shared ? '@'.self::guestsFor($room, $p, $siblings) : '');
+    }
+
     /** Rooms: the only room, the same name, or the same number of persons (when that is unique). @return int newly linked */
     public static function linkRooms(Accommodation $a, SupplierProduct $p): int
     {
@@ -460,7 +486,11 @@ class McsService
                 // villa sold in fixed terms (a "package" in the old system): the term starts on the check-in day
                 // the old system prices the cheapest room that fits the guests: the booked room is asked with all its beds,
                 // so the price (with the discount of the old system) is the one of this room
-                $ask = $mode === 'room' && $roomCode && ($g = self::roomGuests($p, (string) $roomCode)['adults']) >= $adults + count($ages) ? ['adults' => $g] : ['adults' => $adults, 'children_ages' => $ages];
+                $siblings = $b->room ? AccommodationRoom::query()->where('accommodation_id', $b->room->accommodation_id)->whereNotNull('provider_code')->get() : collect();
+                $g = $b->room && $roomCode ? self::guestsFor($b->room, $p, $siblings) : 0;
+                $custom = $b->room && $roomCode && self::askKey($b->room, $p, $siblings) !== (string) $roomCode;
+                // a room asked with its own number of persons (one room of the old system, price by occupancy): always that number
+                $ask = $mode === 'room' && $roomCode && ($custom || $g >= $adults + count($ages)) ? ['adults' => $g] : ['adults' => $adults, 'children_ages' => $ages];
                 $rows = $api->packageSearch(['checkin' => $b->date_from->toDateString(), 'package' => $code, 'room' => $roomCode] + $ask + (self::where($p) ?: ['country' => $item->country]));
                 $rows = array_values(array_filter($rows, [McsClient::class, 'offer']));
                 $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? '') === (string) $code));
@@ -735,8 +765,9 @@ class McsService
                     $term->forceFill(['supplier_synced_at' => now()])->saveQuietly();
                     $seenTerms[] = $term->id;
                     $byRoom = $termRows->groupBy(fn ($r) => (string) ($r['accommodationid'] ?? ''));
+                    $pp = self::product($c, 'package', $code);
                     foreach ($rooms as $room) {
-                        $hit = $byRoom->get((string) $room->provider_code)?->sortBy(fn ($r) => (float) $r['price'])->first();
+                        $hit = $byRoom->get(self::askKey($room, $pp, $rooms))?->sortBy(fn ($r) => (float) $r['price'])->first();
                         $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $room->id]);
                         if ($hit) {
                             $tp->price = round(self::regular((float) $hit['price'], $disc) * $k, 2);
@@ -1075,11 +1106,13 @@ class McsService
      */
     protected static function perRoom(McsClient $api, SupplierConnection $c, string $code, array $byDate, Collection $rooms, array &$out): array
     {
-        $known = fn ($rows) => collect($rows)->contains(fn ($r) => filled($r['accommodationid'] ?? null));
+        $p = self::product($c, 'package', $code);
+        // rooms asked with their own number of persons (several rooms on one room of the old system) are always asked
+        $custom = $rooms->contains(fn ($r) => self::askKey($r, $p, $rooms) !== (string) $r->provider_code);
+        $known = fn ($rows) => ! $custom && collect($rows)->contains(fn ($r) => filled($r['accommodationid'] ?? null));
         if (collect($byDate)->every(fn ($rows) => $known($rows))) {
             return $byDate;
         }
-        $p = self::product($c, 'package', $code);
         $where = self::where($p) ?: ['country' => $p?->country];
         $queries = [];
         foreach ($byDate as $checkin => $rows) {
@@ -1087,19 +1120,20 @@ class McsService
                 continue;
             }
             foreach ($rooms as $room) {
-                $queries[$checkin.'|'.$room->provider_code] = ['checkin' => $checkin, 'package' => $code, 'room' => (string) $room->provider_code] + self::roomGuests($p, (string) $room->provider_code) + $where;
+                $queries[$checkin.'|'.self::askKey($room, $p, $rooms)] = ['checkin' => $checkin, 'package' => $code, 'room' => (string) $room->provider_code, 'adults' => self::guestsFor($room, $p, $rooms)] + $where;
             }
         }
         $prices = [];
         foreach ($api->packageSearchMany($queries, max(1, (int) ($c->settings['concurrency'] ?? 1))) as $key => $rows) {
             $out['calls']++;
             [$checkin, $room] = explode('|', $key, 2);
+            $roomId = explode('@', $room, 2)[0];   // Room-Id of the old system (the key may carry @persons)
             if ($rows instanceof Throwable || ! $rows) {
                 continue;   // this room is not free in this term
             }
             $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? $code) === (string) $code && McsClient::offer($r)));
             // the answer for this room: its own row, or (when the API still gives no room) the first one
-            $mine = array_values(array_filter($rows, fn ($r) => (string) ($r['accommodationid'] ?? '') === $room)) ?: $rows;
+            $mine = array_values(array_filter($rows, fn ($r) => (string) ($r['accommodationid'] ?? '') === $roomId)) ?: $rows;
             if ($mine) {
                 $byDate[$checkin] = array_values(array_filter($byDate[$checkin], fn ($r) => filled($r['accommodationid'] ?? null)));
                 $prices[$checkin][$room] = (float) $mine[0]['price'];

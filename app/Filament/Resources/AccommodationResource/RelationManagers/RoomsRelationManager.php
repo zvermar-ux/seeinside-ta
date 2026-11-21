@@ -58,7 +58,7 @@ class RoomsRelationManager extends RelationManager
                 ->helperText(__('Every physical room of this type. In a booking you choose which one the guest gets (it appears on the contract, voucher and invoice).')),
             Forms\Components\Toggle::make('is_active')->label(__('Active'))->default(true)->inline(false),
             // the old Aries system: its room for this room (bookings are sent there, term prices come from there)
-            Forms\Components\Select::make('provider_code')->label(__('Room in the old Aries system'))->searchable()
+            Forms\Components\Select::make('provider_code')->label(__('Room in the old Aries system'))->searchable()->live()
                 ->visible(fn (RelationManager $livewire) => \App\Filament\Resources\AccommodationResource::isMcs($livewire->getOwnerRecord()->supplier_connection_id))
                 ->options(function (RelationManager $livewire) {
                     $p = \App\Services\Mcs\McsService::accommodationProduct($livewire->getOwnerRecord());
@@ -66,6 +66,10 @@ class RoomsRelationManager extends RelationManager
                     return $p ? $p->roomOptions() : [];
                 })
                 ->helperText(__('Choose the apartment of the old system first (Prices & booking → Source).')),
+            Forms\Components\TextInput::make('provider_guests')->label(__('Ask the old system for (persons)'))->numeric()->minValue(1)->maxValue(12)
+                ->visible(fn (RelationManager $livewire, Forms\Get $get) => filled($get('provider_code')) && \App\Filament\Resources\AccommodationResource::isMcs($livewire->getOwnerRecord()->supplier_connection_id))
+                ->placeholder(fn (Forms\Get $get) => (string) ((int) $get('max_adults') ?: '—'))
+                ->helperText(__('When several rooms here are the SAME room of the old system priced by occupancy (e.g. "2 adults", "3 adults"): link them all to that room and write how many persons each one is – its price is asked for that number. Empty = max. adults of this room (or all beds of the old room).')),
             Forms\Components\TextInput::make('provider_code')->label(__('Room code in the booking system'))
                 ->visible(fn (RelationManager $livewire) => filled($livewire->getOwnerRecord()->supplier_connection_id) && ! \App\Filament\Resources\AccommodationResource::isMcs($livewire->getOwnerRecord()->supplier_connection_id))
                 ->helperText(__('Used to take free / booked dates from the API.')),
@@ -122,7 +126,8 @@ class RoomsRelationManager extends RelationManager
                         }
                         $p = \App\Services\Mcs\McsService::accommodationProduct($livewire->getOwnerRecord());
 
-                        return $p ? ($p->roomOptions()[(string) $r->provider_code] ?? $r->provider_code) : $r->provider_code;
+                        return ($p ? ($p->roomOptions()[(string) $r->provider_code] ?? $r->provider_code) : $r->provider_code)
+                            .($r->provider_guests ? ' · '.__(':n persons', ['n' => $r->provider_guests]) : '');
                     })
                     ->color(fn (AccommodationRoom $r) => blank($r->provider_code) ? 'danger' : 'success')
                     ->icon(fn (AccommodationRoom $r) => blank($r->provider_code) ? 'heroicon-m-x-circle' : 'heroicon-m-link'),

@@ -2168,5 +2168,8 @@
     "Verified trip": "Потврдено патување",
     "This booking was cancelled – a review can be written only for a trip that took place.": "Оваа резервација е откажана – рецензија може да се напише само за патување што се реализирало.",
     "You already wrote a review for this booking – thank you!": "Веќе напишавте рецензија за оваа резервација – ви благодариме!",
-    "Apartments, villas and hotels": "Апартмани, вили и хотели"
+    "Apartments, villas and hotels": "Апартмани, вили и хотели",
+    "Ask the old system for (persons)": "Барај од старата апликација за (лица)",
+    "When several rooms here are the SAME room of the old system priced by occupancy (e.g. \"2 adults\", \"3 adults\"): link them all to that room and write how many persons each one is – its price is asked for that number. Empty = max. adults of this room (or all beds of the old room).": "Кога неколку соби тука се ИСТАТА соба од старата апликација со цени според полнотија (пр. „2 возрасни“, „3 возрасни“): поврзи ги сите со таа соба и напиши за колку лица е секоја – цената се бара за тој број. Празно = макс. возрасни на оваа соба (или сите кревети на старата соба).",
+    ":n persons": ":n лица"
 }
