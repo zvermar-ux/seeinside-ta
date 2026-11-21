@@ -107,7 +107,7 @@ class AriesLinks extends Page
         $byRef = $products->keyBy(fn ($p) => McsService::refKey($p));
         $q = trim($this->search);
 
-        $accs = Accommodation::query()->where('type', '!=', 'hotel')->with('rooms')->orderBy('name')->get()
+        $accs = Accommodation::query()->with('rooms')->orderBy('name')->get()
             ->filter(fn ($a) => $q === '' || mb_stripos($a->name, $q) !== false);
         $termIds = StayTerm::query()->whereIn('accommodation_id', $accs->pluck('id'))->where('date_from', '>=', today())->get(['id', 'accommodation_id', 'supplier_synced_at']);
         $prices = TermPrice::query()->whereIn('stay_term_id', $termIds->pluck('id'))->get(['stay_term_id', 'accommodation_room_id', 'supplier_synced_at', 'stop_sale']);

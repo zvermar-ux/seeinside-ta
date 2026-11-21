@@ -56,7 +56,7 @@
         </span>
     </div>
 
-    <x-filament::section :heading="__('Apartments and villas') . ' (' . count($rows) . ')'" collapsible>
+    <x-filament::section :heading="__('Apartments, villas and hotels') . ' (' . count($rows) . ')'" collapsible>
         <div class="al-grid">
             @forelse ($rows as $r)
                 @php [$c, $bg, $lbl] = $badge($r['status']); @endphp
