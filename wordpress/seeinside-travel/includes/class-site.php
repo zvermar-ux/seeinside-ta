@@ -332,9 +332,85 @@ class STA_Site
         };
         $count = fn ($pt) => (int) (wp_count_posts($pt)->publish ?? 0);
 
+        /*
+         * "By destination" under a menu item: country → region → place (Greece → Halkidiki → Hanioti), from the offers given.
+         * A place always goes under its destination – the destination (and its parents) are added even when no offer is on them directly.
+         */
+        $byDest = function (array $postIds, string $base, int $under) use ($add) {
+            if (! $postIds || $base === '') {
+                return;
+            }
+            $dests = get_terms(['taxonomy' => 'sta_destination', 'hide_empty' => true, 'object_ids' => $postIds, 'orderby' => 'name']);
+            $dests = is_wp_error($dests) ? [] : $dests;
+            $places = get_terms(['taxonomy' => 'sta_place', 'hide_empty' => true, 'object_ids' => $postIds]);
+            $places = is_wp_error($places) ? [] : $places;
+            if (! $dests && ! $places) {
+                return;
+            }
+            $destOfRemote = function (int $remote) {
+                $f = $remote ? get_terms(['taxonomy' => 'sta_destination', 'hide_empty' => false, 'meta_key' => 'sta_id', 'meta_value' => $remote, 'number' => 1]) : [];
+
+                return $f && ! is_wp_error($f) ? $f[0] : null;
+            };
+            // places with their parent places; the destination of every top place joins the destinations
+            $pById = [];
+            foreach ($places as $t) {
+                $pById[$t->term_id] = $t;
+                foreach (get_ancestors($t->term_id, 'sta_place') as $anc) {
+                    if (! isset($pById[$anc]) && ($at = get_term($anc, 'sta_place')) instanceof WP_Term) {
+                        $pById[$anc] = $at;
+                    }
+                }
+            }
+            $placeDest = [];
+            $dById = [];
+            foreach ($dests as $t) {
+                $dById[$t->term_id] = $t;
+            }
+            foreach ($pById as $t) {
+                if (! $t->parent && ($dt = $destOfRemote((int) get_term_meta($t->term_id, 'sta_destination_id', true)))) {
+                    $placeDest[$t->term_id] = $dt->term_id;
+                    $dById[$dt->term_id] = $dt;
+                }
+            }
+            foreach (array_keys($dById) as $id) {
+                foreach (get_ancestors($id, 'sta_destination') as $anc) {
+                    if (! isset($dById[$anc]) && ($at = get_term($anc, 'sta_destination')) instanceof WP_Term) {
+                        $dById[$anc] = $at;
+                    }
+                }
+            }
+            uasort($dById, fn ($x, $y) => strcmp($x->name, $y->name));
+            $d = $add(__('By destination', 'seeinside-travel'), ['menu-item-type' => 'custom', 'menu-item-url' => $base], $under);
+            $menuOf = [];
+            foreach ([0, 1, 2, 3] as $level) {
+                foreach ($dById as $t) {
+                    if (count(get_ancestors($t->term_id, 'sta_destination')) !== $level || isset($menuOf[$t->term_id])) {
+                        continue;
+                    }
+                    $menuOf[$t->term_id] = $add($t->name, ['menu-item-type' => 'custom', 'menu-item-url' => add_query_arg('f_dest', $t->slug, $base)], $menuOf[$t->parent] ?? $d);
+                }
+            }
+            uasort($pById, fn ($x, $y) => strcmp($x->name, $y->name));
+            $menuOfPlace = [];
+            foreach ([0, 1, 2, 3] as $level) {
+                foreach ($pById as $t) {
+                    if (count(get_ancestors($t->term_id, 'sta_place')) !== $level || isset($menuOfPlace[$t->term_id])) {
+                        continue;
+                    }
+                    $parentItem = $t->parent ? ($menuOfPlace[$t->parent] ?? $d) : ($menuOf[$placeDest[$t->term_id] ?? 0] ?? $d);
+                    $menuOfPlace[$t->term_id] = $add($t->name, ['menu-item-type' => 'custom', 'menu-item-url' => add_query_arg('f_place', $t->slug, $base)], $parentItem);
+                }
+            }
+        };
+
         if ($count('sta_tour')) {
             $m = $add(__('Organized tours', 'seeinside-travel'), $link('aranzmani', 'sta_tour'));
             $terms('sta_group', 0, $m);
+            // tours by destination, like the apartments
+            $tourIds = get_posts(['post_type' => 'sta_tour', 'post_status' => 'publish', 'numberposts' => -1, 'fields' => 'ids']);
+            $tbase = $page('aranzmani') ? get_permalink($page('aranzmani')) : get_post_type_archive_link('sta_tour');
+            $byDest($tourIds, (string) $tbase, $m);
         }
         // hotels from a booking system: "Hotels" → its destinations (the search asks for the dates)
         $api = STA_Hotels::enabled();
@@ -369,64 +445,9 @@ class STA_Site
             foreach (is_wp_error($types) ? [] : $types as $t) {
                 $add($t->name, ['menu-item-type' => 'taxonomy', 'menu-item-object' => 'sta_hotel_type', 'menu-item-object-id' => $t->term_id], $m);
             }
-            // destinations that have accommodation → the hotels page with that destination filtered
-            $dests = $hotelIds ? get_terms(['taxonomy' => 'sta_destination', 'hide_empty' => true, 'object_ids' => $hotelIds, 'orderby' => 'name']) : [];
+            // destinations / places that have accommodation → the apartments page filtered
             $base = $page('apartmani') ? get_permalink($page('apartmani')) : ($page('hoteli') ? get_permalink($page('hoteli')) : get_post_type_archive_link('sta_hotel'));
-            if (! is_wp_error($dests) && $dests && $base) {
-                $d = $add(__('By destination', 'seeinside-travel'), ['menu-item-type' => 'custom', 'menu-item-url' => $base], $m);
-                $ids = wp_list_pluck($dests, 'term_id');
-                $parents = [];
-                foreach ($dests as $t) {
-                    foreach (get_ancestors($t->term_id, 'sta_destination') as $anc) {
-                        if (! in_array($anc, $ids, true)) {
-                            $parents[$anc] = get_term($anc, 'sta_destination');
-                        }
-                    }
-                }
-                $all = array_merge(array_values(array_filter($parents)), $dests);
-                $menuOf = [];
-                foreach ([0, 1, 2] as $level) {
-                    foreach ($all as $t) {
-                        if (count(get_ancestors($t->term_id, 'sta_destination')) !== $level || isset($menuOf[$t->term_id])) {
-                            continue;
-                        }
-                        $menuOf[$t->term_id] = $add($t->name, ['menu-item-type' => 'custom', 'menu-item-url' => add_query_arg('f_dest', $t->slug, $base)], $menuOf[$t->parent] ?? $d);
-                    }
-                }
-                // places under their destination (Greece → Lefkada → Nikiana)
-                $places = get_terms(['taxonomy' => 'sta_place', 'hide_empty' => true, 'object_ids' => $hotelIds]);
-                if (! is_wp_error($places) && $places) {
-                    $pIds = wp_list_pluck($places, 'term_id');
-                    foreach ($places as $t) {
-                        foreach (get_ancestors($t->term_id, 'sta_place') as $anc) {
-                            if (! in_array($anc, $pIds, true) && ($at = get_term($anc, 'sta_place')) instanceof WP_Term) {
-                                $places[] = $at;
-                                $pIds[] = $anc;
-                            }
-                        }
-                    }
-                    $destTerm = function (int $remote) {
-                        $f = $remote ? get_terms(['taxonomy' => 'sta_destination', 'hide_empty' => false, 'meta_key' => 'sta_id', 'meta_value' => $remote, 'number' => 1]) : [];
-
-                        return $f && ! is_wp_error($f) ? $f[0] : null;
-                    };
-                    $menuOfPlace = [];
-                    foreach ([0, 1, 2, 3] as $level) {
-                        foreach ($places as $t) {
-                            if (count(get_ancestors($t->term_id, 'sta_place')) !== $level || isset($menuOfPlace[$t->term_id])) {
-                                continue;
-                            }
-                            if ($t->parent) {
-                                $parentItem = $menuOfPlace[$t->parent] ?? $d;
-                            } else {
-                                $dt = $destTerm((int) get_term_meta($t->term_id, 'sta_destination_id', true));
-                                $parentItem = $dt && isset($menuOf[$dt->term_id]) ? $menuOf[$dt->term_id] : $d;
-                            }
-                            $menuOfPlace[$t->term_id] = $add($t->name, ['menu-item-type' => 'custom', 'menu-item-url' => add_query_arg('f_place', $t->slug, $base)], $parentItem);
-                        }
-                    }
-                }
-            }
+            $byDest($hotelIds, (string) $base, $m);
         }
         if ($count('sta_event')) {
             $m = $add(__('Events', 'seeinside-travel'), $link('nastani', 'sta_event'));
