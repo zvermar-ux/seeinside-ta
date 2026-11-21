@@ -107,7 +107,14 @@ class AriesLinks extends Page
         $byRef = $products->keyBy(fn ($p) => McsService::refKey($p));
         $q = trim($this->search);
 
-        $accs = Accommodation::query()->with('rooms')->orderBy('name')->get()
+        $mcsId = $c?->id;
+        // own accommodation: apartments / villas always; hotels only when the agency leases or owns them or they are in the old Aries app –
+        // never hotels that come from a booking system (Hotelbeds…)
+        $accs = Accommodation::query()
+            ->where(fn ($q) => $q->whereNull('supplier_connection_id')->orWhere('supplier_connection_id', $mcsId))
+            ->where(fn ($q) => $q->where('type', '!=', 'hotel')->orWhereIn('ownership', ['lease', 'own'])
+                ->orWhere(fn ($q) => $q->where('supplier_connection_id', $mcsId)->whereNotNull('provider_code')->where('provider_code', '!=', '')))
+            ->with('rooms')->orderBy('name')->get()
             ->filter(fn ($a) => $q === '' || mb_stripos($a->name, $q) !== false);
         $termIds = StayTerm::query()->whereIn('accommodation_id', $accs->pluck('id'))->where('date_from', '>=', today())->get(['id', 'accommodation_id', 'supplier_synced_at']);
         $prices = TermPrice::query()->whereIn('stay_term_id', $termIds->pluck('id'))->get(['stay_term_id', 'accommodation_room_id', 'supplier_synced_at', 'stop_sale']);
