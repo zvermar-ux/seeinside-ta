@@ -77,6 +77,78 @@ Artisan::command('aries:prices {--days=} {--requested : only connections where "
     }
 })->purpose('Dates and prices of linked tours and apartments from the old Aries system');
 
+/*
+ * Diagnosis of sending a booking to the old Aries system: shows every request exactly as sent (password hidden) and the whole answer.
+ * Ways are tried one by one and it STOPS at the first answer that is not empty (so a booking is made at most once).
+ *   php artisan aries:book-test R2611-KBI1S            only shows the fields, sends nothing
+ *   php artisan aries:book-test R2611-KBI1S --send     sends
+ */
+Artisan::command('aries:book-test {reference} {--send : really send it} {--mode=guests : guests | room}', function () {
+    $b = \App\Models\Booking::withoutGlobalScopes()->where('reference', strtoupper($this->argument('reference')))->first();
+    if (! $b) {
+        $this->error('No booking '.$this->argument('reference'));
+
+        return 1;
+    }
+    $c = \App\Services\Mcs\McsService::connectionFor($b);
+    if (! $c) {
+        $this->error('The offer of this booking is not linked to the old Aries system.');
+
+        return 1;
+    }
+    $api = \App\Services\Mcs\McsService::client($c);
+    try {
+        $params = \App\Services\Mcs\McsService::debugBookParams($b, $c, (string) $this->option('mode'));
+    } catch (\Throwable $e) {
+        $this->error('Search before booking: '.$e->getMessage());
+
+        return 1;
+    }
+    $this->line('Address: '.$api->baseUrl());
+    $this->line('Fields (+ username, password):');
+    foreach ($params as $k => $v) {
+        $this->line('  '.$k.' = '.$v);
+    }
+    $show = function (array $r) {
+        $this->line(str_repeat('-', 70));
+        $this->info(strtoupper($r['how']).' '.$r['url']);
+        if (isset($r['error'])) {
+            $this->error('  ERROR: '.$r['error']);
+
+            return;
+        }
+        $this->line('  HTTP '.$r['status'].' · '.$r['ms'].' ms · '.strlen($r['body']).' bytes');
+        foreach (['Content-Type', 'Content-Length', 'Server', 'X-Powered-By', 'Location'] as $h) {
+            if (isset($r['headers'][$h])) {
+                $this->line('  '.$h.': '.$r['headers'][$h]);
+            }
+        }
+        $this->line('  Body: '.json_encode(mb_substr($r['body'], 0, 1500), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    };
+    if (! $this->option('send')) {
+        $this->warn('Nothing sent. Add --send to send it (it stops at the first non-empty answer).');
+
+        return 0;
+    }
+    $base = $api->baseUrl();
+    $plain = preg_replace('#\.php$#', '', $base);
+    $ways = [['BookRequest', 'post-form', $base], ['Book', 'post-form', $base], ['BookRequest', 'post-form', $plain], ['BookRequest', 'get', $base], ['BookRequest', 'post-json', $base]];
+    foreach ($ways as [$op, $how, $url]) {
+        $r = $api->raw($op, $params, $how, $url);
+        $show($r);
+        if (! isset($r['error']) && trim($r['body']) !== '' && ($r['status'] ?? 0) < 400) {
+            $this->info('>>> Non-empty answer – stopped here (no more tries).');
+
+            return 0;
+        }
+    }
+    $this->warn('Every way gave an empty answer or an error.');
+    $this->line('For MCS (password hidden):');
+    $this->line('curl -i -X POST '.escapeshellarg($base.'/BookRequest').' '.collect(['username' => '***', 'password' => '***'] + $params)->map(fn ($v, $k) => '--data-urlencode '.escapeshellarg($k.'='.$v))->implode(' '));
+
+    return 0;
+})->purpose('Diagnosis: send a booking to the old Aries system and show the raw answer');
+
 Artisan::command('aries:retry', function () {
     $list = \App\Models\Booking::withoutGlobalScopes()->where('legacy_status', 'failed')->where('created_at', '>=', now()->subDays(3))->get();
     foreach ($list as $b) {

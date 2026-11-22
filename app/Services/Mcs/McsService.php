@@ -465,6 +465,12 @@ class McsService
     }
 
     /** Search the exact offer again (the price must be the one of the search), then the BookRequest fields */
+    /** For the diagnosis command: the BookRequest fields of a booking */
+    public static function debugBookParams(Booking $b, SupplierConnection $c, string $mode = 'guests'): array
+    {
+        return self::bookParams($b, $c, $mode);
+    }
+
     protected static function bookParams(Booking $b, SupplierConnection $c, string $mode = 'room'): array
     {
         $item = $b->bookable()->withoutGlobalScopes()->first();

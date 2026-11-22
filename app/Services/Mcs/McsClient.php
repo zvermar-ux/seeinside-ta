@@ -198,6 +198,35 @@ class McsClient
         return self::rows($this->call('PackageSearch', self::params($q) + array_filter(['package' => $q['package'] ?? null]), $timeout), ['PackagesResult', 'PackageResult', 'Packages', 'result']);
     }
 
+    /**
+     * Diagnosis: one raw request exactly as sent, with the whole answer (status, headers, body).
+     * $how: post-form | get | post-json · $base: null = the usual address, or another one (e.g. without ".php").
+     */
+    public function raw(string $operation, array $params, string $how = 'post-form', ?string $base = null): array
+    {
+        $url = rtrim($base ?? $this->base(), '/').'/'.$operation;
+        $data = $this->creds() + $params;
+        $req = Http::accept('*/*')->timeout(90)->connectTimeout(10)->withOptions(['verify' => ($this->c->settings['verify_ssl'] ?? true) !== false]);
+        $t = microtime(true);
+        try {
+            $res = match ($how) {
+                'get' => $req->get($url, $data),
+                'post-json' => $req->asJson()->post($url, $data),
+                default => $req->asForm()->post($url, $data),
+            };
+        } catch (\Throwable $e) {
+            return ['url' => $url, 'how' => $how, 'error' => $e->getMessage()];
+        }
+
+        return ['url' => $url, 'how' => $how, 'status' => $res->status(), 'ms' => (int) ((microtime(true) - $t) * 1000),
+            'headers' => array_map(fn ($v) => implode(', ', $v), $res->headers()), 'body' => (string) $res->body()];
+    }
+
+    public function baseUrl(): string
+    {
+        return $this->base();
+    }
+
     /** @return string the booking number in the old system, or "NotAvailable" */
     public function book(array $p): string
     {
