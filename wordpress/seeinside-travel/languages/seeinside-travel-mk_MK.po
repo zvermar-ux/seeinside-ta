@@ -3891,3 +3891,42 @@ msgstr "Мени „%1$s“: %2$d нови, %3$d отстранети, вкуп�
 
 msgid "Photo %1$d of %2$d"
 msgstr "Фотографија %1$d од %2$d"
+
+msgid "How the slider looks on a phone (screens up to 767px). The height is above (Height – phone)."
+msgstr "Како изгледа слајдерот на телефон (екрани до 767px). Висината е погоре (Висина – телефон)."
+
+msgid "Whole text"
+msgstr "Цел текст"
+
+msgid "First 3 lines"
+msgstr "Први 3 реда"
+
+msgid "Hidden"
+msgstr "Скриено"
+
+msgid "Next to each other"
+msgstr "Еден до друг"
+
+msgid "One under the other, full width"
+msgstr "Еден под друг, цела ширина"
+
+msgid "Only the main button"
+msgstr "Само главното копче"
+
+msgid "At the bottom"
+msgstr "Долу"
+
+msgid "Hidden (swipe)"
+msgstr "Скриени (лизгање со прст)"
+
+msgid "Left part"
+msgstr "Левиот дел"
+
+msgid "Right part"
+msgstr "Десниот дел"
+
+msgid "Darker = the text reads better on a small screen"
+msgstr "Потемно = текстот подобро се чита на мал екран"
+
+msgid "Visible part of the photo"
+msgstr "Видлив дел од фотографијата"

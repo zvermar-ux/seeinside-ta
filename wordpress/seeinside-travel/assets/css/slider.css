@@ -113,3 +113,31 @@ html:has(.sta-hero.is-full) body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) {
   .sta-hero-content > *, .sta-hero-title .sta-ch, .sta-hero-bg { transition: none !important; animation: none !important; }
 }
+
+/* phones: settings of SeeInside Travel → Slider → Phones */
+@media (max-width: 767px) {
+  .sta-hero .sta-hero-slide { padding: 0 var(--m-offset, 18px); }
+  .sta-hero.m-valign-bottom .sta-hero-slide { align-items: flex-end; padding-top: 0; padding-bottom: calc(var(--arrow-s, 54px) * .8 + 9%); }
+  .sta-hero.m-valign-center .sta-hero-slide { align-items: center; padding-top: 0; padding-bottom: 0; }
+  .sta-hero.m-arrows-hide .sta-hero-slide { padding-bottom: 8%; }
+  .sta-hero.m-valign-center.m-arrows-hide .sta-hero-slide { padding-bottom: 0; }
+  .sta-hero.m-align-left .sta-hero-slide { justify-content: flex-start; text-align: left; }
+  .sta-hero.m-align-center .sta-hero-slide { justify-content: center; text-align: center; }
+  .sta-hero.m-align-left .sta-hero-btns { justify-content: flex-start; }
+  .sta-hero.m-align-center .sta-hero-btns, .sta-hero.m-align-center .sta-hero-nav { justify-content: center; }
+  .sta-hero.m-align-center .sta-hero-sub { margin-left: auto; margin-right: auto; }
+  .sta-hero-content { max-width: 100%; }
+  .sta-hero .sta-hero-super { font-size: var(--m-super-s, 24px); }
+  .sta-hero .sta-hero-title { font-size: var(--m-title-s, 34px); line-height: 1.15; margin-bottom: .35em; overflow-wrap: anywhere; }
+  .sta-hero .sta-hero-sub { font-size: var(--m-sub-s, 15px); margin: -.2em 0 1.2em; max-width: none; }
+  .sta-hero.m-sub-clamp3 .sta-hero-sub { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .sta-hero.m-sub-hide .sta-hero-sub { display: none; }
+  .sta-hero .sta-hero-btns { gap: .6rem; }
+  .sta-hero.m-btns-stack .sta-hero-btns { flex-direction: column; align-items: stretch; }
+  .sta-hero.m-btns-stack .sta-hero-btn { justify-content: center; width: 100%; }
+  .sta-hero.m-btns-main .sta-hero-btn ~ .sta-hero-btn { display: none; }
+  .sta-hero.m-arrows-hide .sta-hero-nav, .sta-hero.m-arrows-hide .sta-hero-progress { display: none !important; }
+  .sta-hero.m-align-center .sta-hero-nav { left: 50%; right: auto !important; transform: translateX(-50%) !important; }
+  .sta-hero .sta-hero-bg { background-position: var(--m-photo, center) center; }
+  .sta-hero .sta-hero-overlay { opacity: var(--m-ov-o, .45) !important; background: var(--ov, #0b1220) !important; }
+}

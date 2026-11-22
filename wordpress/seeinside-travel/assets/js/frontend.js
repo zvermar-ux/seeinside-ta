@@ -1105,10 +1105,14 @@
           if (all.length) { all[0].parentNode.insertBefore(btn, all[0]); placed = true; }
         }
         if (!placed) { var nav = $('nav', head) || $('.main-menu', head); if (nav && nav.parentNode) { nav.parentNode.appendChild(btn); placed = true; } }
-        if (placed) btn.classList.add('is-in-header');
-        // phones: a second one next to the mobile menu button
+        if (placed) { btn.classList.add('is-in-header'); btn.parentNode.classList.add('sta-qs-row'); }
+        // phones: a second one right next to (left of) the mobile menu button, in one row with it
         var mob = $$('.th-menu-toggle, .menu-toggle, .mobile-menu-toggle, [class*="hamburger"]', head).filter(function (x) { return x.offsetParent !== null; })[0];
-        if (mob && (!placed || btn.offsetParent === null)) { var b2 = btn.cloneNode(true); mob.parentNode.insertBefore(b2, mob); placed = true; }
+        if (mob && (!placed || btn.offsetParent === null || !mob.parentNode.contains(btn))) {
+          if (placed && btn.offsetParent !== null) btn.classList.add('sta-qs-desk');   // the first one only on computers
+          var b2 = btn.cloneNode(true); b2.classList.remove('sta-qs-desk'); b2.classList.add('sta-qs-mob');
+          mob.parentNode.insertBefore(b2, mob); mob.parentNode.classList.add('sta-qs-row'); placed = true;
+        }
       }
       if (!placed) { btn.classList.add('is-floating'); document.body.appendChild(btn); }
     }

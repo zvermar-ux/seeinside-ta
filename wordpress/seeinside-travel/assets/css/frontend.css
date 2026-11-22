@@ -1110,3 +1110,11 @@ dialog.sta-psd::backdrop { background: rgba(15, 23, 42, .55); }
 .sta-psd-prev { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-bottom: 10px; }
 .sta-psd-prev span { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; }
 .sta-psd-prev button { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50% !important; border: 0 !important; background: rgba(15, 23, 42, .75) !important; color: #fff !important; font-size: 16px; line-height: 1; cursor: pointer; padding: 0 !important; }
+
+/* header on phones / tablets: the magnifier in one row with the menu button; nothing may push the page sideways */
+@media (max-width: 1199px) {
+  .sta-qs-row { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: flex-end; gap: 10px; }
+  .sta-qs-row > .sta-qs-desk { display: none !important; }
+  html, body { overflow-x: clip; max-width: 100%; }
+}
+@media (min-width: 1200px) { .sta-qs-mob { display: none !important; } }

@@ -75,6 +75,18 @@ class STA_Slider
             'text_anim' => 'rise',           // rise | letters | blur | none
             'ken_burns' => '',
             'effects_mobile' => '1',
+            // phones (up to 767px)
+            'm_title_size' => 34,
+            'm_super_size' => 24,
+            'm_sub_size' => 15,
+            'm_sub' => 'clamp3',             // show | clamp3 | hide
+            'm_align' => 'left',             // left | center
+            'm_valign' => 'bottom',          // center | bottom
+            'm_offset' => 18,                // px from the side
+            'm_btns' => 'row',               // row | stack | main
+            'm_arrows' => 'bottom',          // bottom | hide
+            'm_overlay' => 0.45,
+            'm_photo' => 'center',           // center | left | right – which part of the photo stays visible
         ];
     }
 
@@ -108,6 +120,12 @@ class STA_Slider
                 'none' => __('Instant', 'seeinside-travel'),
             ],
             'text_anim' => ['rise' => __('Rise & fade (as in the video)', 'seeinside-travel'), 'letters' => __('Letter by letter', 'seeinside-travel'), 'blur' => __('Blur in', 'seeinside-travel'), 'none' => __('No animation', 'seeinside-travel')],
+            'm_sub' => ['show' => __('Whole text', 'seeinside-travel'), 'clamp3' => __('First 3 lines', 'seeinside-travel'), 'hide' => __('Hidden', 'seeinside-travel')],
+            'm_align' => ['left' => __('Left', 'seeinside-travel'), 'center' => __('Centre', 'seeinside-travel')],
+            'm_valign' => ['center' => __('Middle', 'seeinside-travel'), 'bottom' => __('Bottom', 'seeinside-travel')],
+            'm_btns' => ['row' => __('Next to each other', 'seeinside-travel'), 'stack' => __('One under the other, full width', 'seeinside-travel'), 'main' => __('Only the main button', 'seeinside-travel')],
+            'm_arrows' => ['bottom' => __('At the bottom', 'seeinside-travel'), 'hide' => __('Hidden (swipe)', 'seeinside-travel')],
+            'm_photo' => ['center' => __('Centre', 'seeinside-travel'), 'left' => __('Left part', 'seeinside-travel'), 'right' => __('Right part', 'seeinside-travel')],
         ];
     }
 
@@ -208,11 +226,14 @@ class STA_Slider
             '--btn-bg' => $s['btn_bg'], '--btn-c' => $s['btn_color'], '--btn-hover' => $s['btn_hover'], '--btn2-c' => $s['btn2_color'], '--btn-r' => (int) $s['btn_radius'].'px',
             '--arrow-s' => (int) $s['arrow_size'].'px', '--arrow-bg' => $s['arrow_bg'], '--arrow-active' => $s['arrow_active'], '--arrow-c' => $s['arrow_color'],
             '--t-ms' => (int) $s['transition_ms'].'ms',
+            '--m-title-s' => (int) $s['m_title_size'].'px', '--m-super-s' => (int) $s['m_super_size'].'px', '--m-sub-s' => (int) $s['m_sub_size'].'px',
+            '--m-offset' => (int) $s['m_offset'].'px', '--m-ov-o' => (float) $s['m_overlay'], '--m-photo' => $s['m_photo'],
         ];
         $style = implode(';', array_map(fn ($k, $v) => $k.':'.$v, array_keys($vars), $vars));
         $classes = [
             'sta-hero', 'is-align-'.$s['content_align'], 'is-valign-'.$s['content_valign'], 'is-arrows-'.$s['arrows'], 'is-arrow-'.$s['arrow_style'],
             'is-btn-'.$s['btn_size'], 'is-btn2-'.$s['btn2_style'], 'is-text-'.$s['text_anim'], 'is-pag-'.$s['pagination'],
+            'm-sub-'.$s['m_sub'], 'm-align-'.$s['m_align'], 'm-valign-'.$s['m_valign'], 'm-btns-'.$s['m_btns'], 'm-arrows-'.$s['m_arrows'],
         ];
         if ($s['overlay_gradient']) {
             $classes[] = 'has-gradient';
@@ -398,6 +419,19 @@ class STA_Slider
             .self::field('content_offset', __('Distance from the edge', 'seeinside-travel'), 'number', ['min' => 0, 'max' => 30, 'step' => 0.5, 'unit' => '%'])
             .'</table></div>';
 
+        echo '<div class="sta-card"><h2>'.esc_html__('Phones', 'seeinside-travel').'</h2><p class="description">'.esc_html__('How the slider looks on a phone (screens up to 767px). The height is above (Height – phone).', 'seeinside-travel').'</p><table class="form-table">'
+            .self::field('m_title_size', __('Title size', 'seeinside-travel'), 'number', ['min' => 16, 'max' => 70, 'unit' => 'px'])
+            .self::field('m_super_size', __('Supertitle size', 'seeinside-travel'), 'number', ['min' => 10, 'max' => 60, 'unit' => 'px'])
+            .self::field('m_sub_size', __('Subtitle size', 'seeinside-travel'), 'number', ['min' => 10, 'max' => 30, 'unit' => 'px'])
+            .self::field('m_sub', __('Subtitle', 'seeinside-travel'), 'select', self::options()['m_sub'])
+            .self::field('m_align', __('Text position', 'seeinside-travel'), 'select', self::options()['m_align'])
+            .self::field('m_valign', __('Vertical position', 'seeinside-travel'), 'select', self::options()['m_valign'])
+            .self::field('m_offset', __('Distance from the edge', 'seeinside-travel'), 'number', ['min' => 0, 'max' => 60, 'unit' => 'px'])
+            .self::field('m_btns', __('Buttons', 'seeinside-travel'), 'select', self::options()['m_btns'])
+            .self::field('m_arrows', __('Arrows', 'seeinside-travel'), 'select', self::options()['m_arrows'])
+            .self::field('m_overlay', __('Overlay strength', 'seeinside-travel'), 'range', ['min' => 0, 'max' => 0.9, 'step' => 0.02, 'help' => __('Darker = the text reads better on a small screen', 'seeinside-travel')])
+            .self::field('m_photo', __('Visible part of the photo', 'seeinside-travel'), 'select', self::options()['m_photo'])
+            .'</table></div>';
         echo '<div class="sta-card"><h2>'.esc_html__('Photo overlay', 'seeinside-travel').'</h2><table class="form-table">'
             .self::field('overlay_color', __('Overlay colour', 'seeinside-travel'), 'color')
             .self::field('overlay_opacity', __('Overlay strength', 'seeinside-travel'), 'range', ['min' => 0, 'max' => 0.9, 'step' => 0.02])
