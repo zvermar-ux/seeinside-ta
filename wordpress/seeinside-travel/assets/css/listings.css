@@ -93,7 +93,7 @@
 .sta-l--arc .sta-l-cell { position: absolute; left: 50%; top: 0; width: var(--arc-w, 260px); margin-left: calc(var(--arc-w, 260px) / -2); transition: transform .7s cubic-bezier(.22, .8, .24, 1), opacity .5s; will-change: transform; }
 .sta-l--arc .sta-l-cell.is-hidden { opacity: 0; pointer-events: none; }
 .sta-l--arc.is-dragging .sta-l-cell { transition: none; }
-@media (max-width: 640px) { .sta-l--arc { --arc-w: 200px; --arc-h: 330px; } }
+@media (max-width: 640px) { .sta-l--arc { --arc-w: min(74vw, 290px); --arc-h: 380px; } .sta-l--arc .sta-l-stage { padding-top: 1.6rem; } }
 
 /* slider 2: coverflow (video 2) */
 .sta-l--coverflow .sta-l-stage { overflow: hidden; padding: 1.5rem 0 2rem; }
@@ -216,3 +216,23 @@
 .sta-c[style*="--c-img-h"] .sta-c-media { aspect-ratio: auto; height: var(--c-img-h); }
 
 @media (prefers-reduced-motion: reduce) { .sta-c, .sta-c *, .sta-l-cell { transition: none !important; } }
+
+/* narrow cards (phones, 2 in a row, cards on the arc): compact – price label in one line, the button under the price */
+.sta-l-cell { container: stac / inline-size; }
+@container stac (max-width: 300px) {
+  .sta-c-body { padding: .85rem .9rem .95rem; gap: .35rem; }
+  .sta-c-eyebrow { font-size: .68rem; letter-spacing: .1em; }
+  .sta-c-title { font-size: min(var(--c-title, 19px), 1.05rem) !important; }
+  .sta-c-chips, .sta-c-sub { font-size: .82rem; gap: .25rem .6rem; }
+  .sta-c-foot { padding-top: .65rem; gap: .5rem; }
+  .sta-c-price small { font-size: .62rem; letter-spacing: .06em; white-space: nowrap; }
+  .sta-c-price b { font-size: 1.2rem; white-space: nowrap; }
+  .sta-c-btn { padding: .48rem .85rem; font-size: .85rem; }
+}
+@container stac (max-width: 230px) {
+  .sta-c-foot { flex-direction: column; align-items: stretch; }
+  .sta-c-foot .sta-c-btn { justify-content: center; width: 100%; }
+  .is-btn-arrow .sta-c-foot .sta-c-btn { width: 40px; align-self: flex-end; }
+  .sta-c-price { grid-template-columns: auto; }
+  .sta-c-price b { font-size: 1.1rem; }
+}
