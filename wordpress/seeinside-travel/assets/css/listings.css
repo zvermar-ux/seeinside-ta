@@ -236,3 +236,17 @@
   .sta-c-price { grid-template-columns: auto; }
   .sta-c-price b { font-size: 1.1rem; }
 }
+
+/* phones: normal spaces between the heading, the cards and the dots */
+@media (max-width: 640px) {
+  .sta-l { margin-bottom: 1.5rem; }
+  .sta-l-head { margin-bottom: 1rem; gap: .8rem; }
+  .sta-l-head.is-center { gap: .7rem; }
+  .sta-l-sub { font-size: .95rem; }
+  .sta-l-all { padding: .65rem 1.15rem; font-size: .92rem; }
+  .sta-l--arc .sta-l-stage { padding: .9rem 0 0; }
+  .sta-l--coverflow .sta-l-stage { padding: .6rem 0 .4rem; }
+  .sta-l-dots { margin-top: .7rem; gap: .4rem; flex-wrap: wrap; }
+  .sta-l-dots button { width: 9px; height: 9px; }
+  .sta-l--carousel .sta-l-track { padding-bottom: .4rem; }
+}

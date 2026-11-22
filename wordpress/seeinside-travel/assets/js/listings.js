@@ -119,9 +119,12 @@
       c.classList.toggle('is-hidden', a > 3.2);
       c.classList.toggle('is-center', isCenter);
     });
-    // height of the stage = tallest card + the arc drop
-    var cell = $('.sta-l-cell', root); if (cell) root.style.setProperty('--arc-h', (cell.offsetHeight + 70) + 'px');
-    window.addEventListener('load', function () { var c = $('.sta-l-cell', root); if (c) root.style.setProperty('--arc-h', (c.offsetHeight + 70) + 'px'); });
+    // height of the stage = the tallest card + the drop of the cards next to it (small on phones)
+    function h() {
+      var m = 0; $$('.sta-l-cell', root).forEach(function (c) { m = Math.max(m, c.offsetHeight); });
+      if (m) root.style.setProperty('--arc-h', (m + (window.innerWidth < 641 ? 26 : 60)) + 'px');
+    }
+    h(); window.addEventListener('load', h); window.addEventListener('resize', h);
   }
 
   function coverflow(root, opts) {
@@ -136,8 +139,8 @@
       c.classList.toggle('is-center', isCenter);
     });
     var cell = $('.sta-l-cell', root);
-    function h() { var c = $('.sta-l-cell .sta-c', root); if (c) root.style.setProperty('--cf-h', (c.offsetHeight + 20) + 'px'); }
-    h(); window.addEventListener('load', h);
+    function h() { var m = 0; $$('.sta-l-cell .sta-c', root).forEach(function (c) { m = Math.max(m, c.offsetHeight); }); if (m) root.style.setProperty('--cf-h', (m + 16) + 'px'); }
+    h(); window.addEventListener('load', h); window.addEventListener('resize', h);
     // "DRAG" circle following the mouse
     var dragEl = $('.sta-l-drag', root), track = $('.sta-l-track', root);
     if (dragEl && window.matchMedia && matchMedia('(hover: hover)').matches) {
