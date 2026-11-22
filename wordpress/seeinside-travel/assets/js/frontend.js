@@ -1162,6 +1162,39 @@
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var first = $('.sta-qs-item', res); if (first) location.href = first.href; } });
   })();
 
+  /* ---------- header of the theme: top bar + phone layout (SeeInside Travel → Header) ---------- */
+  (function () {
+    var tpl = $('template[data-sta-header]'); if (!tpl) return;
+    var head = $('.elementor-location-header') || $('header.th-header, .th-header') || $('header');
+    if (!head) return;
+    var bar = tpl.content.firstElementChild;
+    if (bar) head.parentNode.insertBefore(bar.cloneNode(true), head);
+    var root = document.documentElement, sticky = tpl.dataset.sticky;
+    if (sticky === 'off') root.classList.add('sta-mh-nosticky');
+    if (sticky === 'on') { root.classList.add('sta-mh-sticky'); head.classList.add('sta-mh-head'); }
+    if (tpl.dataset.mobile !== '1') return;
+    root.classList.add('sta-mh');
+    head.classList.add('sta-mh-head');
+    // logo, the menu button and the row that holds both: one line, small logo left, buttons right
+    var mark = function () {
+      var logo = $$('img', head).filter(function (i) { return !i.closest('nav, .menu, .sub-menu, .sta-qs-btn, .th-menu-wrapper, .mobile-menu'); })[0];
+      var tog = $$('.th-menu-toggle, .menu-toggle, .mobile-menu-toggle, [class*="hamburger"]', head).filter(function (x) { return x.offsetParent !== null; })[0];
+      if (logo) logo.classList.add('sta-mh-logo');
+      if (tog) tog.classList.add('sta-mh-toggle');
+      if (!logo || !tog) return;
+      var a = logo; while (a && !a.contains(tog)) a = a.parentElement;
+      if (!a || a === head.parentElement) return;
+      a.classList.add('sta-mh-row');
+      $$(':scope > *', a).forEach(function (ch) {
+        if (ch.contains(logo)) ch.classList.add('sta-mh-logo-col');
+        else if (ch.contains(tog)) ch.classList.add('sta-mh-btn-col');
+      });
+    };
+    mark();
+    // the theme may copy the header for its sticky version later
+    setTimeout(mark, 1200);
+  })();
+
   /* ---------- main menu of the theme: never two rows – what does not fit goes under "⋯" ---------- */
   (function () {
     var flag = $('[data-sta-menu-more]'); if (!flag) return;

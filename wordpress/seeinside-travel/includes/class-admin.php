@@ -55,6 +55,7 @@ class STA_Admin
             'connection' => __('Connection', 'seeinside-travel'),
             'sync' => __('Sync', 'seeinside-travel'),
             'display' => __('Display & templates', 'seeinside-travel'),
+            'header' => __('Header', 'seeinside-travel'),
             'photos' => __('Photo stories', 'seeinside-travel'),
             'help' => __('Shortcodes & help', 'seeinside-travel'),
         ];
@@ -235,6 +236,51 @@ class STA_Admin
         echo '</div></form>';
     }
 
+    /** Header: top bar with links and the phone layout of the theme header */
+    protected static function tab_header(array $s): void
+    {
+        $o = STA_Header::opt();
+        $d = STA_Header::defaults();
+        $chk = fn ($k, $label) => '<label style="display:block;margin:2px 0"><input type="checkbox" name="'.$k.'" value="1"'.checked($o[$k], '1', false).'> '.esc_html($label).'</label>';
+        $num = fn ($k, $label, $help = '') => '<tr><th><label for="hd-'.$k.'">'.esc_html($label).'</label></th><td><input type="number" min="0" class="small-text" id="hd-'.$k.'" name="'.$k.'" value="'.esc_attr((string) $o[$k]).'"> px <span class="description">'.esc_html(sprintf(__('default: %s', 'seeinside-travel'), $d[$k])).($help ? ' · '.esc_html($help) : '').'</span></td></tr>';
+        $col = fn ($k, $label, $help = '') => '<tr><th>'.esc_html($label).'</th><td><input type="text" class="sta-color" name="'.$k.'" value="'.esc_attr($o[$k]).'" data-default-color="'.esc_attr($d[$k]).'">'.($help ? '<p class="description">'.esc_html($help).'</p>' : '').'</td></tr>';
+        $sel = function ($k, $label, array $opts) use ($o) {
+            $h = '<tr><th>'.esc_html($label).'</th><td><select name="'.$k.'">';
+            foreach ($opts as $v => $l) {
+                $h .= '<option value="'.esc_attr($v).'"'.selected($o[$k], $v, false).'>'.esc_html($l).'</option>';
+            }
+
+            return $h.'</select></td></tr>';
+        };
+        self::form_start('header');
+        echo '<div class="sta-grid2"><div>';
+        echo '<div class="sta-card"><h2>'.esc_html__('Top bar', 'seeinside-travel').'</h2><p class="description">'.esc_html__('A thin bar above the header of the theme: phone and e-mail of the agency on the left, links to pages on the right.', 'seeinside-travel').'</p><table class="form-table">'
+            .'<tr><th>'.esc_html__('Show', 'seeinside-travel').'</th><td>'.$chk('tb_on', __('Top bar above the header', 'seeinside-travel')).'</td></tr>'
+            .$sel('tb_where', __('Where', 'seeinside-travel'), ['all' => __('Computer and phone', 'seeinside-travel'), 'mobile' => __('Only phones and tablets', 'seeinside-travel'), 'desktop' => __('Only computers', 'seeinside-travel')])
+            .'<tr><th><label for="hd-links">'.esc_html__('Links', 'seeinside-travel').'</label></th><td><textarea class="large-text code" rows="5" id="hd-links" name="tb_links">'.esc_textarea($o['tb_links']).'</textarea><p class="description">'.esc_html__('One per line: Text|/page/  (e.g. Visas|/vizi/ or Facebook|https://facebook.com/…)', 'seeinside-travel').'</p></td></tr>'
+            .'<tr><th>'.esc_html__('Contact', 'seeinside-travel').'</th><td>'.$chk('tb_phone', __('Phone of the agency', 'seeinside-travel')).$chk('tb_email', __('E-mail of the agency (on phones only the icon)', 'seeinside-travel')).'</td></tr>'
+            .'<tr><th><label for="hd-text">'.esc_html__('Short text', 'seeinside-travel').'</label></th><td><input type="text" class="large-text" id="hd-text" name="tb_text" value="'.esc_attr($o['tb_text']).'" placeholder="'.esc_attr__('e.g. Working hours: Mon–Fri 9–17', 'seeinside-travel').'"><p class="description">'.esc_html__('Only on computers.', 'seeinside-travel').'</p></td></tr>'
+            .$col('tb_bg', __('Background', 'seeinside-travel')).$col('tb_color', __('Text', 'seeinside-travel'))
+            .$num('tb_size', __('Text size', 'seeinside-travel'))
+            .'</table></div>';
+        echo '</div><div>';
+        echo '<div class="sta-card"><h2>'.esc_html__('Header on phones', 'seeinside-travel').'</h2><p class="description">'.esc_html__('Screens up to 1199px: the logo, the magnifier and the menu button in one row.', 'seeinside-travel').'</p><table class="form-table">'
+            .'<tr><th>'.esc_html__('Arrange', 'seeinside-travel').'</th><td>'.$chk('m_on', __('Arrange the header on phones', 'seeinside-travel')).'</td></tr>'
+            .$num('m_logo', __('Logo width', 'seeinside-travel'))
+            .$num('m_pad', __('Space above and below', 'seeinside-travel'))
+            .$col('m_bg', __('Header background', 'seeinside-travel'), __('Empty = as the theme', 'seeinside-travel'))
+            .$num('m_btn_size', __('Menu button size', 'seeinside-travel'))
+            .$col('m_btn_bg', __('Menu button – background', 'seeinside-travel'), __('Empty = as the theme', 'seeinside-travel'))
+            .$col('m_btn_color', __('Menu button – icon', 'seeinside-travel'), __('Empty = as the theme', 'seeinside-travel'))
+            .$sel('m_sticky', __('Sticky header (stays on top while scrolling)', 'seeinside-travel'), ['theme' => __('As the theme', 'seeinside-travel'), 'off' => __('Off on phones', 'seeinside-travel'), 'on' => __('Always on top', 'seeinside-travel')])
+            .'<tr><th><label for="hd-hide">'.esc_html__('Hide on phones', 'seeinside-travel').'</label></th><td><textarea class="large-text code" rows="3" id="hd-hide" name="m_hide" placeholder=".header-button .th-btn">'.esc_textarea($o['m_hide']).'</textarea><p class="description">'.esc_html__('CSS selectors of elements of the header that should not show on phones, one per line.', 'seeinside-travel').'</p></td></tr>'
+            .'<tr><th><label for="hd-css">'.esc_html__('Own CSS', 'seeinside-travel').'</label></th><td><textarea class="large-text code" rows="4" id="hd-css" name="css" placeholder="@media (max-width:767px){ .sta-topbar { font-size:12px } }">'.esc_textarea($o['css']).'</textarea></td></tr>'
+            .'</table></div>';
+        echo '</div></div>';
+        submit_button(__('Save', 'seeinside-travel'));
+        echo '</form>';
+    }
+
     /** Photo stories: texts, buttons and design of [sta_photo_stories_slider] / [sta_photo_stories] */
     protected static function tab_photos(array $s): void
     {
@@ -392,6 +438,9 @@ class STA_Admin
                     $s[$k] = $v;
                 }
             }
+        } elseif ($tab === 'header') {
+            STA_Header::save($_POST);
+            self::back($tab, __('Saved.', 'seeinside-travel'));
         } elseif ($tab === 'photos') {
             if (! empty($_POST['sta_ps_reset'])) {
                 delete_option('sta_ps');

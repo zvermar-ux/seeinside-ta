@@ -3,7 +3,7 @@
  * Plugin Name:       SeeInside Travel – Sync
  * Plugin URI:        https://ta.seeinsidesolution.com
  * Description:       Real-time sync of tours, events, hotels/apartments and visas from the SeeInside Travel system (ta.seeinsidesolution.com) into custom post types with ACF fields, plus booking & visa forms, listings, slider and page-builder templates (Elementor / Gutenberg / any theme).
- * Version:           2.19.0
+ * Version:           2.20.0
  * Requires at least: 6.2
  * Requires PHP:      8.0
  * Author:            SeeInside Solution
@@ -14,7 +14,7 @@
 
 defined('ABSPATH') || exit;
 
-define('STA_VERSION', '2.19.0');
+define('STA_VERSION', '2.20.0');
 define('STA_FILE', __FILE__);
 define('STA_DIR', plugin_dir_path(__FILE__));
 define('STA_URL', plugin_dir_url(__FILE__));
@@ -40,6 +40,7 @@ require_once STA_DIR.'includes/class-site.php';
 require_once STA_DIR.'includes/class-searchbox.php';
 require_once STA_DIR.'includes/class-quicksearch.php';
 require_once STA_DIR.'includes/class-photo-stories.php';
+require_once STA_DIR.'includes/class-header.php';
 require_once STA_DIR.'includes/class-hotels.php';
 require_once STA_DIR.'includes/class-termpage.php';
 require_once STA_DIR.'includes/class-listings-admin.php';
@@ -65,6 +66,7 @@ add_action('plugins_loaded', function () {
     STA_Search_Box::init();
     STA_Quick_Search::init();
     STA_Photo_Stories::init();
+    STA_Header::init();
     STA_Hotels::init();
     STA_Term_Page::init();
     STA_Listings_Admin::init();

@@ -1118,3 +1118,28 @@ dialog.sta-psd::backdrop { background: rgba(15, 23, 42, .55); }
   html, body { overflow-x: clip; max-width: 100%; }
 }
 @media (min-width: 1200px) { .sta-qs-mob { display: none !important; } }
+
+/* top bar above the header (SeeInside Travel → Header) */
+.sta-topbar { background: var(--tb-bg, #12404d); color: var(--tb-c, #fff); font-size: var(--tb-s, 13px); line-height: 1.3; position: relative; z-index: 60; }
+.sta-topbar-in { max-width: 1400px; margin: 0 auto; padding: 7px 16px; display: flex; align-items: center; justify-content: space-between; gap: 6px 18px; flex-wrap: wrap; }
+.sta-topbar a { color: inherit !important; text-decoration: none !important; display: inline-flex; align-items: center; gap: 6px; opacity: .92; }
+.sta-topbar a:hover { opacity: 1; text-decoration: underline !important; }
+.sta-topbar svg { width: 14px; height: 14px; flex: none; }
+.sta-tb-l, .sta-tb-r { display: flex; align-items: center; gap: 4px 16px; flex-wrap: wrap; }
+.sta-tb-text { opacity: .85; }
+@media (min-width: 1200px) { .sta-topbar.is-mobile { display: none; } }
+@media (max-width: 1199px) {
+  .sta-topbar.is-desktop { display: none; }
+  .sta-topbar-in { padding: 6px 12px; justify-content: center; text-align: center; }
+  .sta-tb-l, .sta-tb-r { justify-content: center; gap: 4px 12px; }
+  .sta-topbar .sta-tb-mail span, .sta-tb-text { display: none; }   /* phones: icon only for the e-mail */
+  /* phones: small logo and the buttons in one row */
+  .sta-mh .sta-mh-row { display: flex !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: space-between !important; gap: 10px; padding-top: var(--mh-pad, 10px) !important; padding-bottom: var(--mh-pad, 10px) !important; }
+  .sta-mh .sta-mh-row > * { width: auto !important; max-width: none !important; flex: 0 1 auto !important; margin-top: 0 !important; margin-bottom: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; }
+  .sta-mh .sta-mh-row > .sta-mh-logo-col { flex: 0 1 auto !important; min-width: 0; }
+  .sta-mh .sta-mh-row > .sta-mh-btn-col { display: flex !important; align-items: center; justify-content: flex-end; gap: 10px; margin-left: auto !important; }
+  .sta-mh img.sta-mh-logo { width: var(--mh-logo, 130px) !important; max-width: var(--mh-logo, 130px) !important; height: auto !important; max-height: none !important; }
+  .sta-mh .sta-mh-toggle { width: var(--mh-btn-s, 44px) !important; height: var(--mh-btn-s, 44px) !important; min-width: 0 !important; padding: 0 !important; display: inline-flex !important; align-items: center; justify-content: center; }
+  .sta-mh-nosticky .sticky-wrapper.sticky, .sta-mh-nosticky .sticky-active, .sta-mh-nosticky .header-sticky.sticky { position: relative !important; top: auto !important; animation: none !important; box-shadow: none !important; }
+  .sta-mh-sticky .sta-mh-head { position: sticky !important; top: 0; z-index: 999; }
+}

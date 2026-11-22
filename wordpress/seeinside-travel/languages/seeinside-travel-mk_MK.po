@@ -3930,3 +3930,96 @@ msgstr "Потемно = текстот подобро се чита на мал
 
 msgid "Visible part of the photo"
 msgstr "Видлив дел од фотографијата"
+
+msgid "Header"
+msgstr "Хедер"
+
+msgid "Top bar"
+msgstr "Топ бар"
+
+msgid "A thin bar above the header of the theme: phone and e-mail of the agency on the left, links to pages on the right."
+msgstr "Тенка лента над хедерот на темата: телефон и е-пошта на агенцијата лево, линкови до страници десно."
+
+msgid "Top bar above the header"
+msgstr "Топ бар над хедерот"
+
+msgid "Where"
+msgstr "Каде"
+
+msgid "Computer and phone"
+msgstr "Компјутер и телефон"
+
+msgid "Only phones and tablets"
+msgstr "Само телефони и таблети"
+
+msgid "Only computers"
+msgstr "Само компјутери"
+
+msgid "One per line: Text|/page/  (e.g. Visas|/vizi/ or Facebook|https://facebook.com/…)"
+msgstr "По еден во ред: Текст|/страница/  (пр. Визи|/vizi/ или Facebook|https://facebook.com/…)"
+
+msgid "Phone of the agency"
+msgstr "Телефон на агенцијата"
+
+msgid "E-mail of the agency (on phones only the icon)"
+msgstr "Е-пошта на агенцијата (на телефон само иконата)"
+
+msgid "Short text"
+msgstr "Краток текст"
+
+msgid "e.g. Working hours: Mon–Fri 9–17"
+msgstr "пр. Работно време: пон–пет 9–17"
+
+msgid "Only on computers."
+msgstr "Само на компјутер."
+
+msgid "Header on phones"
+msgstr "Хедер на телефон"
+
+msgid "Screens up to 1199px: the logo, the magnifier and the menu button in one row."
+msgstr "Екрани до 1199px: логото, лупата и копчето за мени во еден ред."
+
+msgid "Arrange"
+msgstr "Среди"
+
+msgid "Arrange the header on phones"
+msgstr "Среди го хедерот на телефон"
+
+msgid "Logo width"
+msgstr "Ширина на логото"
+
+msgid "Space above and below"
+msgstr "Простор горе и долу"
+
+msgid "Header background"
+msgstr "Позадина на хедерот"
+
+msgid "Empty = as the theme"
+msgstr "Празно = како во темата"
+
+msgid "Menu button size"
+msgstr "Големина на копчето за мени"
+
+msgid "Menu button – background"
+msgstr "Копче за мени – позадина"
+
+msgid "Menu button – icon"
+msgstr "Копче за мени – икона"
+
+msgid "Sticky header (stays on top while scrolling)"
+msgstr "Лепливо мени (останува горе при скролање)"
+
+msgid "As the theme"
+msgstr "Како во темата"
+
+msgid "Off on phones"
+msgstr "Исклучено на телефон"
+
+msgid "Always on top"
+msgstr "Секогаш горе"
+
+msgid "Hide on phones"
+msgstr "Скриј на телефон"
+
+msgid "CSS selectors of elements of the header that should not show on phones, one per line."
+msgstr "CSS селектори на елементи од хедерот што не треба да се гледаат на телефон, по еден во ред."
