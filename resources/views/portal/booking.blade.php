@@ -97,6 +97,10 @@
     @media (min-width: 861px) { .side { position: sticky; top: 16px; } }
     /* phone: price & documents right after the booking summary */
     @media (max-width: 860px) { .maincol { display: contents !important; } .hero { order: 1; } .side { order: 2; } .maincol > section:not(.hero) { order: 3; } }
+    .terms-ok { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; font-size: .92rem; line-height: 1.45; }
+    .terms-ok > span { font-size: 1.05rem; line-height: 1.3; color: #16a34a; }
+    .terms-ok a { color: inherit; font-weight: 700; text-decoration: underline; }
+    .terms-ok small { display: block; color: #64748b; font-size: .8rem; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -138,6 +142,16 @@
                     @if ($b->departurePlace)<div><small>{{ __('Departure place') }}</small><b>{{ $b->departurePlace->tr('name', $lang) }}</b></div>@endif
                 </div>
                 @if ($b->contract_note)<p class="muted" style="margin:12px 0 0">{{ $b->contract_note }}</p>@endif
+                @php $termsUrl = $b->termsUrl(); @endphp
+                @if ($termsUrl || $b->terms_accepted_at)
+                    <div class="terms-ok">
+                        @if ($b->terms_accepted_at)
+                            <span>✔</span><div>{!! __('You declared that you are familiar with the :link and accept them in full.', ['link' => $termsUrl ? '<a href="'.e($termsUrl).'" target="_blank" rel="noopener">'.e(__('General terms of travel of NATA')).'</a>' : e(__('General terms of travel of NATA'))]) !!}<small>{{ __('Accepted on :date', ['date' => $b->terms_accepted_at->format('d.m.Y H:i')]) }}</small></div>
+                        @else
+                            <span>📄</span><div><a href="{{ $termsUrl }}" target="_blank" rel="noopener">{{ __('General terms of travel of NATA') }}</a><small>{{ __('They apply to this booking.') }}</small></div>
+                        @endif
+                    </div>
+                @endif
             </div>
         </section>
 

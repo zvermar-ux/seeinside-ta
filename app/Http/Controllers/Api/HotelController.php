@@ -116,6 +116,8 @@ class HotelController extends Controller
             'locale' => 'nullable|in:mk,en',
             'payment_method' => 'nullable|in:card,agency',
             'return_url' => 'nullable|string|max:500',
+            'terms_accepted' => 'nullable|boolean',
+            'terms_url' => 'nullable|string|max:500',
         ]);
         $policy = \App\Services\Payments\PaymentPolicy::for(\App\Models\Agency::find($this->agencyId($request)), null, 'hotel');
         if ($policy['online'] && ! $policy['agency'] && ($d['payment_method'] ?? 'card') !== 'card') {

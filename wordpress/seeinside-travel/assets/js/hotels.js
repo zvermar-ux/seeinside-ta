@@ -547,6 +547,7 @@
         + '<label class="sta-field"><span>' + esc(L.message) + '</span><textarea name="message" rows="2"></textarea></label>'
         + '<input type="text" name="website" class="sta-hp" tabindex="-1" autocomplete="off" aria-hidden="true">'
         + payChoice(rate.price, h.currency)
+        + (H.terms || '')
         + '<label class="sta-check sta-consent"><input type="checkbox" required> <span>' + (H.consent || '') + '</span></label>'
         + '<div class="sta-msg" data-sta-msg></div><button type="submit" class="sta-btn sta-btn-block">' + esc(L.send) + '</button></form>';
       document.body.appendChild(dlg);
@@ -569,6 +570,7 @@
           customer: { name: fd.get('customer[name]'), email: fd.get('customer[email]'), phone: fd.get('customer[phone]') },
           message: fd.get('message') || '', website: fd.get('website') || '', sta_ts: started,
           payment_method: fd.get('payment_method') || null, return_url: location.href.split('#')[0],
+          terms_accepted: fd.get('terms_accepted') ? true : null, terms_url: fd.get('terms_url') || null,
         };
         if (accept) payload.accept_price = accept;
         var btn = $('button[type=submit]', form); btn.disabled = true; K.msg(form, '<span class="sta-spin"></span> ' + esc(L.sending), true);

@@ -492,7 +492,7 @@ class STA_Frontend
             return $blocked;
         }
         $p = $r->get_json_params() ?: $r->get_body_params();
-        $allowed = ['type', 'slug', 'charter_id', 'transport_only', 'departure_id', 'departure_place_id', 'with_transport', 'room_id', 'term_id', 'ticket_id', 'date_from', 'date_to', 'adults', 'children', 'children_ages', 'quantity', 'extras', 'customer', 'passengers', 'message', 'payment_method', 'return_url'];
+        $allowed = ['type', 'slug', 'charter_id', 'transport_only', 'departure_id', 'departure_place_id', 'with_transport', 'room_id', 'term_id', 'ticket_id', 'date_from', 'date_to', 'adults', 'children', 'children_ages', 'quantity', 'extras', 'customer', 'passengers', 'message', 'payment_method', 'return_url', 'terms_accepted', 'terms_url'];
         $data = array_intersect_key((array) $p, array_flip($allowed));
         $data['locale'] = sta_lang();
         $data['message'] = trim(($data['message'] ?? '')."\n\n[".home_url('/').']');

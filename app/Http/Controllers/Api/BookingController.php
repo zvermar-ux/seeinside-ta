@@ -69,6 +69,8 @@ class BookingController extends Controller
             'locale' => 'nullable|in:mk,en',
             'payment_method' => 'nullable|in:card,agency',
             'return_url' => 'nullable|string|max:500',
+            'terms_accepted' => 'nullable|boolean',
+            'terms_url' => 'nullable|string|max:500',
         ]);
 
         $agencyId = $this->agencyId($request);
@@ -331,6 +333,8 @@ class BookingController extends Controller
             'locale' => 'nullable|in:mk,en',
             'payment_method' => 'nullable|in:card,agency',
             'return_url' => 'nullable|string|max:500',
+            'terms_accepted' => 'nullable|boolean',
+            'terms_url' => 'nullable|string|max:500',
         ]);
 
         // name / e-mail / phone are asked once at the top of website forms; questionnaires may contain them too

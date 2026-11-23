@@ -58,6 +58,7 @@ class STA_Hotels
         $privacy = get_privacy_policy_url();
         wp_localize_script('sta-hotels', 'STA_HOTELS', [
             'payment' => sta_payment([], 'hotel'),   // card online / at the agency for hotels (rule of the agency)
+            'terms' => sta_terms_check(),
             'consent' => sprintf(__('I agree that my data is used to process this request (%s).', 'seeinside-travel'), $privacy ? '<a href="'.esc_url($privacy).'" target="_blank">'.esc_html__('privacy policy', 'seeinside-travel').'</a>' : esc_html__('privacy policy', 'seeinside-travel')),
             'destinations' => self::destinations(),
             // the apartment card (same design) with placeholders – the hotels are filled in by hotels.js
@@ -227,7 +228,7 @@ class STA_Hotels
                 return $blocked;
             }
             $p = (array) ($r->get_json_params() ?: $r->get_body_params());
-            $data = array_intersect_key($p, array_flip(['search_id', 'hotel', 'rate_key', 'accept_price', 'query', 'customer', 'passengers', 'message', 'payment_method', 'return_url']));
+            $data = array_intersect_key($p, array_flip(['search_id', 'hotel', 'rate_key', 'accept_price', 'query', 'customer', 'passengers', 'message', 'payment_method', 'return_url', 'terms_accepted', 'terms_url']));
             $data['locale'] = sta_lang();
             $data['message'] = trim(($data['message'] ?? '')."\n\n[".home_url('/').']');
             $res = STA_Api::post('hotels/book', $data, 90);

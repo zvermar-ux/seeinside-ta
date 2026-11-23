@@ -216,6 +216,10 @@ class STA_Admin
         echo '</select><p><label>'.esc_html__('Height (computer)', 'seeinside-travel').' <input type="number" min="150" max="900" step="10" name="gallery_height" value="'.esc_attr($s['gallery_height'] ?? 420).'" style="width:90px"> px</label> &nbsp; '
             .'<label>'.esc_html__('Height (phone)', 'seeinside-travel').' <input type="number" min="150" max="700" step="10" name="gallery_height_mobile" value="'.esc_attr($s['gallery_height_mobile'] ?? 260).'" style="width:90px"> px</label></p>'
             .'<p class="description">'.esc_html__('For all offers. In an Elementor template the "Travel: section" widget (Gallery) can set its own look and height.', 'seeinside-travel').'</p></td></tr>';
+        echo '<tr><th>'.esc_html__('General terms of travel', 'seeinside-travel').'</th><td>'
+            .'<input type="url" class="regular-text" name="terms_url" value="'.esc_attr($s['terms_url'] ?? '').'" placeholder="'.esc_attr(sta_terms_url() ?: home_url('/opsti-uslovi-za-patuvanje/')).'"><br>'
+            .'<input type="text" class="regular-text" name="terms_label" value="'.esc_attr($s['terms_label'] ?? '').'" placeholder="'.esc_attr__('General terms of travel of NATA', 'seeinside-travel').'" style="margin-top:6px">'
+            .'<p class="description">'.esc_html__('Every booking form has a required box "I declare that I am familiar with the General terms of travel of NATA and accept them in full" with this link. Empty link = the page "opsti-uslovi-za-patuvanje".', 'seeinside-travel').'</p></td></tr>';
         echo '</table></div>';
 
         echo '<div class="sta-card"><h2>'.esc_html__('Addresses (URL)', 'seeinside-travel').'</h2><table class="form-table">';
@@ -463,6 +467,8 @@ class STA_Admin
             $s['gallery_layout'] = in_array($_POST['gallery_layout'] ?? '', ['mosaic', 'mosaic3', 'slider', 'grid'], true) ? $_POST['gallery_layout'] : 'mosaic';
             $s['gallery_height'] = max(150, min(900, (int) ($_POST['gallery_height'] ?? 420)));
             $s['gallery_height_mobile'] = max(150, min(700, (int) ($_POST['gallery_height_mobile'] ?? 260)));
+            $s['terms_url'] = esc_url_raw(trim((string) wp_unslash($_POST['terms_url'] ?? '')));
+            $s['terms_label'] = sanitize_text_field(wp_unslash($_POST['terms_label'] ?? ''));
             $s['slugs'] = array_map('sanitize_title', array_intersect_key((array) wp_unslash($_POST['slugs'] ?? []), STA_Schema::post_types()));
             $pages = get_option('sta_pages', []);
             foreach (array_intersect_key((array) wp_unslash($_POST['page_slugs'] ?? []), ['hoteli' => 1, 'apartmani' => 1]) as $key => $slug) {

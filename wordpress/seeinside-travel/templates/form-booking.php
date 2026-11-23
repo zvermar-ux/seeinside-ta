@@ -138,6 +138,7 @@ $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array(
         <li><?php esc_html_e('Answer by e-mail, Viber or WhatsApp', 'seeinside-travel'); ?></li>
     </ul>
     <label class="sta-check sta-remember"><input type="checkbox" data-sta-remember checked> <span><?php esc_html_e('Remember my details on this device', 'seeinside-travel'); ?></span></label>
+    <?php echo sta_terms_check(); // phpcs:ignore ?>
     <label class="sta-check sta-consent"><input type="checkbox" required> <span><?php echo wp_kses_post(sprintf(__('I agree that my data is used to process this request (%s).', 'seeinside-travel'), get_privacy_policy_url() ? '<a href="'.esc_url(get_privacy_policy_url()).'" target="_blank">'.__('privacy policy', 'seeinside-travel').'</a>' : __('privacy policy', 'seeinside-travel'))); ?></span></label>
     <button type="submit" class="sta-btn sta-btn-lg sta-btn-block"><?php echo esc_html($type === 'accommodation' ? __('Send booking request', 'seeinside-travel') : __('Send booking', 'seeinside-travel')); ?></button>
     <div class="sta-msg" data-sta-msg role="status" aria-live="polite"></div>

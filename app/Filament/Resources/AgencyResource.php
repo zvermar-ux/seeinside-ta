@@ -66,6 +66,9 @@ class AgencyResource extends Resource
                         Forms\Components\TextInput::make('email')->label(__('E-mail'))->email(),
                         Forms\Components\TextInput::make('phone')->label(__('Phone'))->tel(),
                         Forms\Components\TextInput::make('website')->label(__('Website'))->url(),
+                        Forms\Components\TextInput::make('terms_url')->label(__('General terms of travel (link)'))->url()->maxLength(500)
+                            ->placeholder('https://…/opsti-uslovi-za-patuvanje/')
+                            ->helperText(__('Shown on the booking page of the client. On the website the client must accept them when booking.')),
                     ]),
                     Forms\Components\TextInput::make('address')->label(__('Address')),
                     Forms\Components\TextInput::make('city')->label(__('City')),

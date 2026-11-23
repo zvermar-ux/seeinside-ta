@@ -40,7 +40,14 @@ class Booking extends Model
             'cancel_requested_at' => 'datetime',
             'supplier_data' => 'array',
             'legacy_sent_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
         ];
+    }
+
+    /** Link to the general terms of travel: the one accepted on the website, else the one of the agency */
+    public function termsUrl(): ?string
+    {
+        return $this->terms_url ?: ($this->agency?->terms_url ?: null);
     }
 
     protected static function booted(): void
@@ -48,6 +55,12 @@ class Booking extends Model
         static::creating(function (Booking $b) {
             $b->reference ??= 'R'.now()->format('ym').'-'.Str::upper(Str::random(5));
             $b->access_token ??= Str::random(40);
+            // a booking from the website: the client ticked "I accept the general terms of travel"
+            if ($b->terms_accepted_at === null && ! app()->runningInConsole() && request()->boolean('terms_accepted')) {
+                $b->terms_accepted_at = now();
+                $url = trim((string) request()->input('terms_url'));
+                $b->terms_url = preg_match('#^https?://#i', $url) ? mb_substr($url, 0, 500) : null;
+            }
         });
 
         // an amount entered when the booking is created becomes its first payment

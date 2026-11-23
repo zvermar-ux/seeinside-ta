@@ -329,3 +329,28 @@ function sta_payment(array $d, string $kind): array
     return ['online' => true, 'mode' => $mode, 'percent' => $mode === 'full' ? 100 : max(1, min(100, $percent)), 'agency' => $agency,
         'title' => $meta['title'] ?? null, 'note' => $meta['note'] ?? null];
 }
+
+
+/** Link to the general terms of travel: the setting, else the page "opsti-uslovi-za-patuvanje" */
+function sta_terms_url(): string
+{
+    $u = (string) sta_setting('terms_url', '');
+    if ($u === '') {
+        $p = get_page_by_path('opsti-uslovi-za-patuvanje');
+        $u = $p instanceof WP_Post && $p->post_status === 'publish' ? (string) get_permalink($p) : '';
+    }
+
+    return $u;
+}
+
+/** Required box of every booking form: "I declare that I am familiar with the General terms of travel of NATA and accept them in full" */
+function sta_terms_check(): string
+{
+    $url = sta_terms_url();
+    $label = (string) sta_setting('terms_label', '') ?: __('General terms of travel of NATA', 'seeinside-travel');
+    $link = $url ? '<a href="'.esc_url($url).'" target="_blank" rel="noopener">'.esc_html($label).'</a>' : esc_html($label);
+
+    return '<label class="sta-check sta-consent sta-terms"><input type="checkbox" name="terms_accepted" value="1" required>'
+        .($url ? '<input type="hidden" name="terms_url" value="'.esc_attr($url).'">' : '')
+        .' <span>'.sprintf(esc_html__('I declare that I am familiar with the %s and accept them in full.', 'seeinside-travel'), $link).'</span></label>';
+}

@@ -2171,5 +2171,11 @@
     "Apartments, villas and hotels": "Апартмани, вили и хотели",
     "Ask the old system for (persons)": "Барај од старата апликација за (лица)",
     "When several rooms here are the SAME room of the old system priced by occupancy (e.g. \"2 adults\", \"3 adults\"): link them all to that room and write how many persons each one is – its price is asked for that number. Empty = max. adults of this room (or all beds of the old room).": "Кога неколку соби тука се ИСТАТА соба од старата апликација со цени според полнотија (пр. „2 возрасни“, „3 возрасни“): поврзи ги сите со таа соба и напиши за колку лица е секоја – цената се бара за тој број. Празно = макс. возрасни на оваа соба (или сите кревети на старата соба).",
-    ":n persons": ":n лица"
+    ":n persons": ":n лица",
+    "General terms of travel (link)": "Општи услови на патување (линк)",
+    "You declared that you are familiar with the :link and accept them in full.": "Изјавивте дека сте запознаени со :link и во целост ги прифаќате.",
+    "General terms of travel of NATA": "Општите услови на патување на НАТА",
+    "Accepted on :date": "Прифатено на :date",
+    "They apply to this booking.": "Важат за оваа резервација.",
+    "Shown on the booking page of the client. On the website the client must accept them when booking.": "Се прикажува на страната со резервацијата на клиентот. На сајтот клиентот мора да ги прифати при резервација."
 }

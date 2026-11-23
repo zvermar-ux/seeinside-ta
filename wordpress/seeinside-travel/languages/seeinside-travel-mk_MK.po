@@ -4029,3 +4029,15 @@ msgstr "Мени на телефон"
 
 msgid "Phone and e-mail of the agency at the end of the phone menu"
 msgstr "Телефон и е-пошта на агенцијата на крајот од менито на телефон"
+
+msgid "General terms of travel of NATA"
+msgstr "Општите услови на патување на НАТА"
+
+msgid "I declare that I am familiar with the %s and accept them in full."
+msgstr "Изјавувам дека сум запознат со %s и во целост ги прифаќам."
+
+msgid "General terms of travel"
+msgstr "Општи услови на патување"
+
+msgid "Every booking form has a required box \"I declare that I am familiar with the General terms of travel of NATA and accept them in full\" with this link. Empty link = the page \"opsti-uslovi-za-patuvanje\"."
+msgstr "Секоја форма за резервација има задолжително поле „Изјавувам дека сум запознат со Општите услови на патување на НАТА и во целост ги прифаќам“ со овој линк. Празно = страната „opsti-uslovi-za-patuvanje“."
