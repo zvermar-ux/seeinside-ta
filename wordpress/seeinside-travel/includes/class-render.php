@@ -234,7 +234,7 @@ class STA_Render
         if ($layout === 'slider') {
             $html = '<div class="sta-gallery-slider" data-sta-lightbox data-sta-gslider style="'.esc_attr($style).'"><div class="sta-gs-track">';
             foreach ($ids as $i => $id) {
-                $html .= '<a href="'.esc_url(wp_get_attachment_image_url($id, 'full')).'" class="sta-gs-item">'.wp_get_attachment_image($id, 'large', false, ['loading' => $i ? 'lazy' : 'eager']).'</a>';
+                $html .= '<a href="'.esc_url(wp_get_attachment_image_url($id, 'full')).'" class="sta-gs-item" data-elementor-open-lightbox="no" data-thumb="'.esc_url((string) wp_get_attachment_image_url($id, 'thumbnail')).'">'.wp_get_attachment_image($id, 'large', false, ['loading' => $i ? 'lazy' : 'eager']).'</a>';
             }
             $html .= '</div>'.($n > 1 ? '<button type="button" class="sta-gs-nav sta-gs-prev" data-dir="-1" aria-label="‹">‹</button><button type="button" class="sta-gs-nav sta-gs-next" data-dir="1" aria-label="›">›</button><span class="sta-gs-n" data-sta-gs-n>1 / '.$n.'</span>' : '').'</div>';
             if ($n > 1) {
@@ -252,7 +252,7 @@ class STA_Render
         foreach ($ids as $i => $id) {
             $full = wp_get_attachment_image_url($id, 'full');
             $more = $i === $show - 1 && $n > $show ? '<span class="sta-more">+'.($n - $show).'</span>' : '';
-            $html .= '<a href="'.esc_url($full).'" class="sta-gallery-item'.($i >= $show ? ' sta-hidden' : '').'">'.wp_get_attachment_image($id, $i === 0 ? 'large' : 'medium_large', false, ['loading' => $i ? 'lazy' : 'eager']).$more.'</a>';
+            $html .= '<a href="'.esc_url($full).'" class="sta-gallery-item'.($i >= $show ? ' sta-hidden' : '').'" data-elementor-open-lightbox="no" data-thumb="'.esc_url((string) wp_get_attachment_image_url($id, 'thumbnail')).'">'.wp_get_attachment_image($id, $i === 0 ? 'large' : 'medium_large', false, ['loading' => $i ? 'lazy' : 'eager']).$more.'</a>';
         }
         // phones: the first photo with the number of all photos
         if ($layout !== 'grid' && $n > 1) {

@@ -112,29 +112,19 @@
     return fetch(target[0], target[1]).then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); });
   }
 
-  /* ---------- lightbox ---------- */
+  /* ---------- lightbox of the galleries (offers, hotels, apartments…): the same full-screen gallery as the photo stories ---------- */
   $$('[data-sta-lightbox]').forEach(function (g) {
-    var links = $$('a', g), i = 0, box;
-    function show() {
-      if (!box) {
-        box = document.createElement('div'); box.className = 'sta-lightbox';
-        box.innerHTML = '<img alt=""><button class="sta-lb-close" aria-label="×">×</button><button class="sta-lb-prev" aria-label="‹">‹</button><button class="sta-lb-next" aria-label="›">›</button>';
-        box.addEventListener('click', function (e) {
-          if (e.target.classList.contains('sta-lb-next')) { i = (i + 1) % links.length; show(); }
-          else if (e.target.classList.contains('sta-lb-prev')) { i = (i - 1 + links.length) % links.length; show(); }
-          else if (e.target.tagName !== 'IMG') { box.remove(); box = null; }
-        });
-        document.body.appendChild(box);
-      }
-      $('img', box).src = links[i].href;
-    }
-    links.forEach(function (a, n) { a.addEventListener('click', function (e) { e.preventDefault(); i = n; show(); }); });
-    document.addEventListener('keydown', function (e) {
-      if (!box) return;
-      if (e.key === 'Escape') { box.remove(); box = null; }
-      if (e.key === 'ArrowRight') { i = (i + 1) % links.length; show(); }
-      if (e.key === 'ArrowLeft') { i = (i - 1 + links.length) % links.length; show(); }
+    var links = $$('a', g);
+    var data = function () {
+      var h = document.querySelector('h1');
+      return { title: g.dataset.title || (h ? h.textContent.trim() : ''), date: '', photos: links.map(function (a) { var im = $('img', a); return { url: a.href, thumb: a.dataset.thumb || (im ? (im.currentSrc || im.src) : a.href) }; }) };
+    };
+    links.forEach(function (a, n) {
+      a.setAttribute('data-elementor-open-lightbox', 'no');   // not the lightbox of Elementor / the theme
+      a.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); psGallery(data(), n); });
     });
+    // the "📷 55" badge on phones opens the gallery too
+    var all = $('.sta-gallery-all', g); if (all) all.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); psGallery(data(), 0); });
   });
 
   /* ---------- gallery as slider ---------- */
@@ -1264,7 +1254,7 @@
       });
     }
     $('.sta-psg-cap', psBox).innerHTML = '<b>' + esc(data.title) + '</b>' + (data.date ? ' · ' + esc(data.date) : '');
-    $('.sta-psg-th', psBox).innerHTML = data.photos.length > 1 ? data.photos.map(function (p, k) { return '<button type="button" data-i="' + k + '"><img src="' + esc(p.url) + '" alt="" loading="lazy"></button>'; }).join('') : '';
+    $('.sta-psg-th', psBox).innerHTML = data.photos.length > 1 ? data.photos.map(function (p, k) { return '<button type="button" data-i="' + k + '"><img src="' + esc(p.thumb || p.url) + '" alt="" loading="lazy"></button>'; }).join('') : '';
     if (!psBox.open) { try { psBox.showModal(); } catch (err) { psBox.setAttribute('open', ''); } }
     document.documentElement.classList.add('sta-qs-on');
     psShow();
