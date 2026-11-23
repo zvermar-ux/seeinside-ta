@@ -32,6 +32,7 @@ class STA_Header
             'm_btn_size' => 44,
             'm_sticky' => 'theme',          // theme | off | on
             'm_hide' => '',                 // selectors to hide on phones (one per line)
+            'm_menu_contact' => '1',        // phone + e-mail at the end of the phone menu
             'css' => '',
         ];
     }
@@ -54,7 +55,7 @@ class STA_Header
         $o = [];
         foreach ($d as $k => $def) {
             $v = wp_unslash($in[$k] ?? '');
-            if (in_array($k, ['tb_on', 'tb_phone', 'tb_email', 'm_on'], true)) {
+            if (in_array($k, ['tb_on', 'tb_phone', 'tb_email', 'm_on', 'm_menu_contact'], true)) {
                 $o[$k] = ! empty($in[$k]) ? '1' : '0';
             } elseif (is_int($def)) {
                 $o[$k] = max(0, min(600, (int) $v));
@@ -96,7 +97,7 @@ class STA_Header
             return;
         }
         $o = self::opt();
-        if ($o['tb_on'] !== '1' && $o['m_on'] !== '1' && trim($o['css']) === '') {
+        if ($o['tb_on'] !== '1' && $o['m_on'] !== '1' && $o['m_menu_contact'] !== '1' && trim($o['css']) === '') {
             return;
         }
         $agency = (array) (get_option('sta_meta', [])['agency'] ?? []);
@@ -146,6 +147,17 @@ class STA_Header
         }
         $css .= str_replace('</', '', (string) $o['css']);
         echo '<style id="sta-header-style">'.$css.'</style>';   // phpcs:ignore
+        // phone and e-mail of the agency at the end of the phone menu of the theme
+        $mc = '';
+        if ($o['m_menu_contact'] === '1' && (! empty($agency['phone']) || ! empty($agency['email']))) {
+            $mc = '<div class="sta-mmenu-contact">'
+                .(! empty($agency['phone']) ? '<a href="tel:'.esc_attr(preg_replace('/[^0-9+]/', '', (string) $agency['phone'])).'">'.sta_icon('phone').'<span>'.esc_html($agency['phone']).'</span></a>' : '')
+                .(! empty($agency['email']) ? '<a href="mailto:'.esc_attr($agency['email']).'">'.sta_icon('mail').'<span>'.esc_html($agency['email']).'</span></a>' : '')
+                .'</div>';
+        }
         echo '<template data-sta-header data-mobile="'.esc_attr($o['m_on']).'" data-sticky="'.esc_attr($o['m_sticky']).'">'.$bar.'</template>';   // phpcs:ignore
+        if ($mc !== '') {
+            echo '<template data-sta-mmenu>'.$mc.'</template>';   // phpcs:ignore
+        }
     }
 }

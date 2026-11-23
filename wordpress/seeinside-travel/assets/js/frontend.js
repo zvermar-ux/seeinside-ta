@@ -1152,6 +1152,20 @@
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var first = $('.sta-qs-item', res); if (first) location.href = first.href; } });
   })();
 
+  /* ---------- phone and e-mail at the end of the phone menu of the theme ---------- */
+  (function () {
+    var tpl = $('template[data-sta-mmenu]'); if (!tpl) return;
+    function put() {
+      if (document.querySelector('.sta-mmenu-contact')) return;
+      var sels = ['.th-mobile-menu', '.th-menu-wrapper .th-menu-area', '.mobile-menu', '.elementor-nav-menu--dropdown'];
+      for (var k = 0; k < sels.length; k++) {
+        var m = $(sels[k]);
+        if (m) { m.appendChild(tpl.content.firstElementChild.cloneNode(true)); return; }
+      }
+    }
+    put(); setTimeout(put, 1500);   // the theme may build its phone menu after loading
+  })();
+
   /* ---------- header of the theme: top bar + phone layout (SeeInside Travel → Header) ---------- */
   (function () {
     var tpl = $('template[data-sta-header]'); if (!tpl) return;

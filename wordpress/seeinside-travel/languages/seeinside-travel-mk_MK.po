@@ -4023,3 +4023,9 @@ msgstr "Скриј на телефон"
 
 msgid "CSS selectors of elements of the header that should not show on phones, one per line."
 msgstr "CSS селектори на елементи од хедерот што не треба да се гледаат на телефон, по еден во ред."
+
+msgid "Phone menu"
+msgstr "Мени на телефон"
+
+msgid "Phone and e-mail of the agency at the end of the phone menu"
+msgstr "Телефон и е-пошта на агенцијата на крајот од менито на телефон"

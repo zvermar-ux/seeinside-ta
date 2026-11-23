@@ -272,6 +272,7 @@ class STA_Admin
             .$num('m_btn_size', __('Menu button size', 'seeinside-travel'))
             .$col('m_btn_bg', __('Menu button – background', 'seeinside-travel'), __('Empty = as the theme', 'seeinside-travel'))
             .$col('m_btn_color', __('Menu button – icon', 'seeinside-travel'), __('Empty = as the theme', 'seeinside-travel'))
+            .'<tr><th>'.esc_html__('Phone menu', 'seeinside-travel').'</th><td>'.$chk('m_menu_contact', __('Phone and e-mail of the agency at the end of the phone menu', 'seeinside-travel')).'</td></tr>'
             .$sel('m_sticky', __('Sticky header (stays on top while scrolling)', 'seeinside-travel'), ['theme' => __('As the theme', 'seeinside-travel'), 'off' => __('Off on phones', 'seeinside-travel'), 'on' => __('Always on top', 'seeinside-travel')])
             .'<tr><th><label for="hd-hide">'.esc_html__('Hide on phones', 'seeinside-travel').'</label></th><td><textarea class="large-text code" rows="3" id="hd-hide" name="m_hide" placeholder=".header-button .th-btn">'.esc_textarea($o['m_hide']).'</textarea><p class="description">'.esc_html__('CSS selectors of elements of the header that should not show on phones, one per line.', 'seeinside-travel').'</p></td></tr>'
             .'<tr><th><label for="hd-css">'.esc_html__('Own CSS', 'seeinside-travel').'</label></th><td><textarea class="large-text code" rows="4" id="hd-css" name="css" placeholder="@media (max-width:767px){ .sta-topbar { font-size:12px } }">'.esc_textarea($o['css']).'</textarea></td></tr>'
