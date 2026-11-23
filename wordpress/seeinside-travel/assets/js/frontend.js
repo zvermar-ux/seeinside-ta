@@ -1273,6 +1273,7 @@
     document.documentElement.classList.add('sta-qs-on');
     psShow();
   }
+  window.STAGallery = function (data, i) { psGallery(data, i); };   // also for the hotels page (hotels.js)
   function psClose() {
     if (psBox && psBox.open) { try { psBox.close(); } catch (err) { psBox.removeAttribute('open'); } }
     if (!document.querySelector('dialog[open]')) document.documentElement.classList.remove('sta-qs-on');

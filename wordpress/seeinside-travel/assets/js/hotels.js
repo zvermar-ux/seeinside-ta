@@ -456,6 +456,10 @@
       body.innerHTML = '<div class="sta-ht-page"><a href="#" class="sta-ht-back" data-ht-back>← ' + esc(L.back) + '</a>'
         + '<header class="sta-ht-ph"><h2>' + esc(h.name) + ' ' + stars(h.stars) + '</h2><p class="sta-ht-place">' + esc([h.address, h.place].filter(Boolean).join(' · '))
         + (h.latitude ? ' · <a href="https://www.google.com/maps/search/?api=1&query=' + h.latitude + ',' + h.longitude + '" target="_blank" rel="noopener">' + esc(L.map) + '</a>' : '') + '</p></header>'
+        // phones: "Check prices" (or the chosen dates + to the rooms) above the gallery
+        + '<div class="sta-ht-mcta">' + (q.from
+          ? '<span><b>' + esc(dmy(q.from)) + ' – ' + esc(dmy(q.to)) + '</b> · ' + esc(who(q)) + '</span><a href="#sta-ht-rooms" class="sta-btn sta-btn-sm">' + esc(L.roomsTitle) + ' ↓</a>'
+          : '<button type="button" class="sta-btn sta-btn-block" data-hc-dates="' + esc(h.id || q.open) + '">' + esc(L.checkPrices) + '</button>') + '</div>'
         + gal
         + '<div class="sta-ht-cols"><div>' + (desc ? '<div class="sta-ht-desc' + (desc.length > 700 ? ' is-cut' : '') + '"><p>' + esc(desc).replace(/\n+/g, '</p><p>') + '</p></div>' + (desc.length > 700 ? '<button type="button" class="sta-ht-link" data-ht-more-desc>' + esc(L.readMore) + '</button>' : '') : '')
         + (fac ? '<h3>' + esc(L.facilities) + '</h3><ul class="sta-ht-facs">' + fac + '</ul>' : '') + '</div>'
@@ -483,7 +487,19 @@
         }
         $('img', box).src = links[i].href;
       }
-      links.forEach(function (a, n) { a.addEventListener('click', function (e) { e.preventDefault(); i = n; show(); }); });
+      links.forEach(function (a, n) {
+        a.setAttribute('data-elementor-open-lightbox', 'no');
+        a.addEventListener('click', function (e) {
+          e.preventDefault(); e.stopPropagation();
+          // the full-screen gallery of the site (counter, swipe, thumbnails) when it is there
+          if (window.STAGallery) {
+            var h = state.hotel || {};
+            window.STAGallery({ title: h.name || '', date: '', photos: links.map(function (l) { var im = l.querySelector('img'); return { url: l.href, thumb: im ? im.src : l.href }; }) }, n);
+            return;
+          }
+          i = n; show();
+        });
+      });
     }
 
     /* ---------- booking ---------- */

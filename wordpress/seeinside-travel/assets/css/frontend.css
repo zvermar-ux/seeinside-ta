@@ -1175,3 +1175,12 @@ dialog.sta-psd::backdrop { background: rgba(15, 23, 42, .55); }
 .sta-mmenu-contact a { display: flex !important; align-items: center; gap: .6rem; padding: .35rem 0 !important; color: inherit !important; font-size: .95rem; text-decoration: none !important; border: 0 !important; overflow-wrap: anywhere; }
 .sta-mmenu-contact svg { width: 18px; height: 18px; flex: none; color: var(--sta-primary, #0e7490); }
 @media (min-width: 1200px) { .elementor-nav-menu--main .sta-mmenu-contact { display: none; } }
+
+/* hotel page on phones: "Check prices" above the gallery (the box next to the text is then not needed) */
+.sta-ht-mcta { display: none; }
+@media (max-width: 767px) {
+  .sta-ht-mcta { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; margin: .2rem 0 .9rem; }
+  .sta-ht-mcta span { font-size: .9rem; }
+  .sta-ht-mcta .sta-btn-block { width: 100%; }
+  .sta-ht-cols > .sta-ht-sum { display: none; }
+}
