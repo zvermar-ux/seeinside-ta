@@ -30,6 +30,7 @@
   /* ---------- state ---------- */
   var visitor = store.get('sta_chat_visitor') || uuid(); store.set('sta_chat_visitor', visitor);
   var conv = store.get('sta_chat_conv');   // {id, token, at}
+  var me = store.get('sta_chat_me') || {};   // name, e-mail, phone the visitor gave (asked once)
   var msgs = [], lastId = 0, human = false, view = 'home', open = false, busy = false, timer = null, unread = 0;
 
   function api(path, body, method) {
@@ -77,8 +78,8 @@
     setView('home');
     body.appendChild(h('div', 'sta-chat-bubble is-bot', esc(tr(C.greeting))));
     var list = h('div', 'sta-chat-opts');
-    if (C.ai) list.appendChild(option(ICON.ai, 'is-ai', T.aiChat, T.aiChatSub, function () { startChat(); }));
-    if ((C.questionnaires || []).length) list.appendChild(option(ICON.quiz, 'is-quiz', T.choose, T.chooseSub, showQuizzes));
+    if (C.ai) list.appendChild(option(ICON.ai, 'is-ai', T.aiChat, T.aiChatSub, function () { needMe(startChat); }));
+    if ((C.questionnaires || []).length) list.appendChild(option(ICON.quiz, 'is-quiz', T.choose, T.chooseSub, function () { needMe(showQuizzes); }));
     (C.channels || []).forEach(function (ch) {
       list.appendChild(option(ICON[ch.type] || ICON.chat, 'is-' + ch.type, T[ch.type] || ch.type, ch.label || '', null, ch.url));
     });
@@ -92,7 +93,7 @@
   /* ---------- conversation ---------- */
   function ensureConv() {
     if (conv && conv.id) return Promise.resolve(conv);
-    return api('start', { visitor: visitor, page_url: location.href }).then(function (d) {
+    return api('start', { visitor: visitor, page_url: location.href, name: me.name || null, email: me.email || null, phone: me.phone || null }).then(function (d) {
       conv = { id: d.conversation, token: d.token }; store.set('sta_chat_conv', conv);
       msgs = []; lastId = 0; add(d.messages || []); human = !!d.human; return conv;
     });
@@ -163,6 +164,31 @@
     if (!conv || !conv.id) { typing(true); ensureConv().then(function () { typing(false); body.querySelector('.sta-chat-thread').innerHTML = ''; msgs.forEach(draw); }).catch(function () { typing(false); draw({ role: 'system', body: T.error }); }); }
   }
 
+  /* ---------- who are you: name, e-mail and phone before the first conversation ---------- */
+  function hasMe() { return !!(me && me.name && me.email && me.phone); }
+  function needMe(next) {
+    if (C.require_contact === false || (conv && conv.id) || hasMe()) return next();
+    setView('intro');
+    var f = h('form', 'sta-chat-contact sta-chat-intro',
+      '<p><b>' + esc(T.introTitle) + '</b><br>' + esc(T.introText) + '</p>'
+      + '<label><span>' + esc(T.fullName) + ' *</span><input name="name" required minlength="2" maxlength="120" autocomplete="name" value="' + esc(me.name || '') + '"></label>'
+      + '<label><span>' + esc(T.emailField) + ' *</span><input name="email" type="email" required maxlength="150" autocomplete="email" value="' + esc(me.email || '') + '"></label>'
+      + '<label><span>' + esc(T.phoneField) + ' *</span><input name="phone" type="tel" required minlength="6" maxlength="50" autocomplete="tel" value="' + esc(me.phone || '') + '"></label>'
+      + (tr(C.privacy) ? '<small class="sta-chat-meta">' + esc(tr(C.privacy)) + '</small>' : '')
+      + '<div class="sta-chat-err" hidden></div><button type="submit" class="sta-chat-btn">' + esc(T.startChat) + '</button>');
+    f.addEventListener('submit', function (e) {
+      e.preventDefault(); var d = {}; new FormData(f).forEach(function (v, k) { d[k] = String(v).trim(); });
+      var err = f.querySelector('.sta-chat-err');
+      if (d.name.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email) || d.phone.replace(/\D/g, '').length < 6) { err.textContent = T.needAll; err.hidden = false; return; }
+      me = d; store.set('sta_chat_me', me);
+      var btn = f.querySelector('button'); btn.disabled = true;
+      ensureConv().then(function () { next(); })
+        .catch(function (x) { err.textContent = x.message || T.error; err.hidden = false; btn.disabled = false; });
+    });
+    body.appendChild(f);
+    setTimeout(function () { var i = f.querySelector('input'); if (i) i.focus(); }, 60);
+  }
+
   /* ---------- questionnaires ---------- */
   function showQuizzes() {
     var qs = C.questionnaires || [];
@@ -221,9 +247,9 @@
     setView('contact');
     var f = h('form', 'sta-chat-contact',
       '<p>' + esc(tr(C.handoff) || T.callMeSub) + '</p>'
-      + '<label><span>' + esc(T.name) + '</span><input name="name" maxlength="120" autocomplete="name"></label>'
-      + '<label><span>' + esc(T.phoneField) + '</span><input name="phone" type="tel" maxlength="50" autocomplete="tel"></label>'
-      + '<label><span>' + esc(T.emailField) + '</span><input name="email" type="email" maxlength="150" autocomplete="email"></label>'
+      + '<label><span>' + esc(T.name) + '</span><input name="name" maxlength="120" autocomplete="name" value="' + esc(me.name || '') + '"></label>'
+      + '<label><span>' + esc(T.phoneField) + '</span><input name="phone" type="tel" maxlength="50" autocomplete="tel" value="' + esc(me.phone || '') + '"></label>'
+      + '<label><span>' + esc(T.emailField) + '</span><input name="email" type="email" maxlength="150" autocomplete="email" value="' + esc(me.email || '') + '"></label>'
       + '<label><span>' + esc(T.note) + '</span><textarea name="note" rows="2" maxlength="1000"></textarea></label>'
       + '<div class="sta-chat-err" hidden></div><button type="submit" class="sta-chat-btn">' + esc(T.sendContact) + '</button>');
     f.addEventListener('submit', function (e) {

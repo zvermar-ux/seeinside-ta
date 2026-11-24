@@ -2178,5 +2178,7 @@
     "Accepted on :date": "Прифатено на :date",
     "They apply to this booking.": "Важат за оваа резервација.",
     "Shown on the booking page of the client. On the website the client must accept them when booking.": "Се прикажува на страната со резервацијата на клиентот. На сајтот клиентот мора да ги прифати при резервација.",
-    "The AI did not answer": "AI не одговори"
+    "The AI did not answer": "AI не одговори",
+    "Name, e-mail and phone before the chat": "Име, e-mail и телефон пред разговорот",
+    "The visitor fills them in before talking to the bot or answering a questionnaire – you see who you are talking to.": "Посетителот ги внесува пред да разговара со ботот или да пополни прашалник – знаете со кого разговарате."
 }

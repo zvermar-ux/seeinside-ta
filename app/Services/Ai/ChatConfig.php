@@ -29,6 +29,7 @@ class ChatConfig
             'show_ai' => true,
             'show_questionnaires' => true,
             'ask_contact' => true,
+            'require_contact' => true,   // name, e-mail and phone before the chat starts
             'hours' => ['mk' => 'Пон–Пет 09–17 ч.', 'en' => 'Mon–Fri 9am–5pm'],
             'instructions' => '',
             'handoff' => ['mk' => 'Ќе ве поврзам со наш агент. Оставете телефон или e-mail и ќе ви се јавиме.', 'en' => 'I will connect you with an agent. Leave your phone or e-mail and we will contact you.'],
@@ -74,6 +75,7 @@ class ChatConfig
             ])),
             'ai' => $ai,
             'ask_contact' => (bool) $c['ask_contact'],
+            'require_contact' => (bool) $c['require_contact'],
             'hours' => $c['hours'], 'privacy' => $c['privacy'],
             'questionnaires' => $questionnaires,
             'updated_at' => now()->toIso8601String(),

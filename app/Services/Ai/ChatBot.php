@@ -14,7 +14,7 @@ use Throwable;
 /** The website chatbot: answers from the agency knowledge and recommends only active offers */
 class ChatBot
 {
-    public static function system(int $agencyId, string $locale, string $candidates): string
+    public static function system(int $agencyId, string $locale, string $candidates, string $visitor = ''): string
     {
         $agency = Agency::find($agencyId);
         $c = ChatConfig::get($agencyId);
@@ -36,6 +36,7 @@ class ChatBot
             ."- Do not talk about topics unrelated to travel and the agency; politely steer back.\n"
             .($contact ? "- Agency contact: {$contact}. Working hours: ".($c['hours'][$locale] ?? $c['hours']['mk'] ?? '')."\n" : '')
             .(filled($c['instructions']) ? "\nINSTRUCTIONS FROM THE AGENCY:\n".Str::limit($c['instructions'], 3000)."\n" : '')
+            .($visitor ? "- The visitor: {$visitor}. Address them by first name now and then; their contact is already known – do not ask for phone or e-mail again.\n" : '')
             .($knowledge ? "\nAGENCY KNOWLEDGE (trust this, corrections first):\n{$knowledge}\n" : '')
             ."\n".ChatCatalog::overview($agencyId)."\nOFFERS (key | details):\n{$candidates}\n\n"
             .'Answer ONLY with JSON: {"reply": "<text for the visitor>", "recommend": ["<key>", …max 4], "needs_human": false, "contact": {"name": null, "phone": null, "email": null}}'
@@ -46,6 +47,11 @@ class ChatBot
     {
         return collect(ChatCatalog::relevant($agencyId, $query, $limit, $types))
             ->map(fn ($i, $key) => "{$key} | {$i['name']} | {$i['line']}")->implode("\n") ?: '(no active offers)';
+    }
+
+    protected static function who(ChatConversation $conv): string
+    {
+        return implode(', ', array_filter([$conv->name, $conv->email ? 'e-mail '.$conv->email : null, $conv->phone ? 'phone '.$conv->phone : null]));
     }
 
     /** Why the last reply went to an agent instead of the AI (shown on "Test the bot") */
@@ -84,7 +90,7 @@ class ChatBot
         }
 
         try {
-            $out = static::ask($agencyId, static::system($agencyId, $conv->locale, static::candidates($agencyId, $query)), $messages, 'chat #'.$conv->id);
+            $out = static::ask($agencyId, static::system($agencyId, $conv->locale, static::candidates($agencyId, $query), static::who($conv)), $messages, 'chat #'.$conv->id);
             $conv->cost = (float) $conv->cost + Ai::$lastCost;
         } catch (AiException $e) {
             Log::info('Chatbot unavailable: '.$e->getMessage());
@@ -147,7 +153,7 @@ class ChatBot
             $query = $summary.' '.$q->label('title', 'mk').' '.$q->category;
             $prompt = "The visitor filled the questionnaire \"{$q->label('title', 'mk')}\" (category: {$q->category}). Answers:\n{$summary}\n\n"
                 .'Recommend the 2–4 best matching offers from the OFFERS list and explain in 1 sentence each why they fit. If nothing fits well, say so and offer a personal offer from an agent (needs_human true).';
-            $out = static::ask($agencyId, static::system($agencyId, $conv->locale, static::candidates($agencyId, $query, $types, 60)), [['role' => 'user', 'content' => $prompt]], 'questionnaire #'.$q->id);
+            $out = static::ask($agencyId, static::system($agencyId, $conv->locale, static::candidates($agencyId, $query, $types, 60), static::who($conv)), [['role' => 'user', 'content' => $prompt]], 'questionnaire #'.$q->id);
             $conv->cost = (float) $conv->cost + Ai::$lastCost;
 
             return static::store($conv, $out);

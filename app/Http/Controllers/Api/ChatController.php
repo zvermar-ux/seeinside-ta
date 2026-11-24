@@ -47,14 +47,27 @@ class ChatController extends Controller
     {
         $data = $request->validate([
             'visitor' => 'required|uuid', 'locale' => 'nullable|in:mk,en', 'page_url' => 'nullable|string|max:500',
+            'name' => 'nullable|string|max:120', 'email' => 'nullable|email|max:150', 'phone' => 'nullable|string|max:50',
         ]);
         $agencyId = $this->agencyId($request);
         $c = ChatConfig::get($agencyId);
         abort_unless($c['enabled'], 403, 'Chat is turned off.');
+        $who = array_filter([
+            'name' => filled($data['name'] ?? null) ? Str::limit(strip_tags($data['name']), 120, '') : null,
+            'email' => $data['email'] ?? null,
+            'phone' => filled($data['phone'] ?? null) ? Str::limit(strip_tags($data['phone']), 50, '') : null,
+        ]);
 
         // the same browser continues its open conversation
         $conv = ChatConversation::withoutGlobalScopes()->where('agency_id', $agencyId)->where('visitor_id', $data['visitor'])
             ->where('status', 'open')->where('channel', 'ai')->where('updated_at', '>=', now()->subDays(7))->latest('id')->first();
+        if (! $conv && $c['require_contact']) {
+            // name, e-mail and phone before the first conversation
+            $request->validate(['name' => 'required|string|min:2|max:120', 'email' => 'required|email|max:150', 'phone' => 'required|string|min:6|max:50']);
+        }
+        if ($conv && $who) {
+            $conv->forceFill($who)->save();
+        }
         if (! $conv) {
             // simple protection: max 20 new conversations per IP per day
             $n = ChatConversation::withoutGlobalScopes()->where('agency_id', $agencyId)->where('ip', $request->ip())->where('created_at', '>=', now()->subDay())->count();
@@ -62,7 +75,7 @@ class ChatController extends Controller
             $conv = ChatConversation::create([
                 'agency_id' => $agencyId, 'visitor_id' => $data['visitor'], 'token' => Str::random(48), 'channel' => 'ai',
                 'locale' => $data['locale'] ?? 'mk', 'page_url' => $data['page_url'] ?? null, 'ip' => $request->ip(),
-            ]);
+            ] + $who);
             $conv->messages()->create(['role' => 'bot', 'body' => $c['greeting'][$conv->locale] ?? $c['greeting']['mk'] ?? '']);
         }
 

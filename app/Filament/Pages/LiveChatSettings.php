@@ -133,6 +133,8 @@ class LiveChatSettings extends Page implements HasForms
                     Forms\Components\Toggle::make('show_ai')->label(__('Chat with our assistant (AI)'))->inline(false),
                     Forms\Components\Toggle::make('show_questionnaires')->label(__('"Help me choose" questionnaires'))->inline(false),
                     Forms\Components\Toggle::make('ask_contact')->label(__('Offer "Call me back" (name, phone, e-mail)'))->inline(false),
+                    Forms\Components\Toggle::make('require_contact')->label(__('Name, e-mail and phone before the chat'))->inline(false)
+                        ->helperText(__('The visitor fills them in before talking to the bot or answering a questionnaire – you see who you are talking to.')),
                 ]),
                 Forms\Components\Tabs\Tab::make(__('Bot behaviour'))->icon('heroicon-o-academic-cap')->schema([
                     Forms\Components\Textarea::make('instructions')->label(__('Instructions for the bot'))->rows(8)->autosize()->maxLength(3000)

@@ -79,6 +79,11 @@ class STA_Chat
                 'humanOn' => __('An agent has joined the conversation.', 'seeinside-travel'),
                 'contactNeeded' => __('Please enter a phone or an e-mail.', 'seeinside-travel'),
                 'or' => __('or write to us on', 'seeinside-travel'),
+                'introTitle' => __('Before we start', 'seeinside-travel'),
+                'introText' => __('Enter your details so we can answer you more easily and contact you.', 'seeinside-travel'),
+                'fullName' => __('Name and surname', 'seeinside-travel'),
+                'startChat' => __('Start the conversation', 'seeinside-travel'),
+                'needAll' => __('Please enter your name, a valid e-mail and a phone number.', 'seeinside-travel'),
             ],
         ]);
     }

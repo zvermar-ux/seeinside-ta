@@ -4080,3 +4080,15 @@ msgstr "Вашите датуми не се поклопуваат со терм
 
 msgid "Choose another room or fewer guests."
 msgstr "Изберете друга соба или помалку патници."
+
+msgid "Before we start"
+msgstr "Пред да започнеме"
+
+msgid "Enter your details so we can answer you more easily and contact you."
+msgstr "Внесете ги вашите податоци за полесно да ви одговориме и да ве контактираме."
+
+msgid "Start the conversation"
+msgstr "Започни разговор"
+
+msgid "Please enter your name, a valid e-mail and a phone number."
+msgstr "Внесете име и презиме, валиден e-mail и телефон."
