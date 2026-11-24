@@ -4071,3 +4071,9 @@ msgstr "Логото да е мало уште од првиот момент"
 
 msgid "Widest logo on computers"
 msgstr "Најширо лого на компјутер"
+
+msgid "Closest free terms:"
+msgstr "Најблиски слободни термини:"
+
+msgid "Your dates do not match a term – the closest free terms are shown."
+msgstr "Вашите датуми не се поклопуваат со термин – прикажани се најблиските слободни термини."

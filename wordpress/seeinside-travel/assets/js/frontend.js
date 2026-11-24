@@ -331,6 +331,12 @@
       termSel.dispatchEvent(new Event('change', { bubbles: true }));
     });
     drawTerms();
+    // a term chosen on the list (?from=…&to=…) is already selected in the form
+    if (termSel && !termSel.value) {
+      var uq = new URLSearchParams(location.search), wf = uq.get('from'), wt = uq.get('to');
+      var pick = wf && $$('option', termSel).filter(function (o) { return o.value && !o.disabled && o.dataset.from === wf && o.dataset.to === wt; })[0];
+      if (pick) { termSel.value = pick.value; termSel.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
     if (adultsIn) adultsIn.addEventListener('input', function () { var r = roomById(($('[name="room_id"]', form) || {}).value); if (r && form.dataset.selroom) limits(r); });
 
     function estimate() {
@@ -861,10 +867,22 @@
       if (!res.ok) { if (note) note.textContent = T.error; return; }
       var free = {}; list.forEach(function (x) { free[x.slug] = x; });
       // nothing is hidden: the places with a term for the dates go first, the others stay below marked as full
-      var cells = $$('.sta-finder-cell', box), n = 0, items = cells.length ? cells[0].parentNode : null, busy = [];
+      var cells = $$('.sta-finder-cell', box), n = 0, items = cells.length ? cells[0].parentNode : null, busy = [], near = [];
+      var dm = function (d) { var p = d.split('-'); return p[2] + '.' + p[1] + '.'; };
+      var withDates = function (href, from, to) { try { var u = new URL(href); if (u.origin !== location.origin) return href; u.searchParams.set('from', from); u.searchParams.set('to', to); u.searchParams.set('adults', box.dataset.ad); if (+box.dataset.ch) u.searchParams.set('children', box.dataset.ch); return u.toString(); } catch (e) { return href; } };
       cells.forEach(function (cell) {
         var f = free[cell.dataset.slug], av = $('.sta-finder-avail', cell);
         cell.hidden = false; av.hidden = false;
+        // fixed terms that do not match the dates: the closest free terms, each a link to the offer with that term
+        if (f && f.near && f.near.length) {
+          var link = $('a[href]', cell), base = link ? link.href : '';
+          cell.classList.add('is-near'); cell.classList.remove('is-free', 'is-busy');
+          av.className = 'sta-finder-avail is-near';
+          av.innerHTML = '<b>' + esc(T.nearTerms) + '</b><span class="sta-near">' + f.near.map(function (t) {
+            return '<a href="' + esc(withDates(base, t.from, t.to)) + '">' + esc(dm(t.from) + ' – ' + dm(t.to)) + ' <small>' + t.nights + ' ' + esc(T.nights) + '</small> <strong>' + esc(money(t.total, t.currency)) + '</strong></a>';
+          }).join('') + '</span>';
+          near.push(cell); return;
+        }
         cell.classList.toggle('is-free', !!f); cell.classList.toggle('is-busy', !f);
         if (!f) { av.className = 'sta-finder-avail is-busy'; av.textContent = T.noTerm; busy.push(cell); return; }
         n++;
@@ -873,9 +891,9 @@
         items.appendChild(cell);
         $$('a[href]', cell).forEach(function (a) { try { var u = new URL(a.href); if (u.origin === location.origin) { u.searchParams.set('from', box.dataset.from); u.searchParams.set('to', box.dataset.to); u.searchParams.set('adults', box.dataset.ad); a.href = u.toString(); } } catch (e) {} });
       });
-      busy.forEach(function (cell) { items.appendChild(cell); });
+      near.concat(busy).forEach(function (cell) { items.appendChild(cell); });
       var c = $('[data-sta-finder-count]', box); if (c) c.textContent = String(T.freeOf || '%1$d / %2$d').replace('%1$d', n).replace('%2$d', cells.length);
-      if (note) { note.textContent = n ? T.freeFirst : T.noOffers; note.classList.toggle('is-empty', !n); }
+      if (note) { note.textContent = n ? T.freeFirst : (near.length ? T.nearNote : T.noOffers); note.classList.toggle('is-empty', !n && !near.length); }
     });
   });
 
@@ -1124,8 +1142,7 @@
       form.addEventListener('submit', function (e) {
         var missing = [];
         if (form.hasAttribute('data-sb-hotels')) {
-          var d1 = $('[data-sb-dest]', form);
-          if (!$('[name="destination"]', form).value && !$('[name="hotel"]', form).value) missing.push(d1);
+          // no destination = all hotels free for the dates
           if (!fromI.value || !toI.value) missing.push(dbox);
         }
         if (form.hasAttribute('data-sb-flights')) {

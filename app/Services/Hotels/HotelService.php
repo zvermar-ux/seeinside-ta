@@ -319,7 +319,7 @@ class HotelService
                         continue;
                     }
                     $query['hotels'] = [$code];
-                } else {
+                } elseif ($norm['destination']) {
                     [$cid, $code] = array_pad(explode(':', (string) $norm['destination'], 2), 2, null);
                     if ((int) $cid !== $c->id || ! $code) {
                         continue;
@@ -327,6 +327,16 @@ class HotelService
                     // only the hotels imported in the app (and not hidden) – asked by their codes, not the whole destination
                     $codes = SupplierHotel::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('destination_code', $code)
                         ->where('is_active', true)->orderByDesc('is_featured')->orderByDesc('ranking')->limit(2000)->pluck('code')->all();
+                    if (! $codes) {
+                        continue;
+                    }
+                    $query['hotels'] = $codes;
+                    $query['max_hotels'] = min(2000, count($codes));
+                } else {
+                    // no destination: every imported hotel of the switched-on destinations
+                    $dests = SupplierDestination::withoutGlobalScopes()->where('agency_id', $agencyId)->where('supplier_connection_id', $c->id)->where('is_active', true)->pluck('code')->all();
+                    $codes = $dests ? SupplierHotel::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->whereIn('destination_code', $dests)
+                        ->where('is_active', true)->orderByDesc('is_featured')->orderByDesc('ranking')->limit(2000)->pluck('code')->all() : [];
                     if (! $codes) {
                         continue;
                     }

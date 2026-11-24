@@ -73,10 +73,7 @@ class HotelController extends Controller
 
     public function search(Request $request): JsonResponse
     {
-        $q = $this->query($request);
-        if (! $q['destination'] && ! $q['hotel']) {
-            return response()->json(['message' => __('Choose a destination or a hotel.'), 'errors' => ['destination' => [__('Choose a destination or a hotel.')]]], 422);
-        }
+        $q = $this->query($request);   // no destination and no hotel = all imported hotels
 
         return response()->json(['data' => $this->hotels->search($this->agencyId($request), $q)]);
     }

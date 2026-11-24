@@ -51,7 +51,7 @@
       var q = query();
       if (q.open) { hotel(q.open, q.searchId); return; }
       // no dates yet: the list of all hotels (without prices)
-      if (!q.from || !q.to || (!q.destination && !q.hotel)) { catalog(q); return; }
+      if (!q.from || !q.to) { catalog(q); return; }
       loading(L.searching);
       api('hotels/search?' + qs(q)).then(function (r) {
         if (!r.ok) {
@@ -178,11 +178,10 @@
       var sel = $('[data-hf="dest"]', body), q = state.q || query(), hotel = box.dataset.hotel || (!sel || !sel.value ? q.hotel : ''), dest = sel ? sel.value : q.destination;
       var fail = function (m) { err.textContent = m; err.hidden = false; };
       if (!from || !to || to <= from) return fail(L.needDates);
-      if (!dest && !hotel) return fail(L.pickDest);
       var p = new URLSearchParams({ from: from, to: to, room_count: 1, adults: Math.max(1, +$('[data-hd-ad]', box).value || 2) });
       var ages = $$('[data-hd-age]', box).map(function (x) { return x.value; });
       if (ages.length) p.set('ages', ages.join(','));
-      if (hotel) { p.set('hotel', hotel); p.set('hn', box.dataset.hname || ''); } else p.set('destination', dest);
+      if (hotel) { p.set('hotel', hotel); p.set('hn', box.dataset.hname || ''); } else if (dest) p.set('destination', dest);   // no destination = all hotels
       location.href = location.pathname + '?' + p.toString();
     }
 
@@ -270,6 +269,7 @@
           var p = new URLSearchParams(location.search);
           p.delete('hotel'); p.delete('hn'); p.delete('h'); p.delete('sid');
           if (e.target.dataset.hf === 'dest' && e.target.value) { p.set('destination', e.target.value); location.href = location.pathname + '?' + p; }
+          else if (e.target.dataset.hf === 'dest') { p.delete('destination'); location.href = location.pathname + '?' + p; }   // all destinations, same dates
           else { p.delete('destination'); p.delete('from'); p.delete('to'); if (e.target.value) p.set('country', e.target.value); location.href = location.pathname + '?' + p; }
           return;
         }

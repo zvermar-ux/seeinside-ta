@@ -76,6 +76,8 @@ class STA_Frontend
                 'freeNote' => __('Showing only places that are free for your dates, with the total price.', 'seeinside-travel'),
                 'hasTerm' => __('Has a term for the selected period', 'seeinside-travel'),
                 'noTerm' => __('No free places for the selected period', 'seeinside-travel'),
+                'nearTerms' => __('Closest free terms:', 'seeinside-travel'),
+                'nearNote' => __('Your dates do not match a term – the closest free terms are shown.', 'seeinside-travel'),
                 'freeOf' => __('%1$d of %2$d free for your dates', 'seeinside-travel'),
                 'freeFirst' => __('The places free for your dates are shown first, the others below.', 'seeinside-travel'),
                 'available' => __('available', 'seeinside-travel'),

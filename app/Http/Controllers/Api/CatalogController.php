@@ -273,9 +273,14 @@ class CatalogController extends Controller
         $out = [];
         $q = $this->published(Accommodation::class, $request)->where('booking_enabled', true)->with('rooms.rates');
         foreach ($q->limit(300)->get() as $a) {
-            $offers = $a->quote($data['from'], $data['to'], (int) ($data['adults'] ?? 2), (int) ($data['children'] ?? 0));
+            $ad = (int) ($data['adults'] ?? 2);
+            $ch = (int) ($data['children'] ?? 0);
+            $offers = $a->quote($data['from'], $data['to'], $ad, $ch);
             if ($offers) {
                 $out[] = ['id' => $a->id, 'slug' => $a->slug, 'total' => $offers[0]['total'], 'currency' => $offers[0]['currency'], 'nights' => $offers[0]['nights'], 'rooms' => count($offers)];
+            } elseif ($a->book_by_terms && ($near = $this->nearTerms($a, $data['from'], $ad, $ch))) {
+                // fixed terms: the dates do not match a term – the closest free terms instead
+                $out[] = ['id' => $a->id, 'slug' => $a->slug, 'near' => $near];
             }
         }
 
@@ -283,6 +288,28 @@ class CatalogController extends Controller
         });
 
         return response()->json(['data' => $out]);
+    }
+
+    /** Up to 3 free fixed terms closest to the wanted arrival (within 30 days) */
+    protected function nearTerms(Accommodation $a, string $from, int $adults, int $children): array
+    {
+        $want = Carbon::parse($from)->startOfDay();
+        $lo = $want->copy()->subDays(30)->max(today());
+        $terms = $a->stayTerms()->where('is_active', true)->whereDate('date_from', '>=', $lo)->whereDate('date_from', '<=', $want->copy()->addDays(30))->limit(12)->get()
+            ->sortBy(fn ($t) => abs($t->date_from->diffInDays($want, false)))->values();
+        $near = [];
+        foreach ($terms as $t) {
+            $offers = $a->termOffers($t, $adults, $children);
+            if ($offers) {
+                $near[] = ['from' => $t->date_from->toDateString(), 'to' => $t->date_to->toDateString(), 'nights' => $t->nights(), 'total' => $offers[0]['total'], 'currency' => $offers[0]['currency']];
+            }
+            if (count($near) >= 3) {
+                break;
+            }
+        }
+        usort($near, fn ($x, $y) => strcmp($x['from'], $y['from']));
+
+        return $near;
     }
 
     public function terms(Request $request, string $slug): JsonResponse

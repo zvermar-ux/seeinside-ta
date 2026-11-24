@@ -1232,3 +1232,12 @@ body { max-width: 100%; }
 .sta-total-what { display: block; width: 100%; margin-bottom: .35rem; font-size: .85rem; color: #475569; }
 .sta-total .sta-total-what b { font-size: .92rem !important; font-weight: 600; color: #0f172a !important; line-height: 1.4; }
 @media (max-width: 640px) { .sta-tp { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* fixed terms: the closest free terms when the chosen dates do not match a term */
+.sta-finder-avail.is-near { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.sta-finder-avail.is-near > b { display: block; margin-bottom: .35rem; }
+.sta-near { display: flex; flex-direction: column; gap: .3rem; }
+.sta-near a { display: flex; align-items: baseline; gap: .4rem; flex-wrap: wrap; padding: .35rem .55rem; border-radius: 8px; background: #fff; border: 1px solid #fde68a; color: #0f172a !important; text-decoration: none !important; font-size: .88rem; line-height: 1.3; }
+.sta-near a:hover { border-color: #f59e0b; }
+.sta-near a small { color: #6b7280; }
+.sta-near a strong { margin-left: auto; color: #065f46 !important; }
