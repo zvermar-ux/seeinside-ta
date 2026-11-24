@@ -80,7 +80,7 @@ class ChatBot
         }
 
         try {
-            $out = Ai::json($agencyId, 'chat', static::system($agencyId, $conv->locale, static::candidates($agencyId, $query)), $messages, 900, null, 'chat #'.$conv->id);
+            $out = static::ask($agencyId, static::system($agencyId, $conv->locale, static::candidates($agencyId, $query)), $messages, 'chat #'.$conv->id);
             $conv->cost = (float) $conv->cost + Ai::$lastCost;
         } catch (AiException $e) {
             Log::info('Chatbot unavailable: '.$e->getMessage());
@@ -95,6 +95,32 @@ class ChatBot
         }
 
         return static::store($conv, $out);
+    }
+
+    /**
+     * The AI answer as {reply, recommend, needs_human, contact}. An answer that is not clean JSON
+     * (cut off, text around it, plain text) still gives the visitor the text instead of the hand-off.
+     */
+    protected static function ask(int $agencyId, string $system, array $messages, string $note): array
+    {
+        $raw = Ai::text($agencyId, 'chat', $system."\n\nAnswer ONLY with one valid JSON object, no markdown, no comments. Keep \"reply\" short (max. 120 words).", $messages, 2000, true, null, $note);
+        if (is_array($data = Ai::parseJson($raw))) {
+            return $data;
+        }
+        // cut-off JSON: take what is there
+        if (preg_match('/"reply"\s*:\s*"((?:[^"\\\\]|\\\\.)*)/su', $raw, $m)) {
+            $reply = json_decode('"'.$m[1].'"') ?? stripcslashes($m[1]);
+            preg_match_all('/"((?:tour|hotel|apartment|accommodation|event|visa|trip|excursion|cruise|offer)[a-z_]*:\d+)"/i', $raw, $k);
+            Log::info('Chatbot: JSON repaired', ['raw' => mb_substr($raw, 0, 500)]);
+
+            return ['reply' => $reply, 'recommend' => array_values(array_unique($k[1] ?? [])), 'needs_human' => str_contains($raw, '"needs_human": true') || str_contains($raw, '"needs_human":true')];
+        }
+        $plain = trim(preg_replace('/```[a-z]*|```/i', '', $raw));
+        if ($plain !== '' && ! str_starts_with($plain, '{')) {
+            return ['reply' => $plain, 'recommend' => [], 'needs_human' => false];
+        }
+        Log::warning('AI returned invalid JSON', ['raw' => mb_substr($raw, 0, 2000)]);
+        throw new \App\Services\Ai\AiException(__('The AI answer could not be read. Please try again.'));
     }
 
     /** Recommendations from a questionnaire */
@@ -117,7 +143,7 @@ class ChatBot
             $query = $summary.' '.$q->label('title', 'mk').' '.$q->category;
             $prompt = "The visitor filled the questionnaire \"{$q->label('title', 'mk')}\" (category: {$q->category}). Answers:\n{$summary}\n\n"
                 .'Recommend the 2–4 best matching offers from the OFFERS list and explain in 1 sentence each why they fit. If nothing fits well, say so and offer a personal offer from an agent (needs_human true).';
-            $out = Ai::json($agencyId, 'chat', static::system($agencyId, $conv->locale, static::candidates($agencyId, $query, $types, 60)), [['role' => 'user', 'content' => $prompt]], 1000, null, 'questionnaire #'.$q->id);
+            $out = static::ask($agencyId, static::system($agencyId, $conv->locale, static::candidates($agencyId, $query, $types, 60)), [['role' => 'user', 'content' => $prompt]], 'questionnaire #'.$q->id);
             $conv->cost = (float) $conv->cost + Ai::$lastCost;
 
             return static::store($conv, $out);
