@@ -1230,4 +1230,5 @@ body { max-width: 100%; }
 .sta-cap-note { display: block; margin-top: -.3rem; font-size: .82rem; color: #475569; }
 .sta-cap-note.is-warn { color: #b45309; font-weight: 600; }
 .sta-total-what { display: block; width: 100%; margin-bottom: .35rem; font-size: .85rem; color: #475569; }
+.sta-total .sta-total-what b { font-size: .92rem !important; font-weight: 600; color: #0f172a !important; line-height: 1.4; }
 @media (max-width: 640px) { .sta-tp { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
