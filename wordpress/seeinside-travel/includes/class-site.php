@@ -10,6 +10,8 @@ class STA_Site
     public static function init(): void
     {
         add_action('template_redirect', [self::class, 'preview'], 1);
+        // menu: a class on Tours / Hotels / Apartments, so their sub-menus get their own icon (plane, hotel, summer)
+        add_filter('nav_menu_css_class', [self::class, 'menu_classes'], 10, 2);
         // SEO title / description entered in SeeInside
         add_filter('document_title_parts', [self::class, 'seo_title_parts'], 20);
         add_action('wp_head', [self::class, 'seo_head'], 2);
@@ -290,19 +292,28 @@ class STA_Site
         $history = $fresh ? [] : array_flip((array) get_option($histKey, []));
         $keyOf = fn (string $type, string $object, int $oid, string $url) => $type === 'custom' ? 'u:'.self::menu_url_key($url) : $type.':'.$object.':'.$oid;
         $byKey = [];
+        $titleOf = [];
         foreach ($existing as $it) {
             $byKey[$keyOf((string) $it->type, (string) $it->object, (int) $it->object_id, (string) $it->url)] ??= (int) $it->ID;
+            $titleOf[(int) $it->ID] = (string) $it->title;
         }
         $produced = [];
         $added = 0;
         $isNew = [];
         $pages = get_option('sta_pages', []);
         // -1 = skip (deleted by you earlier) – its sub-items are skipped too
-        $add = function (string $title, array $args, int $parent = 0) use ($menuId, $keyOf, &$byKey, $history, &$produced, &$added, &$isNew): int {
+        $add = function (string $title, array $args, int $parent = 0) use ($menuId, $keyOf, &$byKey, $history, &$produced, &$added, &$isNew, $titleOf): int {
+            $old = (string) ($args['_old'] ?? '');   // the name it had before (e.g. Latin "LEFKADA" → "Лефкада")
+            unset($args['_old']);
             $k = $keyOf((string) ($args['menu-item-type'] ?? 'custom'), (string) ($args['menu-item-object'] ?? ''), (int) ($args['menu-item-object-id'] ?? 0), (string) ($args['menu-item-url'] ?? ''));
             $produced[$k] ??= count($produced);   // the place in the logical order
             if (isset($byKey[$k])) {
-                return $byKey[$k];          // already in the menu – stays where and how you put it
+                $id = $byKey[$k];
+                if ($old !== '' && $old !== $title && mb_strtolower($titleOf[$id] ?? '') === mb_strtolower($old)) {
+                    wp_update_post(['ID' => $id, 'post_title' => $title]);   // you did not rename it – the Macedonian name
+                }
+
+                return $id;                 // already in the menu – stays where and how you put it
             }
             if ($parent < 0 || isset($history[$k])) {
                 return -1;                  // you removed it (or its parent) – not added again
@@ -425,11 +436,11 @@ class STA_Site
                 $parent = count($byCountry) > 1 && $country !== '' ? $add($country, ['menu-item-type' => 'custom', 'menu-item-url' => $code ? add_query_arg('country', $code, $hbase) : $hbase], $hm) : $hm;
                 foreach (array_slice($list, 0, 30) as $hd) {
                     $durl = add_query_arg('destination', $hd['id'], $hbase);
-                    $dm = $add($hd['name'], ['menu-item-type' => 'custom', 'menu-item-url' => $durl], $parent);
+                    $dm = $add($hd['name'], ['menu-item-type' => 'custom', 'menu-item-url' => $durl, '_old' => (string) ($hd['name_en'] ?? '')], $parent);
                     $zones = (array) ($hd['zones'] ?? []);
                     if (count($zones) > 1) {
                         foreach (array_slice($zones, 0, 12) as $z) {
-                            $add($z['name'], ['menu-item-type' => 'custom', 'menu-item-url' => add_query_arg('zone', rawurlencode($z['name']), $durl)], $dm);
+                            $add((string) ($z['label'] ?? $z['name']), ['menu-item-type' => 'custom', 'menu-item-url' => add_query_arg('zone', rawurlencode($z['name']), $durl), '_old' => (string) $z['name']], $dm);
                         }
                     }
                 }
@@ -565,6 +576,26 @@ class STA_Site
             }
         };
         $walk(0);
+    }
+
+    public static function menu_classes($classes, $item): array
+    {
+        $classes = (array) $classes;
+        if ((int) ($item->menu_item_parent ?? 0)) {
+            return $classes;
+        }
+        $pages = (array) get_option('sta_pages', []);
+        $is = fn (string $slug, string $pt) => ($item->object === 'page' && (int) $item->object_id && (int) $item->object_id === (int) ($pages[$slug] ?? 0))
+            || ($item->type === 'post_type_archive' && $item->object === $pt);
+        if ($is('aranzmani', 'sta_tour')) {
+            $classes[] = 'sta-mi-tours';
+        } elseif ($is('apartmani', 'sta_hotel')) {
+            $classes[] = 'sta-mi-apartments';
+        } elseif ($is('hoteli', '')) {
+            $classes[] = 'sta-mi-hotels';
+        }
+
+        return $classes;
     }
 
     /** Same link = same item, whatever the domain, order of the parameters or the last slash */

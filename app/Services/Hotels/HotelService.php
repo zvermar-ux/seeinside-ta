@@ -69,6 +69,41 @@ class HotelService
 
     /* ---------------- website: destinations, search, hotel, booking ---------------- */
 
+    /* ---------------- Macedonian names of destinations and areas ("Lefkada" → "Лефкада") ---------------- */
+
+    protected static array $mkMap = [];
+
+    public static function mk(?int $agencyId, ?string $name): string
+    {
+        $name = trim((string) $name);
+        if ($name === '' || ! $agencyId) {
+            return $name;
+        }
+        $map = self::$mkMap[$agencyId] ??= Cache::remember('hotels:mk:'.$agencyId, 600, function () use ($agencyId) {
+            $m = [];
+            foreach (SupplierDestination::withoutGlobalScopes()->where('agency_id', $agencyId)->get(['name', 'name_mk', 'zones_mk']) as $d) {
+                if (filled($d->name_mk)) {
+                    $m[mb_strtolower(trim($d->name))] = $d->name_mk;
+                }
+                foreach ((array) $d->zones_mk as $z => $mk) {
+                    if (filled($mk)) {
+                        $m[mb_strtolower(trim((string) $z))] = $mk;
+                    }
+                }
+            }
+
+            return $m;
+        });
+
+        return $map[mb_strtolower($name)] ?? $name;
+    }
+
+    /** "Area, Destination" in Macedonian */
+    public static function mkPlace(?int $agencyId, ?string $zone, ?string $dest): string
+    {
+        return trim(($zone ? self::mk($agencyId, $zone).', ' : '').self::mk($agencyId, $dest), ', ');
+    }
+
     /** Destinations offered in the website search (chosen in the app) */
     public static function destinations(int $agencyId): array
     {
@@ -82,7 +117,7 @@ class HotelService
             return SupplierDestination::withoutGlobalScopes()
                 ->where('agency_id', $agencyId)->where('is_active', true)->whereIn('supplier_connection_id', $conns)
                 ->orderBy('country_name')->orderBy('name')->get()
-                ->map(fn ($d) => ['id' => $d->supplier_connection_id.':'.$d->code, 'name' => $d->name, 'country' => $d->country_name ?: $d->country_code, 'country_code' => $d->country_code, 'hotels' => $counts[$d->supplier_connection_id.':'.$d->code] ?? 0])
+                ->map(fn ($d) => ['id' => $d->supplier_connection_id.':'.$d->code, 'name' => $d->name_mk ?: $d->name, 'name_en' => $d->name, 'country' => $d->country_name ?: $d->country_code, 'country_code' => $d->country_code, 'hotels' => $counts[$d->supplier_connection_id.':'.$d->code] ?? 0])
                 ->filter(fn ($d) => $d['hotels'] > 0)   // destinations without imported hotels are not offered
                 ->map(function ($d) use ($agencyId) {
                     // areas of the destination (Kassandra, Sithonia…) for the menu; a photo of its best hotel for the page header
@@ -90,7 +125,7 @@ class HotelService
                     $zones = $rows->countBy('zone')->forget('')->sortDesc()->take(15);
                     $photo = fn ($list) => optional($list->filter(fn ($r) => ! empty($r['image']))->sortByDesc(fn ($r) => [(int) ! empty($r['featured']), (int) ($r['stars'] ?? 0)])->first())['image'];
 
-                    return $d + ['image' => $photo($rows), 'zones' => $zones->map(fn ($n, $z) => ['name' => $z, 'hotels' => $n, 'image' => $photo($rows->where('zone', $z))])->values()->all()];
+                    return $d + ['image' => $photo($rows), 'zones' => $zones->map(fn ($n, $z) => ['name' => $z, 'label' => self::mk($agencyId, $z), 'hotels' => $n, 'image' => $photo($rows->where('zone', $z))])->values()->all()];
                 })
                 ->values()->all();
         });
@@ -120,7 +155,7 @@ class HotelService
         return SupplierHotel::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)
             ->where('name', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], $q).'%')
             ->orderByDesc('is_featured')->orderByDesc('ranking')->limit(10)->get()
-            ->map(fn ($h) => ['id' => $h->publicId(), 'name' => $h->name, 'stars' => $h->stars, 'place' => trim(($h->zone_name ? $h->zone_name.', ' : '').$h->destination_name, ', ')])->all();
+            ->map(fn ($h) => ['id' => $h->publicId(), 'name' => $h->name, 'stars' => $h->stars, 'place' => self::mkPlace($agencyId, $h->zone_name, $h->destination_name)])->all();
     }
 
     /**
@@ -199,7 +234,7 @@ class HotelService
             $rows = [];
             SupplierHotel::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->whereIn('supplier_connection_id', $conns)
                 ->orderByDesc('is_featured')->orderByDesc('stars')->orderByDesc('ranking')->orderBy('name')
-                ->chunk(500, function ($list) use (&$rows, $active) {
+                ->chunk(500, function ($list) use (&$rows, $active, $agencyId) {
                     foreach ($list as $h) {
                         $f = self::facts($h);
                         $d = $active[$f['dest']] ?? null;
@@ -208,8 +243,8 @@ class HotelService
                         }
                         $rows[] = $f + [
                             'id' => $h->publicId(), 'name' => $h->name, 'stars' => (int) $h->stars,
-                            'dest_name' => $d->name, 'country_name' => $d->country_name ?: $d->country_code,
-                            'place' => trim(($h->zone_name ? $h->zone_name.', ' : '').$h->destination_name, ', '),
+                            'dest_name' => self::mk($agencyId, $d->name), 'country_name' => $d->country_name ?: $d->country_code,
+                            'place' => self::mkPlace($agencyId, $h->zone_name, $h->destination_name), 'zone_label' => self::mk($agencyId, $h->zone_name),
                             'image' => ! empty($h->images[0]['path']) ? HotelbedsDriver::imageUrl($h->images[0]['path'], 'xl') : null,
                             'images' => array_map(fn ($i) => HotelbedsDriver::imageUrl($i['path'], 'bigger'), array_slice($h->images ?? [], 0, 5)),
                             'facilities' => array_map(fn ($x) => $x['name'], HotelText::facilities($h->facilities ?? [], 6)),
@@ -279,7 +314,7 @@ class HotelService
         $facets = [
             'countries' => collect($opt($count('country', 'country'), fn ($id) => $countries[$id] ?? $id))->sortBy('name')->values()->all(),
             'destinations' => collect($opt($count('dest', 'dest'), fn ($id) => $dests[$id]['name'] ?? $id))->map(fn ($d) => $d + ['country' => $dests[$d['id']]['country'] ?? ''])->sortBy('name')->values()->all(),
-            'zones' => $f['dest'] ? collect($opt($count('zone', 'zone'), fn ($id) => $id))->sortBy('name')->values()->all() : [],
+            'zones' => $f['dest'] ? collect($opt($count('zone', 'zone'), fn ($id) => self::mk($agencyId, $id)))->sortBy('name')->values()->all() : [],
             'stars' => collect($opt($count('stars', 'stars'), fn ($id) => (int) $id))->sortByDesc('id')->values()->all(),
             'types' => collect($opt($count('type', 'type'), fn ($id) => ['mk' => self::TYPES[$id][0] ?? $id, 'en' => self::TYPES[$id][1] ?? $id]))->sortByDesc('n')->values()->all(),
             'boards' => collect($opt($count('board', 'boards'), fn ($id) => HotelText::board($id)))->sortBy(fn ($b) => array_search($b['id'], ['RO', 'BB', 'HB', 'FB', 'AI']))->values()->all(),
@@ -289,7 +324,7 @@ class HotelService
         $slice = array_slice($hits, ($f['page'] - 1) * $f['per'], $f['per']);
 
         return [
-            'hotels' => array_map(fn ($r) => array_intersect_key($r, array_flip(['id', 'name', 'stars', 'place', 'dest', 'country', 'zone', 'type', 'boards', 'features', 'image', 'images', 'facilities', 'featured'])), $slice),
+            'hotels' => array_map(fn ($r) => array_intersect_key($r, array_flip(['id', 'name', 'stars', 'place', 'dest', 'country', 'zone', 'zone_label', 'type', 'boards', 'features', 'image', 'images', 'facilities', 'featured'])), $slice),
             'total' => count($hits), 'page' => $f['page'], 'pages' => $pages, 'facets' => $facets,
         ];
     }
@@ -414,7 +449,7 @@ class HotelService
                     $zone = (string) $local->zone_name;
                     $list = $list->sortBy(fn ($h) => [$zone !== '' && str_starts_with((string) $h['place'], $zone) ? 0 : 1, $h['price']])->values();
                     if ($list->isNotEmpty()) {
-                        $out['nearby'] = ['destination' => $dest, 'search_id' => $r['search_id'], 'place' => $local->zone_name ?: $local->destination_name,
+                        $out['nearby'] = ['destination' => $dest, 'search_id' => $r['search_id'], 'place' => self::mk($agencyId, $local->zone_name ?: $local->destination_name),
                             'count' => $list->count(), 'hotels' => $list->take(6)->map(fn ($h) => array_intersect_key($h, array_flip(['id', 'name', 'stars', 'place', 'image', 'price', 'currency', 'board'])))->all()];
                     }
                 } catch (\Throwable $e) {
@@ -458,7 +493,8 @@ class HotelService
             'id' => $row['id'],
             'name' => $l?->name ?: ucwords(mb_strtolower($h['name'])),
             'stars' => $l?->stars ?? $h['stars'],
-            'place' => trim(($l?->zone_name ?? $h['zone'] ?? '').', '.($l?->destination_name ?? $h['destination'] ?? ''), ', '),
+            'place' => self::mkPlace($l?->agency_id, $l?->zone_name ?? $h['zone'] ?? '', $l?->destination_name ?? $h['destination'] ?? ''),
+            'zone_label' => self::mk($l?->agency_id, $l?->zone_name ?? $h['zone'] ?? ''),
             'image' => $l && ! empty($l->images[0]['path']) ? HotelbedsDriver::imageUrl($l->images[0]['path'], 'xl') : null,
             'images' => $l ? array_map(fn ($i) => HotelbedsDriver::imageUrl($i['path'], 'bigger'), array_slice($l->images ?? [], 0, 5)) : [],
             'latitude' => $l?->latitude ?? $h['latitude'],
@@ -520,7 +556,7 @@ class HotelService
             'id' => $id,
             'name' => $l?->name ?: ucwords(mb_strtolower($live['name'] ?? '')),
             'stars' => $l?->stars ?? ($live['stars'] ?? null),
-            'place' => trim(($l?->zone_name ?? $live['zone'] ?? '').', '.($l?->destination_name ?? $live['destination'] ?? ''), ', '),
+            'place' => self::mkPlace($l?->agency_id, $l?->zone_name ?? $live['zone'] ?? '', $l?->destination_name ?? $live['destination'] ?? ''),
             'address' => trim(($l?->address ?? '').($l?->city ? ', '.$l->city : ''), ', '),
             'description' => $l?->description,
             'images' => array_map(fn ($i) => ['url' => HotelbedsDriver::imageUrl($i['path'], 'xl'), 'thumb' => HotelbedsDriver::imageUrl($i['path'], 'bigger')], $l?->images ?? []),
@@ -608,7 +644,7 @@ class HotelService
                 'hotel_code' => $live['code'],
                 'hotel_name' => $local?->name ?: ucwords(mb_strtolower($live['name'])),
                 'stars' => $local?->stars ?? $live['stars'],
-                'place' => trim(($local?->zone_name ?? $live['zone'] ?? '').', '.($local?->destination_name ?? $live['destination'] ?? ''), ', '),
+                'place' => self::mkPlace($agencyId, $local?->zone_name ?? $live['zone'] ?? '', $local?->destination_name ?? $live['destination'] ?? ''),
                 'room_name' => ucfirst(mb_strtolower($found['room']['name'])),
                 'room_code' => $found['room']['code'],
                 'rooms' => count($q['rooms']),

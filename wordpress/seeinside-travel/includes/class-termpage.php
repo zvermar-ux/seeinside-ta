@@ -200,7 +200,7 @@ class STA_Term_Page
                 foreach ((array) ($d['zones'] ?? []) as $z) {
                     if (strcasecmp((string) $z['name'], $zone) === 0) {
                         $crumbs[] = '<a href="'.esc_url(add_query_arg('destination', $destId, $base)).'">'.esc_html($title).'</a>';
-                        $title = (string) $z['name'];
+                        $title = (string) ($z['label'] ?? $z['name']);
                         $n = (int) ($z['hotels'] ?? 0);
                         $img = (string) ($z['image'] ?? '') ?: $img;
                         break;

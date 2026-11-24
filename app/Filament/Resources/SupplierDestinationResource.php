@@ -49,7 +49,8 @@ class SupplierDestinationResource extends Resource
             ->defaultSort('name')
             ->columns([
                 Tables\Columns\TextColumn::make('name')->label(__('Destination'))->searchable()->sortable()->weight('semibold')
-                    ->description(fn (SupplierDestination $r) => collect($r->zones)->pluck('name')->take(6)->implode(', ')),
+                    ->formatStateUsing(fn (SupplierDestination $r) => $r->name_mk ? $r->name_mk.' ('.$r->name.')' : $r->name)
+                    ->description(fn (SupplierDestination $r) => collect($r->zones)->pluck('name')->take(6)->map(fn ($z) => ($r->zones_mk ?? [])[$z] ?? $z)->implode(', ')),
                 Tables\Columns\TextColumn::make('country_name')->label(__('Country'))->sortable()->badge()->color('gray'),
                 Tables\Columns\TextColumn::make('code')->label(__('Code'))->copyable(),
                 Tables\Columns\TextColumn::make('hotels_count')->label(__('Hotels'))->sortable()->badge(),
@@ -61,6 +62,26 @@ class SupplierDestinationResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_active')->label(__('In the website search')),
             ])
             ->actions([
+                Tables\Actions\Action::make('mk_names')->label(__('Macedonian names'))->icon('heroicon-o-language')->color('gray')
+                    ->modalHeading(fn (SupplierDestination $r) => $r->name)
+                    ->fillForm(function (SupplierDestination $r) {
+                        $zm = (array) ($r->zones_mk ?? []);
+                        $zones = [];
+                        foreach (\App\Services\Hotels\HotelNamesMk::zones($r) as $z) {
+                            $zones[$z] = $zm[$z] ?? '';
+                        }
+
+                        return ['name_mk' => $r->name_mk, 'zones_mk' => $zones];
+                    })
+                    ->form([
+                        Forms\Components\TextInput::make('name_mk')->label(__('Name on the website (Macedonian)'))->maxLength(120),
+                        Forms\Components\KeyValue::make('zones_mk')->label(__('Areas'))->keyLabel(__('Name in the booking system'))->valueLabel(__('Name on the website'))
+                            ->addable(false)->deletable(false)->editableKeys(false),
+                    ])
+                    ->action(function (SupplierDestination $record, array $data) {
+                        $record->update(['name_mk' => trim((string) $data['name_mk']) ?: null, 'zones_mk' => array_filter(array_map(fn ($v) => trim((string) $v), (array) ($data['zones_mk'] ?? [])))]);
+                        Notification::make()->success()->title(__('Saved'))->send();
+                    }),
                 Tables\Actions\Action::make('import')->label(__('Import hotels'))->icon('heroicon-o-arrow-down-tray')->color('gray')
                     ->form([Forms\Components\Select::make('min_stars')->label(__('Only from'))->default(3)
                         ->options([0 => __('All'), 2 => '★★', 3 => '★★★', 4 => '★★★★', 5 => '★★★★★'])])

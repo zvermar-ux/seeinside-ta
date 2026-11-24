@@ -261,7 +261,7 @@
       var opts = function (o, name) { return Object.keys(o).map(function (k) { return { id: k, name: name(k), n: o[k] }; }); };
       var bn = { RO: { mk: 'Само ноќевање', en: 'Room only' }, BB: { mk: 'Ноќевање со појадок', en: 'Bed & breakfast' }, HB: { mk: 'Полупансион', en: 'Half board' }, FB: { mk: 'Полн пансион', en: 'Full board' }, AI: 'All inclusive' };
       return {
-        zones: opts(count('zone', function (h) { return h.zone || ''; }), function (k) { return k; }).sort(function (a, b) { return a.name.localeCompare(b.name); }),
+        zones: opts(count('zone', function (h) { return h.zone || ''; }), function (k) { var x = list.filter(function (h) { return h.zone === k && h.zone_label; })[0]; return x ? x.zone_label : k; }).sort(function (a, b) { return a.name.localeCompare(b.name); }),
         stars: opts(count('stars', function (h) { return h.stars || 0; }), function (k) { return k; }).sort(function (a, b) { return b.id - a.id; }),
         types: opts(count('type', function (h) { return h.type || ''; }), function (k) { return (H.types || {})[k] || k; }),
         boards: opts(count('board', function (h) { return h.boards || []; }), function (k) { return bn[k] || k; }),

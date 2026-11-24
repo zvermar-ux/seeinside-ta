@@ -14,7 +14,7 @@ class SupplierDestination extends Model
 
     protected function casts(): array
     {
-        return ['zones' => 'array', 'is_active' => 'boolean'];
+        return ['zones' => 'array', 'zones_mk' => 'array', 'is_active' => 'boolean'];
     }
 
     public function connection(): BelongsTo
@@ -28,9 +28,10 @@ class SupplierDestination extends Model
         $changed = function ($m) {
             \Illuminate\Support\Facades\Cache::forget('hotels:dest:'.$m->agency_id);
             \Illuminate\Support\Facades\Cache::forget('hotels:index:'.$m->agency_id);
+            \Illuminate\Support\Facades\Cache::forget('hotels:mk:'.$m->agency_id);
             \App\Services\Website\WebsiteNotifier::metaChanged($m->agency_id);
         };
-        static::saved(fn ($m) => ($m->wasRecentlyCreated || $m->wasChanged(['is_active', 'name', 'hotels_count'])) && $changed($m));
+        static::saved(fn ($m) => ($m->wasRecentlyCreated || $m->wasChanged(['is_active', 'name', 'hotels_count', 'name_mk', 'zones_mk'])) && $changed($m));
         static::deleted($changed);
     }
 }

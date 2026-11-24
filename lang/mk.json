@@ -2188,5 +2188,14 @@
     "Write questions & answers": "Напиши прашања и одговори",
     ":count questions & answers written. Check them and test the bot.": "Напишани се :count прашања и одговори. Проверете ги и тестирајте го ботот.",
     "The questions & answers are written in the background (2–5 minutes). This page shows when they are ready.": "Прашањата и одговорите се пишуваат во позадина (2–5 минути). Оваа страница ќе покаже кога се готови.",
-    "Questions & answers are being written…": "Се пишуваат прашања и одговори…"
+    "Questions & answers are being written…": "Се пишуваат прашања и одговори…",
+    "Macedonian names (AI)": "Македонски имиња (AI)",
+    "Macedonian names": "Македонски имиња",
+    "Macedonian names of destinations and areas": "Македонски имиња на дестинации и области",
+    "AI writes the names of the destinations in the website search and of their areas in Macedonian Cyrillic (Lefkada → Лефкада, Central and North Greece → Централна и Северна Грција). Names you already wrote stay. You can change every name with \"Macedonian names\" on the row.": "AI ги пишува имињата на дестинациите во пребарувањето на сајтот и нивните области на македонски, на кирилица (Lefkada → Лефкада, Central and North Greece → Централна и Северна Грција). Имињата што веќе сте ги внеле остануваат. Секое име може да го смените со „Македонски имиња“ во редот.",
+    ":count names written in Macedonian.": "Напишани се :count имиња на македонски.",
+    "Name on the website (Macedonian)": "Име на сајтот (македонски)",
+    "Areas": "Области",
+    "Name in the booking system": "Име во системот за резервации",
+    "Name on the website": "Име на сајтот"
 }

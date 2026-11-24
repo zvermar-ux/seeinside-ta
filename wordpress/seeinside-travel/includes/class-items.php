@@ -181,7 +181,7 @@ class STA_Items
         $it['stars'] = (int) ($h['stars'] ?? 0);
         $it['place'] = (string) ($h['place'] ?? '');
         $it['country_code'] = strtolower((string) ($h['country'] ?? ''));
-        $it['eyebrow'] = trim((string) ($h['zone'] ?? ''));
+        $it['eyebrow'] = trim((string) ($h['zone_label'] ?? $h['zone'] ?? ''));
         $feat = STA_Hotels::features();
         $it['amenities'] = array_values(array_filter(array_map(fn ($k) => isset($feat[$k]) ? sta_t($feat[$k]) : null, array_slice((array) ($h['features'] ?? []), 0, 4))));
         $it['featured'] = ! empty($h['featured']);
