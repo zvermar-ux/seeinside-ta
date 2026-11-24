@@ -184,3 +184,29 @@ Artisan::command('aries:availability', function () {
 })->purpose('What was booked offline in the old Aries system: free / stop sale for the terms and departures we have');
 // offline bookings of the old system reach the website within ~2 hours (7–23 h)
 \Illuminate\Support\Facades\Schedule::command('aries:availability')->cron('10 7-23/2 * * *')->runInBackground()->withoutOverlapping();
+
+// bot questions & answers ("Questions & answers (AI)" on Bot knowledge) – long AI work, so in the background
+Artisan::command('chat:faq {--agency=} {--requested : only agencies where the button was clicked}', function () {
+    @set_time_limit(900);
+    $ids = $this->option('agency') ? [(int) $this->option('agency')] : [];
+    if ($this->option('requested')) {
+        $ids = (array) \Illuminate\Support\Facades\Cache::pull('chat-faq:queue', []);
+    }
+    foreach (array_unique($ids) as $agencyId) {
+        $key = 'chat-faq:status:'.$agencyId;
+        $st = (array) \Illuminate\Support\Facades\Cache::get($key, []);
+        if (! empty($st['user'])) {
+            \Illuminate\Support\Facades\Auth::onceUsingId($st['user']);
+        }
+        \Illuminate\Support\Facades\Cache::put($key, ['state' => 'running', 'at' => now()->toIso8601String()] + $st, 3600);
+        try {
+            $n = \App\Services\Ai\ChatTrainer::faq($agencyId);
+            \Illuminate\Support\Facades\Cache::put($key, ['state' => 'done', 'count' => $n, 'at' => now()->toIso8601String()], 86400);
+            $this->info("agency {$agencyId}: {$n} Q&A");
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Cache::put($key, ['state' => 'error', 'message' => $e->getMessage(), 'at' => now()->toIso8601String()], 86400);
+            $this->error("agency {$agencyId}: ".$e->getMessage());
+        }
+    }
+})->purpose('Questions & answers for the website chatbot, written by AI');
+\Illuminate\Support\Facades\Schedule::command('chat:faq --requested')->everyMinute()->runInBackground()->withoutOverlapping();

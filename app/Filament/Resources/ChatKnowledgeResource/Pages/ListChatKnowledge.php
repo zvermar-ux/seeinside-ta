@@ -11,7 +11,9 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class ListChatKnowledge extends ListRecords
 {
@@ -19,7 +21,31 @@ class ListChatKnowledge extends ListRecords
 
     public function getSubheading(): ?string
     {
-        return __('The bot answers from this knowledge and from the active offer (tours, events, hotels, visas – always up to date). Corrected answers have priority.');
+        $text = __('The bot answers from this knowledge and from the active offer (tours, events, hotels, visas – always up to date). Corrected answers have priority.');
+        $st = $this->faqStatus();
+
+        return match ($st['state'] ?? null) {
+            'queued', 'running' => $text.' ⏳ '.__('Questions & answers are being written…'),
+            'done' => $text.' ✓ '.__(':count questions & answers written. Check them and test the bot.', ['count' => $st['count'] ?? 0]),
+            'error' => $text.' ⚠ '.__('Questions & answers').': '.($st['message'] ?? ''),
+            default => $text,
+        };
+    }
+
+    protected function faqStatus(): array
+    {
+        $agencyId = Auth::user()->agency_id;
+        if (! $agencyId) {   // super admin: the last started one
+            $agencyId = Cache::get('chat-faq:last');
+        }
+
+        return $agencyId ? (array) Cache::get('chat-faq:status:'.$agencyId, []) : [];
+    }
+
+    public function table(Table $table): Table
+    {
+        // refresh while the questions & answers are being written
+        return parent::table($table)->poll(fn () => in_array($this->faqStatus()['state'] ?? null, ['queued', 'running'], true) ? '10s' : null);
     }
 
     protected function getHeaderActions(): array
@@ -48,13 +74,13 @@ class ListChatKnowledge extends ListRecords
                     Forms\Components\Select::make('agency_id')->label(__('Agency'))->required()->options(Agency::query()->orderBy('name')->pluck('name', 'id')),
                 ] : [])
                 ->action(function (array $data) {
-                    @set_time_limit(600);
-                    try {
-                        $n = ChatTrainer::faq((int) ($data['agency_id'] ?? Auth::user()->agency_id));
-                        Notification::make()->success()->title(__('Done'))->body(__(':count questions & answers written. Check them and test the bot.', ['count' => $n]))->send();
-                    } catch (AiException $e) {
-                        Notification::make()->danger()->title(__('AI'))->body($e->getMessage())->persistent()->send();
-                    }
+                    $agencyId = (int) ($data['agency_id'] ?? Auth::user()->agency_id);
+                    // long AI work: done in the background by the scheduler (chat:faq --requested, every minute)
+                    $q = (array) Cache::get('chat-faq:queue', []);
+                    Cache::put('chat-faq:queue', array_values(array_unique([...$q, $agencyId])), 3600);
+                    Cache::put('chat-faq:last', $agencyId, 86400);
+                    Cache::put('chat-faq:status:'.$agencyId, ['state' => 'queued', 'user' => Auth::id(), 'at' => now()->toIso8601String()], 3600);
+                    Notification::make()->success()->title(__('Started'))->body(__('The questions & answers are written in the background (2–5 minutes). This page shows when they are ready.'))->send();
                 }),
             Actions\Action::make('test')->label(__('Test the bot'))->icon('heroicon-o-beaker')->color('gray')->url(fn () => ChatPlayground::getUrl()),
             Actions\CreateAction::make()->icon('heroicon-o-plus'),

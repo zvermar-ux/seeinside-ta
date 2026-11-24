@@ -2184,7 +2184,9 @@
     "Questions & answers": "Прашања и одговори",
     "Questions & answers (AI)": "Прашања и одговори (AI)",
     "Questions & answers for the bot": "Прашања и одговори за ботот",
-    "AI reads the whole website (up to 20 pages from the menu, general terms), the active offer and the knowledge, and writes 40–70 questions visitors really ask with answers. Takes 1–3 minutes. Earlier AI questions & answers are replaced; your entries stay.": "AI го чита целиот сајт (до 20 страници од менито и општите услови), активната понуда и знаењето, и пишува 40–70 прашања какви што навистина поставуваат посетителите, со одговори. Трае 1–3 минути. Претходните AI прашања и одговори се заменуваат; вашите записи остануваат.",
+    "AI reads the whole website (up to 20 pages from the menu, general terms), the active offer and the knowledge, and writes 40–70 questions visitors really ask with answers. Takes 1–3 minutes. Earlier AI questions & answers are replaced; your entries stay.": "AI го чита целиот сајт (до 20 страници од менито и општите услови), активната понуда и знаењето, и пишува 40–70 прашања какви што навистина поставуваат посетителите, со одговори. Се работи во позадина, 2–5 минути. Претходните AI прашања и одговори се заменуваат; вашите записи остануваат.",
     "Write questions & answers": "Напиши прашања и одговори",
-    ":count questions & answers written. Check them and test the bot.": "Напишани се :count прашања и одговори. Проверете ги и тестирајте го ботот."
+    ":count questions & answers written. Check them and test the bot.": "Напишани се :count прашања и одговори. Проверете ги и тестирајте го ботот.",
+    "The questions & answers are written in the background (2–5 minutes). This page shows when they are ready.": "Прашањата и одговорите се пишуваат во позадина (2–5 минути). Оваа страница ќе покаже кога се готови.",
+    "Questions & answers are being written…": "Се пишуваат прашања и одговори…"
 }
