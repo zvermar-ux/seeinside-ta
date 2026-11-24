@@ -1260,3 +1260,10 @@ body { max-width: 100%; }
   .sta-tp-b { padding: .5rem .55rem !important; }
   .sta-tp-b b { font-size: .8rem; }
 }
+
+/* pictures added in the text editor of the app (Trix attachments) */
+figure.attachment, figure[data-trix-attachment] { margin: 1rem 0; max-width: 100%; }
+figure.attachment img, figure[data-trix-attachment] img { display: block; max-width: 100% !important; height: auto !important; border-radius: 12px; }
+figure.attachment .attachment__name, figure.attachment .attachment__size { display: none !important; }
+figure.attachment figcaption:not(:has(> :not(.attachment__name):not(.attachment__size))) { display: none; }
+figure.attachment figcaption { font-size: .85rem; color: #64748b; margin-top: .35rem; text-align: center; }

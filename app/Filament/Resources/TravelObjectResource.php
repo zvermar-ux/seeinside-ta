@@ -110,7 +110,7 @@ class TravelObjectResource extends Resource
                         Forms\Components\RichEditor::make('description')->label(__('Description'))
                             ->fileAttachmentsDisk('public')->fileAttachmentsDirectory('objects/attachments'),
                         Forms\Components\RichEditor::make('service_description')->label(__('Service / accommodation description'))
-                            ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'link', 'undo', 'redo']),
+                            ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'link', 'attachFiles', 'undo', 'redo']),
                     ]),
                 ]),
                 Forms\Components\Group::make()->columnSpan(1)->schema([

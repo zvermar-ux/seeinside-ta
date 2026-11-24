@@ -51,7 +51,7 @@ class Lang
     public static function editor(string $name, string $label, string $locale): RichEditor
     {
         return RichEditor::make("{$name}.{$locale}")->label($label)
-            ->toolbarButtons(['bold', 'italic', 'underline', 'h2', 'h3', 'bulletList', 'orderedList', 'link', 'blockquote', 'undo', 'redo'])
+            ->toolbarButtons(['bold', 'italic', 'underline', 'h2', 'h3', 'bulletList', 'orderedList', 'link', 'blockquote', 'attachFiles', 'undo', 'redo'])
             ->fileAttachmentsDisk('public')->fileAttachmentsDirectory('content');
     }
 }
