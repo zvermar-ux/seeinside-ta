@@ -267,6 +267,10 @@ class STA_Admin
             .$col('tb_bg', __('Background', 'seeinside-travel')).$col('tb_color', __('Text', 'seeinside-travel'))
             .$num('tb_size', __('Text size', 'seeinside-travel'))
             .'</table></div>';
+        echo '<div class="sta-card"><h2>'.esc_html__('Logo while loading', 'seeinside-travel').'</h2><p class="description">'.esc_html__('Stops the logo from showing huge for a moment while the page loads.', 'seeinside-travel').'</p><table class="form-table">'
+            .'<tr><th>'.esc_html__('Show', 'seeinside-travel').'</th><td>'.$chk('early_on', __('Keep the logo small from the first moment', 'seeinside-travel')).'</td></tr>'
+            .$num('logo_max', __('Widest logo on computers', 'seeinside-travel'))
+            .'</table></div>';
         echo '</div><div>';
         echo '<div class="sta-card"><h2>'.esc_html__('Header on phones', 'seeinside-travel').'</h2><p class="description">'.esc_html__('Screens up to 1199px: the logo, the magnifier and the menu button in one row.', 'seeinside-travel').'</p><table class="form-table">'
             .'<tr><th>'.esc_html__('Arrange', 'seeinside-travel').'</th><td>'.$chk('m_on', __('Arrange the header on phones', 'seeinside-travel')).'</td></tr>'

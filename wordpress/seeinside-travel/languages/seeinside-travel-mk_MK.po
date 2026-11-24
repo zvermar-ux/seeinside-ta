@@ -4059,3 +4059,15 @@ msgstr "Моментално нема термини."
 
 msgid "You book"
 msgstr "Резервирате"
+
+msgid "Logo while loading"
+msgstr "Лого при вчитување"
+
+msgid "Stops the logo from showing huge for a moment while the page loads."
+msgstr "Логото нема да се појави огромно за момент додека се вчитува страницата."
+
+msgid "Keep the logo small from the first moment"
+msgstr "Логото да е мало уште од првиот момент"
+
+msgid "Widest logo on computers"
+msgstr "Најширо лого на компјутер"

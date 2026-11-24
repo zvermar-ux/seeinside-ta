@@ -34,6 +34,9 @@ class STA_Header
             'm_hide' => '',                 // selectors to hide on phones (one per line)
             'm_menu_contact' => '1',        // phone + e-mail at the end of the phone menu
             'css' => '',
+            // the logo while the page loads (before the CSS of the theme arrives)
+            'early_on' => '1',
+            'logo_max' => 180,              // px, widest the logo may be on computers
         ];
     }
 
@@ -47,6 +50,30 @@ class STA_Header
     public static function init(): void
     {
         add_action('wp_footer', [self::class, 'output'], 5);
+        add_action('wp_head', [self::class, 'early'], 1);
+    }
+
+    /**
+     * A tiny style at the very top of <head>: the logo of the header never shows in its natural
+     * (huge) size while the CSS of the theme is still loading (LiteSpeed "Load CSS asynchronously" etc.).
+     */
+    public static function early(): void
+    {
+        if (is_admin() || isset($_GET['elementor-preview'])) {   // phpcs:ignore
+            return;
+        }
+        $o = self::opt();
+        if ($o['early_on'] !== '1') {
+            return;
+        }
+        $max = max(60, (int) $o['logo_max']);
+        $sel = 'header .header-logo img,.th-header .header-logo img,.sticky-wrapper .header-logo img,.th-menu-wrapper .mobile-logo img,'
+            .'.elementor-location-header .elementor-widget-theme-site-logo img,.elementor-location-header .elementor-widget-image img,header img.custom-logo,.elementor-location-header img.custom-logo';
+        $css = $sel.'{max-width:'.$max.'px!important;height:auto!important}';
+        if ($o['m_on'] === '1') {
+            $css .= '@media (max-width:1199px){'.$sel.'{max-width:'.max(40, (int) $o['m_logo']).'px!important}}';
+        }
+        echo '<style id="sta-header-early">'.$css.'</style>'."\n";   // phpcs:ignore
     }
 
     public static function save(array $in): void
@@ -55,7 +82,7 @@ class STA_Header
         $o = [];
         foreach ($d as $k => $def) {
             $v = wp_unslash($in[$k] ?? '');
-            if (in_array($k, ['tb_on', 'tb_phone', 'tb_email', 'm_on', 'm_menu_contact'], true)) {
+            if (in_array($k, ['tb_on', 'tb_phone', 'tb_email', 'm_on', 'm_menu_contact', 'early_on'], true)) {
                 $o[$k] = ! empty($in[$k]) ? '1' : '0';
             } elseif (is_int($def)) {
                 $o[$k] = max(0, min(600, (int) $v));
