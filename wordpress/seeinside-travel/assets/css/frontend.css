@@ -1293,3 +1293,8 @@ figure.attachment figcaption { font-size: .85rem; color: #64748b; margin-top: .3
 .sta-mi-hotels .sub-menu .current-menu-item > a::before, .sta-mi-apartments .sub-menu .current-menu-item > a::before { width: 1.1em !important; margin-right: .45em !important; opacity: 1 !important; }
 .sta-mi-hotels { --sta-mi-ico: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/><path d="M10 21v-3h4v3"/></svg>'); }
 .sta-mi-apartments { --sta-mi-ico: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 6.5 6 21"/><path d="M3.5 9.5a9 9 0 0 1 16-1.5z"/><path d="M3 21h18"/><circle cx="19.5" cy="3.5" r="1.5"/></svg>'); }
+
+/* hotels: nothing free for the dates – the hotels stay visible, each marked */
+.sta-ht-busy { margin: 0 0 .8rem; padding: .8rem 1rem; border-radius: 14px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: .95rem; line-height: 1.45; }
+.sta-ht-busy + [data-ht-alt] .sta-ht-alt { margin: 0 0 1rem; }
+.sta-finder-cell.is-busy .sta-c-price.is-ask:empty { display: none; }

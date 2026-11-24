@@ -104,6 +104,8 @@ class STA_Hotels
                 'noneFilter' => __('No hotel matches these filters.', 'seeinside-travel'),
                 'hotels' => __('hotels', 'seeinside-travel'),
                 'hotel1' => __('hotel', 'seeinside-travel'),
+                'noFreeDates' => __('No free room for the chosen dates', 'seeinside-travel'),
+                'busyHead' => __('No free hotels for %s. Below are all hotels – open one, or choose one of the closest free dates.', 'seeinside-travel'),
                 'altLooking' => __('Looking for the closest free dates…', 'seeinside-travel'),
                 'altDates' => __('Closest free dates', 'seeinside-travel'),
                 'altHotels' => __('Free hotels in %s for your dates', 'seeinside-travel'),

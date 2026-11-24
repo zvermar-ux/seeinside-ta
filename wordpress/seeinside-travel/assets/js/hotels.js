@@ -93,11 +93,13 @@
         }
         state.res = r.body.data; state.list = state.res.hotels || []; state.shown = perPage; state.q = q; state.at = Date.now();
         if (!state.list.length) {
-          // nothing free: the filter column stays (other dates, another destination) + all hotels without dates
-          state.lo = state.hi = 0; layout(); list();
-          $('[data-hf-list]', body).innerHTML = '<div class="sta-ht-empty' + (state.res.error ? ' is-error' : '') + '">' + esc(state.res.error || L.none)
-            + ' <button type="button" class="sta-btn sta-btn-sm" data-hf-clear>' + esc(L.showAll) + '</button></div><div data-ht-alt></div>';
-          if (!state.res.error) alternatives(q, $('[data-ht-alt]', body));
+          if (state.res.error) {
+            state.lo = state.hi = 0; layout(); list();
+            $('[data-hf-list]', body).innerHTML = '<div class="sta-ht-empty is-error">' + esc(state.res.error) + ' <button type="button" class="sta-btn sta-btn-sm" data-hf-clear>' + esc(L.showAll) + '</button></div>';
+            return;
+          }
+          // nothing free for the dates: the hotels are shown anyway, each with "no free room for the dates", + closest free dates
+          catalog(q, true);
           return;
         }
         // a single hotel searched by name → straight to its page
@@ -130,7 +132,7 @@
       io.observe(el);
     }
     // a card exactly like the apartment cards (rendered by the plugin with placeholders)
-    function stdCard(h, priced) {
+    function stdCard(h, priced, busy) {
       var url = '#h=' + encodeURIComponent(h.id), html;
       if (!CARD) {
         html = '<article class="sta-c"><div class="sta-c-media">' + (h.image ? '<img src="' + esc(h.image) + '" alt="" loading="lazy">' : '') + '</div><div class="sta-c-body"><h3 class="sta-c-title"><a class="sta-c-stretch" href="' + url + '">' + esc(h.name) + '</a></h3><div class="sta-c-sub">' + esc(h.place || '') + '</div><div class="sta-c-foot"><div class="sta-c-price"><b>' + esc(PT) + '</b></div></div></div></article>';
@@ -145,13 +147,14 @@
         html = html.split(PT).join(esc(money(h.price, h.currency)));
       } else {
         // no dates yet: no price, only what the button does
-        html = html.replace(/<div class="sta-c-price">[\s\S]*?<\/div>/, '<div class="sta-c-price is-ask"><small>' + esc(L.pricesFor) + '</small></div>');
+        html = html.replace(/<div class="sta-c-price">[\s\S]*?<\/div>/, busy ? '<div class="sta-c-price is-ask"></div>' : '<div class="sta-c-price is-ask"><small>' + esc(L.pricesFor) + '</small></div>');
       }
       var tags = [];
       if (priced && h.board) tags.push(esc(tr(h.board)));
       if (priced && h.refundable) tags.push('✓ ' + esc(L.freeCancel));
       if (priced && h.left) tags.push(esc(fmt(L.left, h.left)));
-      return '<div class="sta-l-cell sta-finder-cell">' + html + (tags.length ? '<div class="sta-finder-tags"><span>' + tags.join('</span><span>') + '</span></div>' : '') + '</div>';
+      return '<div class="sta-l-cell sta-finder-cell' + (busy ? ' is-busy' : '') + '">' + html + (tags.length ? '<div class="sta-finder-tags"><span>' + tags.join('</span><span>') + '</span></div>' : '')
+        + (busy ? '<div class="sta-finder-avail is-busy">' + esc(L.noFreeDates) + '</div>' : '') + '</div>';
     }
     function destSelect(sel) {
       var dests = H.destinations || [], byCountry = {};
@@ -348,14 +351,20 @@
 
     /* ---------- all hotels without dates (no prices) ---------- */
     var cat = null, catTimer = null;
-    function catalog(q) {
-      state.q = q;
+    function catalog(q, busy) {
+      state.q = q; state.busy = busy && q.from ? q : null;
       var u = new URLSearchParams(location.search);
       cat = { sel: { country: (u.get('country') || '').toUpperCase(), dest: q.destination || '', zone: u.get('zone') || '', stars: state.filter.stars.slice(), type: [], board: state.filter.board.slice(), feature: [] }, name: '', page: 1, pages: 1, total: 0, items: [], loading: false };
       var side = qbox('data-hc-name') + datesBox(q, {})
         + '<div data-hf-blocks><div class="sta-ht-loading"><span class="sta-spin"></span></div></div>';
       shell(side, '', '');
-      $('[data-hf-note]', body).textContent = ' · ' + L.catalogNote;
+      $('[data-hf-note]', body).textContent = ' · ' + (state.busy ? who(q) : L.catalogNote);
+      if (state.busy) {
+        // above the hotels: nothing free for these dates + the closest free dates / hotels nearby
+        var lst = $('[data-hf-list]', body);
+        lst.insertAdjacentHTML('beforebegin', '<div class="sta-ht-busy">' + esc((L.busyHead || '%s').replace('%s', dmy(q.from) + ' – ' + dmy(q.to))) + '</div><div data-ht-alt></div>');
+        alternatives(q, $('[data-ht-alt]', body));
+      }
       $('.sta-finder-side', body).addEventListener('change', function (e) {
         if (!e.target.matches('[data-hf]')) return;
         if (e.target.dataset.hf === 'country') { $$('[data-hf="dest"], [data-hf="zone"]', body).forEach(function (x) { x.value = ''; }); }
@@ -368,6 +377,16 @@
     }
     function catFilter() {
       readSel($('[data-hf-blocks]', body), cat.sel);
+      if (state.busy) {
+        // with dates: another destination / area is searched for free rooms again
+        var bu = new URL(location.href);
+        ['country', 'destination', 'zone', 'hotel', 'hn'].forEach(function (k) { bu.searchParams.delete(k); });
+        if (cat.sel.dest) bu.searchParams.set('destination', cat.sel.dest);
+        else if (cat.sel.country) bu.searchParams.set('country', cat.sel.country);
+        if (cat.sel.zone) bu.searchParams.set('zone', cat.sel.zone);
+        location.href = bu.toString();
+        return;
+      }
       cat.name = lat($('[data-hc-name]', body).value.trim());
       // the address keeps the choice (back button, sharing)
       if (history.replaceState) {
@@ -404,7 +423,7 @@
           box.innerHTML = '<div class="sta-ht-empty">' + esc(L.noneFilter)
             + ' <button type="button" class="sta-btn sta-btn-sm" data-hc-all>' + esc(L.showAll) + '</button></div>';
         } else {
-          box.insertAdjacentHTML('beforeend', fresh.map(function (h) { return stdCard(h, false); }).join(''));
+          box.insertAdjacentHTML('beforeend', fresh.map(function (h) { return stdCard(h, false, !!state.busy); }).join(''));
         }
         cat.items = cat.items.concat(fresh);
         more.hidden = cat.page >= cat.pages;
