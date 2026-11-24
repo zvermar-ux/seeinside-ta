@@ -350,7 +350,9 @@
         var r = roomById(($('[name="room_id"]', form) || {}).value); if (r) limits(r, false);
         var box = $('[data-sta-offers]', form), q = $('[data-sta-quote]', form);
         clearTimeout(reTimer);
-        if (box && q && $('.sta-offer', box)) reTimer = setTimeout(function () { q.click(); }, 600);
+        // ask again only for whole numbers (not while the field is being typed / empty)
+        var okN = /^\d+$/.test(String(adultsIn ? adultsIn.value : '1')) && /^\d+$/.test(String(children ? children.value : '0'));
+        if (box && q && okN && box.innerHTML.trim()) reTimer = setTimeout(function () { q.click(); }, 600);
       });
     });
 
@@ -402,7 +404,7 @@
       var from = $('[name="date_from"]', form).value, to = $('[name="date_to"]', form).value, box = $('[data-sta-offers]', form);
       if (!from || !to) { if (termSel) { termSel.classList.add('is-invalid'); termSel.focus(); } else validate(form); return; }
       box.innerHTML = '<p class="sta-muted">' + esc(T.checking) + '</p>';
-      var q = new URLSearchParams({ slug: form.dataset.slug, from: from, to: to, adults: $('[name="adults"]', form).value, children: children ? children.value : 0 });
+      var q = new URLSearchParams({ slug: form.dataset.slug, from: from, to: to, adults: Math.max(1, parseInt($('[name="adults"]', form).value, 10) || 1), children: Math.max(0, parseInt(children ? children.value : 0, 10) || 0) });
       api('quote?' + q).then(function (r) {
         var offers = (r.body && r.body.data) || [];
         if (!r.ok) { box.innerHTML = '<p class="sta-msg is-error">' + errors(r.body) + '</p>'; return; }
