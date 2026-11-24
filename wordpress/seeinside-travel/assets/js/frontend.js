@@ -269,17 +269,23 @@
     var selBox = $('[data-sta-selroom]', form), capNote = $('[data-sta-capnote]', form);
     var adultsIn = $('[name="adults"]', form);
     function roomById(id) { for (var k = 0; k < roomsData.length; k++) if (String(roomsData[k].id) === String(id)) return roomsData[k]; return null; }
-    function limits(r) {
+    // capacity of the room: clamp = lower the guests (room chosen on its card); otherwise only a warning right away
+    function limits(r, clamp) {
       if (!adultsIn) return;
       var maxA = r && r.max_adults ? r.max_adults : 20, maxC = r ? (r.max_children || 0) : 10;
       adultsIn.max = maxA; if (children) children.max = maxC;
-      var fixed = false;
-      if (+adultsIn.value > maxA) { adultsIn.value = maxA; fixed = true; }
-      if (children && +children.value > maxC) { children.value = maxC; children.dispatchEvent(new Event('input', { bubbles: true })); fixed = true; }
+      var over = +adultsIn.value > maxA || (children && +children.value > maxC);
+      if (over && clamp) {
+        if (+adultsIn.value > maxA) adultsIn.value = maxA;
+        if (children && +children.value > maxC) { children.value = maxC; children.dispatchEvent(new Event('input', { bubbles: true })); }
+      }
+      adultsIn.classList.toggle('is-invalid', !!(over && !clamp && +adultsIn.value > maxA));
+      if (children) children.classList.toggle('is-invalid', !!(over && !clamp && +children.value > maxC));
       if (capNote) {
         capNote.hidden = !r;
-        if (r) capNote.innerHTML = (fixed ? '⚠ ' : 'ℹ ') + esc((T.roomCap || 'Max. %a adults + %c children in this room').replace('%a', maxA).replace('%c', maxC));
-        capNote.classList.toggle('is-warn', fixed);
+        if (r) capNote.innerHTML = (over ? '⚠ ' : 'ℹ ') + esc((T.roomCap || 'Max. %a adults + %c children in this room').replace('%a', maxA).replace('%c', maxC))
+          + (over && !clamp ? ' ' + esc(T.roomCapMore || 'Choose another room or fewer guests.') : '');
+        capNote.classList.toggle('is-warn', !!over);
       }
     }
     function setRoom(id, fromCard) {
@@ -292,7 +298,7 @@
           + '<div><small>' + esc(T.selRoom || 'Chosen room') + '</small><b>' + esc(r.name) + '</b><span>' + esc([r.beds, r.board].filter(Boolean).join(' · ')) + '</span></div>'
           + '<button type="button" class="sta-selroom-x" data-sta-selroom-x>' + esc(T.otherRoom || 'Other room') + '</button>';
       }
-      limits(r); drawTerms();
+      limits(r, !!fromCard); drawTerms();
     }
     selBox && selBox.addEventListener('click', function (e) {
       if (!e.target.closest('[data-sta-selroom-x]')) return;
@@ -337,7 +343,16 @@
       var pick = wf && $$('option', termSel).filter(function (o) { return o.value && !o.disabled && o.dataset.from === wf && o.dataset.to === wt; })[0];
       if (pick) { termSel.value = pick.value; termSel.dispatchEvent(new Event('change', { bubbles: true })); }
     }
-    if (adultsIn) adultsIn.addEventListener('input', function () { var r = roomById(($('[name="room_id"]', form) || {}).value); if (r && form.dataset.selroom) limits(r); });
+    // more / fewer guests: the warning at once, and the list of rooms asked again (rooms too small drop out)
+    var reTimer;
+    [adultsIn, children].forEach(function (inp) {
+      inp && inp.addEventListener('input', function () {
+        var r = roomById(($('[name="room_id"]', form) || {}).value); if (r) limits(r, false);
+        var box = $('[data-sta-offers]', form), q = $('[data-sta-quote]', form);
+        clearTimeout(reTimer);
+        if (box && q && $('.sta-offer', box)) reTimer = setTimeout(function () { q.click(); }, 600);
+      });
+    });
 
     function estimate() {
       if (!totalBox) return;
@@ -395,12 +410,15 @@
         box.innerHTML = offers.map(function (o) {
           return '<label class="sta-offer" data-room="' + o.room_id + '" data-total="' + o.total + '"><span><b style="color:inherit;font-size:1rem">' + esc(o.room) + '</b><br><small class="sta-muted">' + esc(o.board || '') + ' · ' + o.nights + ' ' + esc(T.nights) + (o.available ? ' · ' + o.available + ' ' + esc(T.available) : '') + '</small></span><b>' + money(o.total, o.currency) + '</b></label>';
         }).join('');
-        var pre = $('[name="room_id"]', form).value;
+        var pre = $('[name="room_id"]', form).value, keep = form.dataset.selroom;
+        if (pre && !keep && !$('.sta-offer[data-room="' + pre + '"]', box)) pre = '';   // the room picked from the list no longer fits: the first one that fits
         $$('.sta-offer', box).forEach(function (el, k) {
           if ((pre && el.dataset.room === pre) || (!pre && k === 0)) el.classList.add('is-selected');
           el.addEventListener('click', function () { $$('.sta-offer', box).forEach(function (x) { x.classList.remove('is-selected'); }); el.classList.add('is-selected'); $('[name="room_id"]', form).value = el.dataset.room; form.dispatchEvent(new CustomEvent('sta:offer', { detail: el.dataset.room })); estimate(); });
         });
         var s = $('.sta-offer.is-selected', box); if (s) $('[name="room_id"]', form).value = s.dataset.room;
+        // the room in use (also the one given automatically) is shown with its capacity
+        var cur1 = roomById(($('[name="room_id"]', form) || {}).value); if (cur1) setRoom(cur1.id);
         estimate();
       }).catch(function () { box.innerHTML = '<p class="sta-msg is-error">' + esc(T.error) + '</p>'; });
     });

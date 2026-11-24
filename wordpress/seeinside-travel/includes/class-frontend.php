@@ -62,6 +62,7 @@ class STA_Frontend
                 'selRoom' => __('Chosen room', 'seeinside-travel'),
                 'otherRoom' => __('Other room', 'seeinside-travel'),
                 'roomCap' => __('This room takes max. %a adults + %c children.', 'seeinside-travel'),
+                'roomCapMore' => __('Choose another room or fewer guests.', 'seeinside-travel'),
                 'free' => __('free', 'seeinside-travel'),
                 'full' => __('full', 'seeinside-travel'),
                 'from' => __('from', 'seeinside-travel'),

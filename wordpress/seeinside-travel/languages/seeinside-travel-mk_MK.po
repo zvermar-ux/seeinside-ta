@@ -4077,3 +4077,6 @@ msgstr "Најблиски слободни термини:"
 
 msgid "Your dates do not match a term – the closest free terms are shown."
 msgstr "Вашите датуми не се поклопуваат со термин – прикажани се најблиските слободни термини."
+
+msgid "Choose another room or fewer guests."
+msgstr "Изберете друга соба или помалку патници."
