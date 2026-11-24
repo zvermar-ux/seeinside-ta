@@ -48,9 +48,13 @@ class ChatBot
             ->map(fn ($i, $key) => "{$key} | {$i['name']} | {$i['line']}")->implode("\n") ?: '(no active offers)';
     }
 
+    /** Why the last reply went to an agent instead of the AI (shown on "Test the bot") */
+    public static ?string $lastError = null;
+
     /** Reply to the visitor's last message. Returns the bot message (or null when the bot is paused). */
     public static function reply(ChatConversation $conv): ?ChatMessage
     {
+        static::$lastError = null;
         if ($conv->bot_paused) {
             return null;
         }
@@ -80,10 +84,12 @@ class ChatBot
             $conv->cost = (float) $conv->cost + Ai::$lastCost;
         } catch (AiException $e) {
             Log::info('Chatbot unavailable: '.$e->getMessage());
+            static::$lastError = $e->getMessage();
 
             return static::handoff($conv);
         } catch (Throwable $e) {
-            Log::error('Chatbot error: '.$e->getMessage());
+            Log::error('Chatbot error: '.$e->getMessage(), ['exception' => $e]);
+            static::$lastError = $e->getMessage();
 
             return static::handoff($conv);
         }

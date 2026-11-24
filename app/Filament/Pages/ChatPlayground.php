@@ -124,6 +124,10 @@ class ChatPlayground extends Page
         $c->increment('messages_count');
         $this->text = '';
         ChatBot::reply($c->fresh());
+        if (ChatBot::$lastError) {
+            // the visitor only sees "an agent will contact you" – here the real reason
+            \Filament\Notifications\Notification::make()->danger()->title(__('The AI did not answer'))->body(ChatBot::$lastError)->persistent()->send();
+        }
     }
 
     public function restart(): void
