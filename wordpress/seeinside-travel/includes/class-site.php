@@ -273,7 +273,9 @@ class STA_Site
      *
      * $fresh = false (the button "Update"): the menu as you arranged it stays – order, names, moved and deleted items –
      *   only items that never existed are added (under the right parent); hotel/destination links that have no hotels any more are removed.
-     * $fresh = true: everything is created again from the beginning.
+     * $fresh = true ("Create again"): your arrangement (order, names, where items are) still stays, but items you deleted
+     *   earlier come back and every item of ours whose offer / destination is gone is removed.
+     * New items are put where they belong: under their parent, between their neighbours (e.g. a new country in alphabetical order).
      */
     public static function build_menu(bool $fresh = false): array
     {
@@ -286,12 +288,6 @@ class STA_Site
         $existing = (array) wp_get_nav_menu_items($menuId, ['post_status' => 'any']);
         $histKey = 'sta_menu_keys_'.$menuId;
         $history = $fresh ? [] : array_flip((array) get_option($histKey, []));
-        if ($fresh) {
-            foreach ($existing as $it) {
-                wp_delete_post($it->ID, true);
-            }
-            $existing = [];
-        }
         $keyOf = fn (string $type, string $object, int $oid, string $url) => $type === 'custom' ? 'u:'.self::menu_url_key($url) : $type.':'.$object.':'.$oid;
         $byKey = [];
         foreach ($existing as $it) {
@@ -299,11 +295,12 @@ class STA_Site
         }
         $produced = [];
         $added = 0;
+        $isNew = [];
         $pages = get_option('sta_pages', []);
         // -1 = skip (deleted by you earlier) – its sub-items are skipped too
-        $add = function (string $title, array $args, int $parent = 0) use ($menuId, $keyOf, &$byKey, $history, &$produced, &$added): int {
+        $add = function (string $title, array $args, int $parent = 0) use ($menuId, $keyOf, &$byKey, $history, &$produced, &$added, &$isNew): int {
             $k = $keyOf((string) ($args['menu-item-type'] ?? 'custom'), (string) ($args['menu-item-object'] ?? ''), (int) ($args['menu-item-object-id'] ?? 0), (string) ($args['menu-item-url'] ?? ''));
-            $produced[$k] = true;
+            $produced[$k] ??= count($produced);   // the place in the logical order
             if (isset($byKey[$k])) {
                 return $byKey[$k];          // already in the menu – stays where and how you put it
             }
@@ -315,6 +312,7 @@ class STA_Site
                 return -1;
             }
             $added++;
+            $isNew[(int) $id] = true;
 
             return $byKey[$k] = (int) $id;
         };
@@ -470,20 +468,38 @@ class STA_Site
         }
         // hotel / destination links that have no hotels any more (e.g. areas without imported hotels) go away
         $removed = 0;
-        if (! $fresh) {
-            foreach ($existing as $it) {
-                if ($it->type !== 'custom') {
-                    continue;
-                }
-                $k = 'u:'.self::menu_url_key((string) $it->url);
+        foreach ($existing as $it) {
+            $k = $keyOf((string) $it->type, (string) $it->object, (int) $it->object_id, (string) $it->url);
+            if (isset($produced[$k])) {
+                continue;
+            }
+            if ($it->type === 'custom') {
                 parse_str((string) wp_parse_url((string) $it->url, PHP_URL_QUERY), $qs);
                 $hotelLink = (bool) array_intersect(array_keys($qs), ['destination', 'zone', 'country']);
-                if (! isset($produced[$k]) && (isset($history[$k]) || (! $history && $hotelLink)) && ($hotelLink || array_intersect(array_keys($qs), ['f_dest', 'f_place']))) {
+                $ours = $hotelLink || array_intersect(array_keys($qs), ['f_dest', 'f_place']);
+                $gone = $ours && ($fresh || isset($history[$k]) || (! $history && $hotelLink));
+            } else {
+                // "create again": groups, types, categories of ours without offers any more
+                $gone = $fresh && str_starts_with((string) $it->object, 'sta_');
+            }
+            if ($gone) {
+                wp_delete_post($it->ID, true);
+                $removed++;
+            }
+        }
+        // sub-items whose parent was removed go too (only ours)
+        if ($removed) {
+            $left = (array) wp_get_nav_menu_items($menuId, ['post_status' => 'any']);
+            $ids = array_flip(array_map(fn ($i) => (int) $i->ID, $left));
+            foreach ($left as $it) {
+                $k = $keyOf((string) $it->type, (string) $it->object, (int) $it->object_id, (string) $it->url);
+                if ((int) $it->menu_item_parent && ! isset($ids[(int) $it->menu_item_parent]) && ! isset($produced[$k])) {
                     wp_delete_post($it->ID, true);
                     $removed++;
                 }
             }
         }
+        self::menu_order($menuId, $produced, $isNew, $keyOf);
         update_option($histKey, array_keys($history + $produced), false);
 
         // put it in the theme's main location when that one is empty
@@ -496,6 +512,59 @@ class STA_Site
         }
 
         return ['id' => $menuId, 'name' => $name, 'items' => count((array) wp_get_nav_menu_items($menuId)), 'added' => $added, 'removed' => $removed];
+    }
+
+    /**
+     * Order of the menu: your items keep their order; every new item goes between its neighbours of the logical order
+     * (e.g. "Кипар" between "Италија" and "Малта"), under its parent.
+     */
+    protected static function menu_order(int $menuId, array $gen, array $isNew, callable $keyOf): void
+    {
+        global $wpdb;
+        $items = (array) wp_get_nav_menu_items($menuId, ['post_status' => 'any']);
+        if (! $items) {
+            return;
+        }
+        $ids = [];
+        foreach ($items as $it) {
+            $ids[(int) $it->ID] = $it;
+        }
+        $kids = [];
+        foreach ($items as $it) {   // already sorted by menu_order
+            $p = (int) $it->menu_item_parent;
+            $kids[isset($ids[$p]) ? $p : 0][] = $it;
+        }
+        $g = fn ($it) => $gen[$keyOf((string) $it->type, (string) $it->object, (int) $it->object_id, (string) $it->url)] ?? null;
+        foreach ($kids as $p => $list) {
+            $old = array_values(array_filter($list, fn ($it) => empty($isNew[(int) $it->ID])));
+            $new = array_values(array_filter($list, fn ($it) => ! empty($isNew[(int) $it->ID])));
+            usort($new, fn ($a, $b) => ($g($a) ?? PHP_INT_MAX) <=> ($g($b) ?? PHP_INT_MAX));
+            foreach ($new as $n) {
+                $gn = $g($n);
+                $pos = count($old);
+                foreach ($old as $i => $o) {
+                    $go = $g($o);
+                    if ($gn !== null && $go !== null && $go > $gn) {
+                        $pos = $i;
+                        break;
+                    }
+                }
+                array_splice($old, $pos, 0, [$n]);
+            }
+            $kids[$p] = $old;
+        }
+        $n = 0;
+        $walk = function (int $parent) use (&$walk, &$kids, &$n, $wpdb) {
+            foreach ($kids[$parent] ?? [] as $it) {
+                $n++;
+                if ((int) $it->menu_order !== $n) {
+                    $wpdb->update($wpdb->posts, ['menu_order' => $n], ['ID' => (int) $it->ID]);
+                    clean_post_cache((int) $it->ID);
+                }
+                $walk((int) $it->ID);
+            }
+        };
+        $walk(0);
     }
 
     /** Same link = same item, whatever the domain, order of the parameters or the last slash */

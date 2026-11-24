@@ -4104,3 +4104,9 @@ msgstr "Слободни хотели во %s за вашите датуми"
 
 msgid "All free hotels in the area (%d)"
 msgstr "Сите слободни хотели во областа (%d)"
+
+msgid "The order, names and places of the items stay as you arranged them; items you deleted come back, items without offers are removed, new ones are added where they belong. Continue?"
+msgstr "Редоследот, имињата и местата на ставките остануваат како што ги средивте; избришаните ставки се враќаат, ставките без понуди се отстрануваат, а новите се додаваат каде што им е место. Продолжи?"
+
+msgid "Both buttons keep the order, names and places of the items as you arranged them in Appearance → Menus. New groups, destinations, hotel regions and types are added under their parent in their logical place (e.g. a country in alphabetical order). \"Update\": items you deleted do not come back. \"Create again\": items you deleted come back and everything without offers is cleaned out."
+msgstr "Двете копчиња го задржуваат редоследот, имињата и местата на ставките како што ги средивте во Изглед → Менија. Новите групи, дестинации, хотелски региони и типови се додаваат под нивниот родител на логичното место (на пр. држава по азбучен ред). „Ажурирај“: избришаните ставки не се враќаат. „Креирај одново“: избришаните ставки се враќаат, а сè без понуди се чисти."
