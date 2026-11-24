@@ -14,13 +14,16 @@ use Throwable;
 /** The website chatbot: answers from the agency knowledge and recommends only active offers */
 class ChatBot
 {
-    public static function system(int $agencyId, string $locale, string $candidates, string $visitor = ''): string
+    public static function system(int $agencyId, string $locale, string $candidates, string $visitor = '', string $query = ''): string
     {
         $agency = Agency::find($agencyId);
         $c = ChatConfig::get($agencyId);
-        $knowledge = ChatKnowledge::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)
+        $knowledge = ChatKnowledge::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->where('source', '!=', 'faq')
             ->orderByRaw("case source when 'correction' then 0 when 'manual' then 1 else 2 end")->latest('id')->limit(80)->get()
             ->map(fn ($k) => "### {$k->title}\n".Str::limit($k->content, 1500))->implode("\n\n");
+        if ($faq = static::faqFor($agencyId, $query)) {
+            $knowledge .= ($knowledge ? "\n\n" : '')."FREQUENT QUESTIONS & ANSWERS (closest to this conversation):\n".$faq;
+        }
         $lang = $locale === 'en' ? 'English' : 'Macedonian (Cyrillic)';
         $name = $c['bot_name'] ?: 'assistant';
         $contact = implode(', ', array_filter([$agency?->phone ? 'phone '.$agency->phone : null, $agency?->email ? 'e-mail '.$agency->email : null, $agency?->address ? 'address '.$agency->address.', '.$agency->city : null]));
@@ -47,6 +50,45 @@ class ChatBot
     {
         return collect(ChatCatalog::relevant($agencyId, $query, $limit, $types))
             ->map(fn ($i, $key) => "{$key} | {$i['name']} | {$i['line']}")->implode("\n") ?: '(no active offers)';
+    }
+
+    /** The questions & answers that fit the visitor's words best (all of them when there are few) */
+    protected static function faqFor(int $agencyId, string $query, int $limit = 25): string
+    {
+        $all = ChatKnowledge::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->where('source', 'faq')->get(['title', 'content']);
+        if ($all->isEmpty()) {
+            return '';
+        }
+        $words = static::words($query);
+        $picked = $all->count() <= $limit || ! $words ? $all->take($limit) : $all->map(function ($k) use ($words) {
+            $t = ' '.static::norm($k->title).' ';
+            $c = ' '.static::norm($k->content).' ';
+            $k->score = 0;
+            foreach ($words as $w) {
+                $k->score += (str_contains($t, $w) ? 3 : 0) + (str_contains($c, $w) ? 1 : 0);
+            }
+
+            return $k;
+        })->sortByDesc('score')->take($limit);
+
+        return $picked->map(fn ($k) => "Q: {$k->title}\nA: ".Str::limit($k->content, 700))->implode("\n\n");
+    }
+
+    /** lower case, Latin written Macedonian → Cyrillic ("kade da letuvam" → "каде да летувам") */
+    protected static function norm(string $s): string
+    {
+        $s = mb_strtolower($s);
+        $s = strtr($s, ['dž' => 'џ', 'dzh' => 'џ', 'gj' => 'ѓ', 'kj' => 'ќ', 'lj' => 'љ', 'nj' => 'њ', 'zh' => 'ж', 'ch' => 'ч', 'sh' => 'ш', 'dz' => 'ѕ', 'ž' => 'ж', 'č' => 'ч', 'š' => 'ш', 'ć' => 'ќ', 'đ' => 'ѓ']);
+
+        return strtr($s, ['a' => 'а', 'b' => 'б', 'v' => 'в', 'g' => 'г', 'd' => 'д', 'e' => 'е', 'z' => 'з', 'i' => 'и', 'j' => 'ј', 'k' => 'к', 'l' => 'л', 'm' => 'м', 'n' => 'н', 'o' => 'о', 'p' => 'п', 'r' => 'р', 's' => 'с', 't' => 'т', 'u' => 'у', 'f' => 'ф', 'h' => 'х', 'c' => 'ц', 'w' => 'в', 'y' => 'ј', 'x' => 'кс', 'q' => 'к']);
+    }
+
+    /** word stems of the query (4+ letters, the first 5 letters – "летување", "летувам" both match "летув") */
+    protected static function words(string $query): array
+    {
+        preg_match_all('/[\p{L}\p{N}]{4,}/u', static::norm($query), $m);
+
+        return array_values(array_unique(array_map(fn ($w) => mb_substr($w, 0, 5), $m[0])));
     }
 
     protected static function who(ChatConversation $conv): string
@@ -90,7 +132,7 @@ class ChatBot
         }
 
         try {
-            $out = static::ask($agencyId, static::system($agencyId, $conv->locale, static::candidates($agencyId, $query), static::who($conv)), $messages, 'chat #'.$conv->id);
+            $out = static::ask($agencyId, static::system($agencyId, $conv->locale, static::candidates($agencyId, $query), static::who($conv), $query), $messages, 'chat #'.$conv->id);
             $conv->cost = (float) $conv->cost + Ai::$lastCost;
         } catch (AiException $e) {
             Log::info('Chatbot unavailable: '.$e->getMessage());
@@ -153,7 +195,7 @@ class ChatBot
             $query = $summary.' '.$q->label('title', 'mk').' '.$q->category;
             $prompt = "The visitor filled the questionnaire \"{$q->label('title', 'mk')}\" (category: {$q->category}). Answers:\n{$summary}\n\n"
                 .'Recommend the 2–4 best matching offers from the OFFERS list and explain in 1 sentence each why they fit. If nothing fits well, say so and offer a personal offer from an agent (needs_human true).';
-            $out = static::ask($agencyId, static::system($agencyId, $conv->locale, static::candidates($agencyId, $query, $types, 60), static::who($conv)), [['role' => 'user', 'content' => $prompt]], 'questionnaire #'.$q->id);
+            $out = static::ask($agencyId, static::system($agencyId, $conv->locale, static::candidates($agencyId, $query, $types, 60), static::who($conv), $query), [['role' => 'user', 'content' => $prompt]], 'questionnaire #'.$q->id);
             $conv->cost = (float) $conv->cost + Ai::$lastCost;
 
             return static::store($conv, $out);

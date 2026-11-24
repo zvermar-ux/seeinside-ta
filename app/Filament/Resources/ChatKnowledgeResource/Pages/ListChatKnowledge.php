@@ -40,6 +40,22 @@ class ListChatKnowledge extends ListRecords
                         Notification::make()->danger()->title(__('AI'))->body($e->getMessage())->persistent()->send();
                     }
                 }),
+            Actions\Action::make('faq')->label(__('Questions & answers (AI)'))->icon('heroicon-o-chat-bubble-left-right')->color('info')
+                ->modalHeading(__('Questions & answers for the bot'))
+                ->modalDescription(__('AI reads the whole website (up to 20 pages from the menu, general terms), the active offer and the knowledge, and writes 40–70 questions visitors really ask with answers. Takes 1–3 minutes. Earlier AI questions & answers are replaced; your entries stay.'))
+                ->modalSubmitActionLabel(__('Write questions & answers'))
+                ->form(fn () => Auth::user()->isSuperAdmin() ? [
+                    Forms\Components\Select::make('agency_id')->label(__('Agency'))->required()->options(Agency::query()->orderBy('name')->pluck('name', 'id')),
+                ] : [])
+                ->action(function (array $data) {
+                    @set_time_limit(600);
+                    try {
+                        $n = ChatTrainer::faq((int) ($data['agency_id'] ?? Auth::user()->agency_id));
+                        Notification::make()->success()->title(__('Done'))->body(__(':count questions & answers written. Check them and test the bot.', ['count' => $n]))->send();
+                    } catch (AiException $e) {
+                        Notification::make()->danger()->title(__('AI'))->body($e->getMessage())->persistent()->send();
+                    }
+                }),
             Actions\Action::make('test')->label(__('Test the bot'))->icon('heroicon-o-beaker')->color('gray')->url(fn () => ChatPlayground::getUrl()),
             Actions\CreateAction::make()->icon('heroicon-o-plus'),
         ];

@@ -16,7 +16,7 @@ use Throwable;
 class ChatTrainer
 {
     /** Text of the agency website: home page + pages like contact, about, terms, payment, FAQ */
-    public static function websiteText(int $agencyId): array
+    public static function websiteText(int $agencyId, int $max = 8, int $chars = 6000): array
     {
         $agency = Agency::find($agencyId);
         $base = ApiClient::withoutGlobalScopes()->where('agency_id', $agencyId)->whereNotNull('site_url')->value('site_url') ?: $agency?->website;
@@ -42,27 +42,89 @@ class ChatTrainer
         if (! $home) {
             return [];
         }
-        $pages[$base.'/'] = static::clean($home);
+        $pages[$base.'/'] = static::clean($home, $chars);
         preg_match_all('/href=["\']([^"\'#?]+)["\']/i', $home, $m);
-        $want = '/(kontakt|contact|za-nas|about|uslovi|terms|plakjanje|placanje|payment|faq|prasanja|cesto|osiguruvanje|insurance|vizi|visa|politika|privacy)/i';
-        $links = collect($m[1])->map(fn ($u) => str_starts_with($u, '/') ? $base.$u : $u)
-            ->filter(fn ($u) => parse_url($u, PHP_URL_HOST) === $host && preg_match($want, rawurldecode($u)))
-            ->unique()->take(8);
-        foreach ($links as $u) {
+        $want = '/(kontakt|contact|za-nas|about|uslovi|terms|plakjanje|placanje|payment|faq|prasanja|cesto|osiguruvanje|insurance|vizi|visa|politika|privacy|dokument|otkaz|rati|popust|early|last-minute)/i';
+        $skip = '/\.(jpe?g|png|webp|gif|svg|pdf|zip|css|js|xml)$|wp-(content|admin|json|login)|\/feed\/|\/(tag|author|page)\//i';
+        $all = collect($m[1])->map(fn ($u) => str_starts_with($u, '/') ? 'https://'.$host.$u : $u)
+            ->filter(fn ($u) => parse_url($u, PHP_URL_HOST) === $host && ! preg_match($skip, $u) && rtrim($u, '/') !== $base)->unique();
+        // pages about the agency and its rules first, then the other pages of the menu
+        $links = $all->filter(fn ($u) => preg_match($want, rawurldecode($u)))->merge($all->reject(fn ($u) => preg_match($want, rawurldecode($u))))->unique()->take($max);
+        $terms = $agency?->terms_url;
+        if ($terms && parse_url($terms, PHP_URL_HOST) === $host) {
+            $links->prepend($terms);
+        }
+        foreach ($links->unique()->take($max) as $u) {
             if ($html = $get($u)) {
-                $pages[$u] = static::clean($html);
+                $pages[$u] = static::clean($html, $chars);
             }
         }
 
         return $pages;
     }
 
-    protected static function clean(string $html): string
+    protected static function clean(string $html, int $chars = 6000): string
     {
         $html = preg_replace('#<(script|style|noscript|svg|nav|footer|header)[^>]*>.*?</\1>#is', ' ', $html);
         $text = html_entity_decode(strip_tags(preg_replace('#<(br|p|div|li|h[1-6])[^>]*>#i', "\n", $html)), ENT_QUOTES | ENT_HTML5);
 
-        return Str::limit(trim(preg_replace("/\n\s*\n+/", "\n", preg_replace('/[ \t]+/', ' ', $text))), 6000);
+        return Str::limit(trim(preg_replace("/\n\s*\n+/", "\n", preg_replace('/[ \t]+/', ' ', $text))), $chars);
+    }
+
+    /**
+     * Questions & answers for the bot: the questions visitors really ask (booking, paying, documents, destinations,
+     * transport, children…) answered only from the website, the offer and the knowledge. Replaces the earlier Q&A.
+     */
+    public static function faq(int $agencyId): int
+    {
+        $agency = Agency::findOrFail($agencyId);
+        $pages = static::websiteText($agencyId, 20, 4000);
+        $groups = Group::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->get()
+            ->map(fn ($g) => $g->getTranslation('name', 'mk', false) ?: $g->display_name)->filter()->implode(', ');
+        $items = collect(ChatCatalog::items($agencyId))->take(200)->map(fn ($i, $k) => "{$k} | {$i['name']} | {$i['line']}")->implode("\n");
+        $known = ChatKnowledge::withoutGlobalScopes()->where('agency_id', $agencyId)->where('is_active', true)->where('source', '!=', 'faq')
+            ->latest('id')->limit(60)->get()->map(fn ($k) => "### {$k->title}\n".Str::limit($k->content, 1200))->implode("\n\n");
+        $data = "AGENCY: {$agency->name}, {$agency->address}, {$agency->city}, phone {$agency->phone}, e-mail {$agency->email}, web {$agency->website}"
+            .($agency->terms_url ? ", general terms of travel: {$agency->terms_url}" : '')."\n"
+            ."DESTINATIONS / GROUPS: {$groups}\n\nKNOWLEDGE ALREADY ENTERED:\n{$known}\n\nACTIVE OFFER (key | name | details):\n{$items}\n\n"
+            .collect($pages)->map(fn ($t, $u) => "WEBSITE PAGE {$u}:\n{$t}")->implode("\n\n");
+        $data = Str::limit($data, 90000);
+
+        $topics = [
+            'the agency, contacts and working hours, how to book (online, phone, office), payment (advance, rest, cards, instalments), cancellation and changes, general terms of travel, travel insurance, documents, passports and visas, children and discounts',
+            'summer holidays and stays: which countries and places, apartments and hotels, fixed terms and nights, what the price includes (board, tourist tax), rooms and capacity, early booking / last minute, beaches and distances, transport to the destination (bus, own car, flight), departure places and times',
+            'organised tours, city breaks, excursions, events and concerts, winter / ski, spa, group travel, what is included in a tour, guides, seats in the bus, best offers for families, couples and seniors, what to recommend for a budget or a month',
+        ];
+        $all = collect();
+        foreach ($topics as $n => $topic) {
+            $prompt = "You build the knowledge base of the website chatbot of a travel agency. Topic of this part: {$topic}.\n"
+                ."Write 15–25 QUESTION & ANSWER pairs in Macedonian (Cyrillic). Questions as visitors really write them (short, everyday words). "
+                ."Answers: 1–5 sentences, concrete facts ONLY from the data below (names of destinations and offers, prices \"од\", dates, contacts, rules). "
+                ."Never invent prices, dates, rules or services. If the data does not answer an important question, answer that an agent will give the details and give the contact. "
+                ."Do not repeat the same question twice.\n"
+                .'Return {"qa": [{"q": "", "a": ""}]}'
+                ."\n\nDATA:\n{$data}";
+            try {
+                $out = Ai::json($agencyId, 'training', 'You are an expert in travel agency customer service. You write precise, friendly FAQ answers.', [['role' => 'user', 'content' => $prompt]], 8000, Auth::id(), 'Q&A '.($n + 1).'/3');
+            } catch (AiException $e) {
+                if ($all->isEmpty() && $n === count($topics) - 1) {
+                    throw $e;
+                }
+
+                continue;
+            }
+            $all = $all->merge(collect($out['qa'] ?? [])->filter(fn ($e) => filled($e['q'] ?? null) && filled($e['a'] ?? null)));
+        }
+        $all = $all->unique(fn ($e) => mb_strtolower(trim($e['q'])));
+        if ($all->isEmpty()) {
+            throw new AiException(__('The analysis returned nothing. Please try again.'));
+        }
+        ChatKnowledge::withoutGlobalScopes()->where('agency_id', $agencyId)->where('source', 'faq')->delete();
+        foreach ($all as $e) {
+            ChatKnowledge::create(['agency_id' => $agencyId, 'title' => Str::limit(trim($e['q']), 190), 'content' => trim($e['a']), 'source' => 'faq', 'created_by' => Auth::id()]);
+        }
+
+        return $all->count();
     }
 
     /** Builds (replaces) the "analysis" knowledge entries. Returns the number of entries. */
