@@ -225,7 +225,7 @@ button.sta-gs-nav { position: absolute !important; top: 50%; transform: translat
 .sta-radios { display: flex; gap: 1rem; flex-wrap: wrap; }
 .sta-extras, .sta-fieldset { border: 1px solid var(--sta-line); border-radius: calc(var(--sta-radius) * .7); padding: .8rem 1rem; display: grid; gap: .5rem; margin: 0; }
 .sta-extras legend, .sta-fieldset legend { font-weight: 700; padding: 0 .3rem; }
-.sta-total { padding: 1rem; border-radius: calc(var(--sta-radius) * .7); background: color-mix(in srgb, var(--sta-primary) 8%, white); display: flex; justify-content: space-between; align-items: baseline; }
+.sta-total { flex-wrap: wrap; padding: 1rem; border-radius: calc(var(--sta-radius) * .7); background: color-mix(in srgb, var(--sta-primary) 8%, white); display: flex; justify-content: space-between; align-items: baseline; }
 .sta-total b { font-size: 1.5rem; color: var(--sta-primary); }
 .sta-msg:empty { display: none; }
 .sta-msg { padding: .9rem 1rem; border-radius: 10px; }
@@ -1207,3 +1207,27 @@ body { max-width: 100%; }
   .sta-room-facts small { font-size: .7rem; }
   .sta-room-dlg::backdrop { background: rgba(15, 23, 42, .6); }
 }
+
+/* booking form: the chosen room, the terms as buttons (green free / red full), the capacity note, what is booked */
+.sta-selroom { display: flex; align-items: center; gap: .8rem; padding: .7rem .8rem; margin: 0 0 1rem; border: 2px solid var(--sta-primary, #0ea5e9); border-radius: 14px; background: color-mix(in srgb, var(--sta-primary, #0ea5e9) 6%, #fff); }
+.sta-selroom img { width: 64px; height: 52px; object-fit: cover; border-radius: 10px; flex: none; }
+.sta-selroom div { display: grid; min-width: 0; flex: 1; }
+.sta-selroom small { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--sta-primary, #0ea5e9); font-weight: 700; }
+.sta-selroom b { font-size: 1.02rem; }
+.sta-selroom span { font-size: .85rem; color: #64748b; }
+.sta-selroom-x { flex: none; padding: .4rem .7rem !important; border: 1px solid #cbd5e1 !important; border-radius: 99px !important; background: #fff !important; color: #334155 !important; font: inherit; font-size: .82rem; cursor: pointer; }
+.sta-sr-only { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden !important; clip: rect(0 0 0 0) !important; white-space: nowrap !important; border: 0 !important; padding: 0 !important; }
+.sta-tp { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; margin-top: .25rem; }
+.sta-tp-b { display: grid; gap: 2px; text-align: left; padding: .55rem .7rem !important; border-radius: 12px !important; border: 1.5px solid !important; font: inherit; cursor: pointer; transition: transform .12s, box-shadow .12s; }
+.sta-tp-b b { font-size: .88rem; }
+.sta-tp-b small { font-size: .75rem; opacity: .8; }
+.sta-tp-b em { font-style: normal; font-weight: 700; font-size: .85rem; }
+.sta-tp-b.is-free { background: #f0fdf4 !important; border-color: #86efac !important; color: #14532d !important; }
+.sta-tp-b.is-free:hover { transform: translateY(-1px); box-shadow: 0 6px 14px -8px rgba(22, 163, 74, .6); }
+.sta-tp-b.is-full { background: #fef2f2 !important; border-color: #fecaca !important; color: #991b1b !important; cursor: not-allowed; opacity: .75; }
+.sta-tp-b.is-full b { text-decoration: line-through; }
+.sta-tp-b.is-on { background: #16a34a !important; border-color: #16a34a !important; color: #fff !important; box-shadow: 0 0 0 3px rgba(22, 163, 74, .25); }
+.sta-cap-note { display: block; margin-top: -.3rem; font-size: .82rem; color: #475569; }
+.sta-cap-note.is-warn { color: #b45309; font-weight: 600; }
+.sta-total-what { display: block; width: 100%; margin-bottom: .35rem; font-size: .85rem; color: #475569; }
+@media (max-width: 640px) { .sta-tp { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

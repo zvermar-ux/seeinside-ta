@@ -13,9 +13,17 @@ $title = [
 $pre = fn ($k) => isset($_GET[$k]) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $_GET[$k]) ? (string) $_GET[$k] : '';   // phpcs:ignore -- dates from the hotel finder
 $tr = $type === 'accommodation' && ! empty($d['transport']) ? $d['transport'] : null;
 $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array($x['status'], ['sold_out', 'cancelled'], true)));
+// rooms of the accommodation: the chosen room is shown in the form, and its capacity limits the guests
+$roomsJs = $type === 'accommodation' ? array_values(array_map(fn ($r) => [
+    'id' => (int) $r['id'], 'name' => sta_t($r['name'] ?? ''), 'board' => $r['board'] ?? '', 'beds' => $r['beds'] ?? '',
+    'max_adults' => (int) ($r['max_adults'] ?? 0), 'max_children' => (int) ($r['max_children'] ?? 0),
+    'image' => $r['cover_image'] ?? (($r['images'][0]['url'] ?? $r['images'][0] ?? '') ?: ''),
+], (array) ($d['rooms'] ?? []))) : [];
+$termPriceType = $d['terms']['price_type'] ?? '';
 ?>
-<form class="sta-form sta-booking" data-sta-booking data-type="<?php echo esc_attr($type); ?>" data-slug="<?php echo esc_attr($d['slug']); ?>" data-currency="<?php echo esc_attr($currency); ?>" novalidate>
+<form class="sta-form sta-booking" data-sta-booking data-type="<?php echo esc_attr($type); ?>" data-slug="<?php echo esc_attr($d['slug']); ?>" data-currency="<?php echo esc_attr($currency); ?>"<?php if ($roomsJs) : ?> data-rooms="<?php echo esc_attr(wp_json_encode($roomsJs)); ?>" data-price-type="<?php echo esc_attr($termPriceType); ?>"<?php endif; ?> novalidate>
     <h3 class="sta-h"><?php echo esc_html($title); ?></h3>
+    <?php if ($roomsJs) : ?><div class="sta-selroom" data-sta-selroom hidden></div><?php endif; ?>
     <input type="text" name="website" value="" tabindex="-1" autocomplete="off" class="sta-hp" aria-hidden="true">
 
     <?php if ($type === 'tour') : ?>
@@ -45,16 +53,22 @@ $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array(
             <label class="sta-field sta-col-2"><span><?php esc_html_e('Term', 'seeinside-travel'); ?> *</span>
                 <select name="term_id" required data-sta-term>
                     <option value=""><?php esc_html_e('Choose a term', 'seeinside-travel'); ?></option>
-                    <?php foreach ($d['terms']['terms'] ?? [] as $term) : ?>
-                        <option value="<?php echo (int) $term['id']; ?>" data-from="<?php echo esc_attr($term['from']); ?>" data-to="<?php echo esc_attr($term['to']); ?>">
+                    <?php foreach ($d['terms']['terms'] ?? [] as $term) :
+                        $avail = [];
+                        foreach ((array) ($term['rooms'] ?? []) as $rid => $x) {
+                            $avail[$rid] = $x ? ['f' => ! empty($x['free']) ? 1 : 0, 'p' => $x['price'] ?? null, 'r' => $x['regular'] ?? null] : null;
+                        } ?>
+                        <option value="<?php echo (int) $term['id']; ?>" data-from="<?php echo esc_attr($term['from']); ?>" data-to="<?php echo esc_attr($term['to']); ?>" data-nights="<?php echo (int) $term['nights']; ?>" data-label="<?php echo esc_attr((string) ($term['label'] ?? '')); ?>" data-rooms="<?php echo esc_attr(wp_json_encode($avail)); ?>">
                             <?php echo esc_html(sta_date($term['from']).' – '.sta_date($term['to']).' · '.(int) $term['nights'].' '.__('nights', 'seeinside-travel').($term['label'] ? ' · '.$term['label'] : '')); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
+                <div class="sta-tp" data-sta-tp></div>
             </label>
         </div>
         <input type="hidden" name="date_from" value="">
         <input type="hidden" name="date_to" value="">
+        <input type="hidden" name="room_id" value="">
     <?php elseif ($type === 'accommodation') : ?>
         <div class="sta-row">
             <label class="sta-field"><span><?php esc_html_e('Check-in', 'seeinside-travel'); ?> *</span><input type="date" name="date_from" required min="<?php echo esc_attr(wp_date('Y-m-d')); ?>" value="<?php echo esc_attr($pre('from')); ?>"></label>
@@ -85,6 +99,7 @@ $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array(
         <div class="sta-row">
             <label class="sta-field"><span><?php esc_html_e('Adults', 'seeinside-travel'); ?></span><input type="number" name="adults" min="1" max="20" value="2"></label>
             <label class="sta-field"><span><?php esc_html_e('Children', 'seeinside-travel'); ?></span><input type="number" name="children" min="0" max="10" value="0"></label>
+            <small class="sta-cap-note sta-col-2" data-sta-capnote hidden></small>
         </div>
         <div class="sta-row sta-ages" data-sta-ages></div>
     <?php endif; ?>

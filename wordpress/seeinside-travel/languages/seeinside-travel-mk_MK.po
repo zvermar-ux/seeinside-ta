@@ -4041,3 +4041,21 @@ msgstr "Општи услови на патување"
 
 msgid "Every booking form has a required box \"I declare that I am familiar with the General terms of travel of NATA and accept them in full\" with this link. Empty link = the page \"opsti-uslovi-za-patuvanje\"."
 msgstr "Секоја форма за резервација има задолжително поле „Изјавувам дека сум запознат со Општите услови на патување на НАТА и во целост ги прифаќам“ со овој линк. Празно = страната „opsti-uslovi-za-patuvanje“."
+
+msgid "Chosen room"
+msgstr "Избрана соба"
+
+msgid "Other room"
+msgstr "Друга соба"
+
+msgid "This room takes max. %a adults + %c children."
+msgstr "Оваа соба прима макс. %a возрасни + %c деца."
+
+msgid "full"
+msgstr "зафатено"
+
+msgid "No terms at the moment."
+msgstr "Моментално нема термини."
+
+msgid "You book"
+msgstr "Резервирате"

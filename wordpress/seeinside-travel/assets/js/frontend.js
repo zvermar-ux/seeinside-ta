@@ -259,9 +259,79 @@
       $('[name="date_from"]', form).value = o && o.value ? o.dataset.from : '';
       $('[name="date_to"]', form).value = o && o.value ? o.dataset.to : '';
       var box = $('[data-sta-offers]', form); if (box) box.innerHTML = '';
-      $('[name="room_id"]', form).value = '';
+      if (!form.dataset.selroom) $('[name="room_id"]', form).value = '';   // a room chosen on its card stays
       if (o && o.value) { var q = $('[data-sta-quote]', form); if (q) q.click(); }
+      drawTerms();
     });
+
+    /* chosen room (from its card or from the list): shown on top, its capacity limits the guests, the terms show if it is free */
+    var roomsData = []; try { roomsData = JSON.parse(form.dataset.rooms || '[]'); } catch (err) {}
+    var selBox = $('[data-sta-selroom]', form), capNote = $('[data-sta-capnote]', form);
+    var adultsIn = $('[name="adults"]', form);
+    function roomById(id) { for (var k = 0; k < roomsData.length; k++) if (String(roomsData[k].id) === String(id)) return roomsData[k]; return null; }
+    function limits(r) {
+      if (!adultsIn) return;
+      var maxA = r && r.max_adults ? r.max_adults : 20, maxC = r ? (r.max_children || 0) : 10;
+      adultsIn.max = maxA; if (children) children.max = maxC;
+      var fixed = false;
+      if (+adultsIn.value > maxA) { adultsIn.value = maxA; fixed = true; }
+      if (children && +children.value > maxC) { children.value = maxC; children.dispatchEvent(new Event('input', { bubbles: true })); fixed = true; }
+      if (capNote) {
+        capNote.hidden = !r;
+        if (r) capNote.innerHTML = (fixed ? '⚠ ' : 'ℹ ') + esc((T.roomCap || 'Max. %a adults + %c children in this room').replace('%a', maxA).replace('%c', maxC));
+        capNote.classList.toggle('is-warn', fixed);
+      }
+    }
+    function setRoom(id, fromCard) {
+      var r = roomById(id), inp = $('[name="room_id"]', form);
+      if (inp) inp.value = r ? r.id : '';
+      form.dataset.selroom = r && fromCard ? r.id : (r && form.dataset.selroom ? r.id : '');
+      if (selBox) {
+        selBox.hidden = !r;
+        if (r) selBox.innerHTML = (r.image ? '<img src="' + esc(r.image) + '" alt="">' : '')
+          + '<div><small>' + esc(T.selRoom || 'Chosen room') + '</small><b>' + esc(r.name) + '</b><span>' + esc([r.beds, r.board].filter(Boolean).join(' · ')) + '</span></div>'
+          + '<button type="button" class="sta-selroom-x" data-sta-selroom-x>' + esc(T.otherRoom || 'Other room') + '</button>';
+      }
+      limits(r); drawTerms();
+    }
+    selBox && selBox.addEventListener('click', function (e) {
+      if (!e.target.closest('[data-sta-selroom-x]')) return;
+      form.dataset.selroom = ''; setRoom('');
+      var box = $('[data-sta-offers]', form); if (box) $$('.sta-offer', box).forEach(function (x) { x.classList.remove('is-selected'); });
+      estimate();
+    });
+    form.addEventListener('sta:room', function (e) { setRoom(e.detail, true); var q = $('[data-sta-quote]', form); var df = $('[name="date_from"]', form); if (q && df && df.value) q.click(); });
+    form.addEventListener('sta:offer', function (e) { if (roomById(e.detail)) { form.dataset.selroom = e.detail; setRoom(e.detail); } });
+
+    /* fixed terms as buttons: green = free, red = full (cannot be chosen) – for the chosen room, else for any room */
+    var tp = $('[data-sta-tp]', form);
+    function drawTerms() {
+      if (!tp || !termSel) return;
+      termSel.classList.add('sta-sr-only');
+      var rid = ($('[name="room_id"]', form) || {}).value, ptype = form.dataset.priceType;
+      tp.innerHTML = $$('option', termSel).filter(function (o) { return o.value; }).map(function (o) {
+        var av = {}; try { av = JSON.parse(o.dataset.rooms || '{}') || {}; } catch (err) {}
+        var free = false, price = null;
+        if (rid) { var x = av[rid]; free = !!(x && x.f); price = x ? x.p : null; }
+        else Object.keys(av).forEach(function (k) { var x = av[k]; if (x && x.f) { free = true; if (x.p != null && (price === null || +x.p < price)) price = +x.p; } });
+        o.disabled = !free;
+        var d1 = o.dataset.from.split('-'), d2 = o.dataset.to.split('-');
+        return '<button type="button" class="sta-tp-b ' + (free ? 'is-free' : 'is-full') + (o.selected ? ' is-on' : '') + '" data-v="' + o.value + '"' + (free ? '' : ' disabled aria-disabled="true"') + '>'
+          + '<b>' + d1[2] + '.' + d1[1] + ' – ' + d2[2] + '.' + d2[1] + '.' + d2[0] + '</b>'
+          + '<small>' + o.dataset.nights + ' ' + esc(T.nightsShort || 'nights') + (o.dataset.label ? ' · ' + esc(o.dataset.label) : '') + '</small>'
+          + '<em>' + (free ? (price != null ? (rid ? '' : esc(T.from || 'from') + ' ') + money(price, cur) + (ptype === 'per_person' ? ' / ' + esc(T.person || 'person') : '') : '✓ ' + esc(T.free || 'free')) : '✕ ' + esc(T.full || 'full')) + '</em></button>';
+      }).join('') || '<p class="sta-muted">' + esc(T.noTerms || 'No terms') + '</p>';
+      // the chosen term is no longer free for this room → choose again
+      var cur0 = termSel.selectedOptions[0];
+      if (cur0 && cur0.value && cur0.disabled) { termSel.value = ''; termSel.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
+    tp && tp.addEventListener('click', function (e) {
+      var b = e.target.closest('.sta-tp-b'); if (!b || b.disabled) return;
+      termSel.value = b.dataset.v; termSel.classList.remove('is-invalid');
+      termSel.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    drawTerms();
+    if (adultsIn) adultsIn.addEventListener('input', function () { var r = roomById(($('[name="room_id"]', form) || {}).value); if (r && form.dataset.selroom) limits(r); });
 
     function estimate() {
       if (!totalBox) return;
@@ -292,7 +362,15 @@
         }
       }
       totalBox.hidden = sum === null;
-      if (sum !== null) totalBox.innerHTML = '<span>' + esc(T.estimate) + '</span><b>' + money(sum, cur) + '</b>';
+      // what is booked: room · dates · guests
+      var what = '';
+      if (type === 'accommodation' && sum !== null) {
+        var rr = typeof roomById === 'function' ? roomById(($('[name="room_id"]', form) || {}).value) : null;
+        var f1 = ($('[name="date_from"]', form) || {}).value, f2 = ($('[name="date_to"]', form) || {}).value;
+        var dm = function (x) { var p = String(x || '').split('-'); return p.length === 3 ? p[2] + '.' + p[1] + '.' + p[0] : ''; };
+        what = [rr ? rr.name : '', f1 && f2 ? dm(f1) + ' – ' + dm(f2) : '', adults + ' ' + (T.adultsShort || 'adults') + (kids ? ' + ' + kids + ' ' + (T.childrenShort || 'children') : '')].filter(Boolean).join(' · ');
+      }
+      if (sum !== null) totalBox.innerHTML = (what ? '<small class="sta-total-what">' + esc(T.youBook || 'You book') + ': <b>' + esc(what) + '</b></small>' : '') + '<span>' + esc(T.estimate) + '</span><b>' + money(sum, cur) + '</b>';
       payInfo(form, sum, cur);
     }
     form.addEventListener('change', estimate); form.addEventListener('input', estimate);
@@ -314,7 +392,7 @@
         var pre = $('[name="room_id"]', form).value;
         $$('.sta-offer', box).forEach(function (el, k) {
           if ((pre && el.dataset.room === pre) || (!pre && k === 0)) el.classList.add('is-selected');
-          el.addEventListener('click', function () { $$('.sta-offer', box).forEach(function (x) { x.classList.remove('is-selected'); }); el.classList.add('is-selected'); $('[name="room_id"]', form).value = el.dataset.room; estimate(); });
+          el.addEventListener('click', function () { $$('.sta-offer', box).forEach(function (x) { x.classList.remove('is-selected'); }); el.classList.add('is-selected'); $('[name="room_id"]', form).value = el.dataset.room; form.dispatchEvent(new CustomEvent('sta:offer', { detail: el.dataset.room })); estimate(); });
         });
         var s = $('.sta-offer.is-selected', box); if (s) $('[name="room_id"]', form).value = s.dataset.room;
         estimate();
@@ -367,7 +445,7 @@
     if (!a) return;
     var form = $('form[data-sta-booking]:not([data-quick])'); if (!form) return;
     if (a.dataset.staDeparture) { var s = $('[name="departure_id"]', form); if (s) { s.value = a.dataset.staDeparture; s.dispatchEvent(new Event('change', { bubbles: true })); } }
-    if (a.dataset.staRoom) { var r = $('[name="room_id"]', form); if (r) r.value = a.dataset.staRoom; }
+    if (a.dataset.staRoom) { var r = $('[name="room_id"]', form); if (r) { r.value = a.dataset.staRoom; form.dispatchEvent(new CustomEvent('sta:room', { detail: a.dataset.staRoom })); } }
   });
 
   /* ---------- charters ---------- */
