@@ -36,6 +36,7 @@ Route::prefix('public/{site}')->middleware([\App\Http\Middleware\AuthenticatePub
     Route::get('hotels/suggest', [HotelController::class, 'suggest'])->middleware('throttle:120,1');
     Route::get('hotels/catalog', [HotelController::class, 'catalog'])->middleware('throttle:120,1');
     Route::get('hotels/search', [HotelController::class, 'search'])->middleware('throttle:30,1');
+    Route::get('hotels/alternatives', [HotelController::class, 'alternatives'])->middleware('throttle:10,1');
     Route::get('hotels/{id}', [HotelController::class, 'show'])->middleware('throttle:60,1');
     Route::post('hotels/book', [HotelController::class, 'book'])->middleware('throttle:10,1');
 
@@ -85,6 +86,7 @@ Route::middleware([AuthenticateApiClient::class, 'throttle:website'])->group(fun
     Route::get('hotels/suggest', [HotelController::class, 'suggest']);
     Route::get('hotels/catalog', [HotelController::class, 'catalog']);
     Route::get('hotels/search', [HotelController::class, 'search'])->middleware('throttle:60,1');
+    Route::get('hotels/alternatives', [HotelController::class, 'alternatives'])->middleware('throttle:30,1');
     Route::get('hotels/{id}', [HotelController::class, 'show']);
     Route::post('hotels/book', [HotelController::class, 'book'])->middleware('throttle:website-forms');
 

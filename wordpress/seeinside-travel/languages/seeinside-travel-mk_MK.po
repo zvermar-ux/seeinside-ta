@@ -4092,3 +4092,15 @@ msgstr "Започни разговор"
 
 msgid "Please enter your name, a valid e-mail and a phone number."
 msgstr "Внесете име и презиме, валиден e-mail и телефон."
+
+msgid "Looking for the closest free dates…"
+msgstr "Барам најблиски слободни термини…"
+
+msgid "Closest free dates"
+msgstr "Најблиски слободни термини"
+
+msgid "Free hotels in %s for your dates"
+msgstr "Слободни хотели во %s за вашите датуми"
+
+msgid "All free hotels in the area (%d)"
+msgstr "Сите слободни хотели во областа (%d)"

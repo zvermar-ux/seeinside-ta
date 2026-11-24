@@ -78,6 +78,14 @@ class HotelController extends Controller
         return response()->json(['data' => $this->hotels->search($this->agencyId($request), $q)]);
     }
 
+    /** Nothing free: closest free dates and free hotels of the same area */
+    public function alternatives(Request $request): JsonResponse
+    {
+        @set_time_limit(120);
+
+        return response()->json(['data' => $this->hotels->alternatives($this->agencyId($request), $this->query($request))]);
+    }
+
     public function show(Request $request, string $id): JsonResponse
     {
         $q = $request->filled('from') ? $this->query($request) : null;

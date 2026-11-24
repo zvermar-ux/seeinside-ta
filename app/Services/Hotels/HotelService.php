@@ -394,6 +394,60 @@ class HotelService
             'error' => ! $list && $result['errors'] ? __('The hotel search is not available at the moment. Please try again or contact us.') : null];
     }
 
+    /**
+     * Nothing free for the search: the closest dates with free rooms (same nights, up to 3) and – when one hotel
+     * was asked – the free hotels of its area (same zone first) for the same dates.
+     */
+    public function alternatives(int $agencyId, array $q): array
+    {
+        $nights = (int) round((strtotime($q['to']) - strtotime($q['from'])) / 86400);
+        $out = ['dates' => [], 'nearby' => null];
+
+        if (! empty($q['hotel'])) {
+            [$cid, $code] = array_pad(explode('-', (string) $q['hotel'], 2), 2, null);
+            $local = SupplierHotel::withoutGlobalScopes()->where('supplier_connection_id', (int) $cid)->where('code', $code)->first();
+            if ($local && $local->destination_code) {
+                $dest = $local->supplier_connection_id.':'.$local->destination_code;
+                try {
+                    $r = $this->search($agencyId, ['destination' => $dest, 'hotel' => null] + $q);
+                    $list = collect($r['hotels'])->reject(fn ($h) => $h['id'] === $q['hotel']);
+                    $zone = (string) $local->zone_name;
+                    $list = $list->sortBy(fn ($h) => [$zone !== '' && str_starts_with((string) $h['place'], $zone) ? 0 : 1, $h['price']])->values();
+                    if ($list->isNotEmpty()) {
+                        $out['nearby'] = ['destination' => $dest, 'search_id' => $r['search_id'], 'place' => $local->zone_name ?: $local->destination_name,
+                            'count' => $list->count(), 'hotels' => $list->take(6)->map(fn ($h) => array_intersect_key($h, array_flip(['id', 'name', 'stars', 'place', 'image', 'price', 'currency', 'board'])))->all()];
+                    }
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        }
+
+        // other dates with the same nights: closest first, a few searches at most (each one asks the booking system)
+        $tries = 0;
+        foreach ([1, -1, 2, -2, 3, -3, 7, -7] as $shift) {
+            $from = date('Y-m-d', strtotime($q['from'].' '.($shift > 0 ? '+' : '').$shift.' days'));
+            if ($from < date('Y-m-d', strtotime('+1 day'))) {
+                continue;
+            }
+            if (++$tries > 6 || count($out['dates']) >= 3) {
+                break;
+            }
+            $to = date('Y-m-d', strtotime($from.' +'.$nights.' days'));
+            try {
+                $r = $this->search($agencyId, ['from' => $from, 'to' => $to] + $q);
+            } catch (\Throwable $e) {
+                continue;
+            }
+            if ($r['hotels']) {
+                $out['dates'][] = ['from' => $from, 'to' => $to, 'count' => count($r['hotels']), 'price' => min(array_column($r['hotels'], 'price')), 'currency' => $r['currency']];
+            }
+        }
+        usort($out['dates'], fn ($a, $b) => strcmp($a['from'], $b['from']));
+
+        return $out;
+    }
+
     protected function summary(array $row, ?SupplierHotel $l): array
     {
         $h = $row['live'];

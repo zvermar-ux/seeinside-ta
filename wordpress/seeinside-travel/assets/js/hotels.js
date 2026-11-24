@@ -46,6 +46,38 @@
     body.addEventListener('click', function (e) { var b = e.target.closest('[data-qbox-go]'); if (b) { var i = b.parentNode.querySelector('input'); i.dispatchEvent(new Event('input', { bubbles: true })); i.focus(); } });
     function loading(text) { body.innerHTML = '<div class="sta-ht-loading"><span class="sta-spin"></span>' + esc(text) + '</div>'; }
 
+    /* ---------- nothing free: closest free dates + free hotels of the same area ---------- */
+    function alternatives(q, box) {
+      if (!box) return;
+      box.innerHTML = '<div class="sta-ht-alt is-loading"><span class="sta-spin"></span>' + esc(L.altLooking) + '</div>';
+      var link = function (set, del) {
+        var p = new URLSearchParams(location.search);
+        (del || []).forEach(function (k) { p.delete(k); });
+        Object.keys(set).forEach(function (k) { p.set(k, set[k]); });
+        return location.pathname + '?' + p.toString();
+      };
+      api('hotels/alternatives?' + qs(q)).then(function (r) {
+        var d = r.ok && r.body && r.body.data, html = '';
+        if (!d) { box.innerHTML = ''; return; }
+        if (d.dates && d.dates.length) {
+          html += '<h4>' + esc(L.altDates) + '</h4><div class="sta-ht-alt-dates">' + d.dates.map(function (x) {
+            return '<a href="' + esc(link({ from: x.from, to: x.to }, ['h', 'sid'])) + '"><b>' + esc(dmy(x.from)) + ' – ' + esc(dmy(x.to)) + '</b><small>'
+              + (q.hotel ? '' : esc(plural(x.count, L.hotel1, L.hotels)) + ' · ') + esc(L.from) + ' <strong>' + money(x.price, x.currency) + '</strong></small></a>';
+          }).join('') + '</div>';
+        }
+        var n = d.nearby;
+        if (n && n.hotels && n.hotels.length) {
+          html += '<h4>' + esc((L.altHotels || '%s').replace('%s', n.place || '')) + '</h4><div class="sta-ht-alt-hotels">' + n.hotels.map(function (h) {
+            return '<a href="' + esc(link({ destination: n.destination, h: h.id, sid: n.search_id }, ['hotel', 'hn'])) + '">'
+              + (h.image ? '<img src="' + esc(h.image) + '" alt="" loading="lazy">' : '<span class="sta-ht-alt-noimg"></span>')
+              + '<span><b>' + esc(h.name) + '</b> ' + stars(h.stars) + '<small>' + esc(h.place || '') + '</small><small>' + esc(tr(h.board) || '') + ' · ' + esc(L.from) + ' <strong>' + money(h.price, h.currency) + '</strong></small></span></a>';
+          }).join('') + '</div>'
+            + (n.count > n.hotels.length ? '<a class="sta-btn sta-btn-sm" href="' + esc(link({ destination: n.destination }, ['hotel', 'hn', 'h', 'sid'])) + '">' + esc((L.altAll || '%d').replace('%d', n.count)) + '</a>' : '');
+        }
+        box.innerHTML = html ? '<div class="sta-ht-alt">' + html + '</div>' : '';
+      }).catch(function () { box.innerHTML = ''; });
+    }
+
     /* ---------- results ---------- */
     function search() {
       var q = query();
@@ -64,7 +96,8 @@
           // nothing free: the filter column stays (other dates, another destination) + all hotels without dates
           state.lo = state.hi = 0; layout(); list();
           $('[data-hf-list]', body).innerHTML = '<div class="sta-ht-empty' + (state.res.error ? ' is-error' : '') + '">' + esc(state.res.error || L.none)
-            + ' <button type="button" class="sta-btn sta-btn-sm" data-hf-clear>' + esc(L.showAll) + '</button></div>';
+            + ' <button type="button" class="sta-btn sta-btn-sm" data-hf-clear>' + esc(L.showAll) + '</button></div><div data-ht-alt></div>';
+          if (!state.res.error) alternatives(q, $('[data-ht-alt]', body));
           return;
         }
         // a single hotel searched by name → straight to its page
@@ -466,8 +499,9 @@
         + (q.from ? '<aside class="sta-ht-sum"><b>' + esc(dmy(q.from)) + ' – ' + esc(dmy(q.to)) + '</b><br>' + esc(who(q)) + '</aside></div>'
           : '<aside class="sta-ht-sum"><p>' + esc(L.pickDates) + '</p><button type="button" class="sta-btn" data-hc-dates="' + esc(h.id || q.open) + '">' + esc(L.checkPrices) + '</button></aside></div>')
         + '<h3 class="sta-ht-rt" id="sta-ht-rooms">' + esc(L.roomsTitle) + '</h3>'
-        + (q.from ? (rooms || '<div class="sta-ht-empty">' + esc(L.none) + '</div>') : '<div class="sta-ht-empty">' + esc(L.pickDates) + ' <button type="button" class="sta-btn sta-btn-sm" data-hc-dates="' + esc(h.id || q.open) + '">' + esc(L.checkPrices) + '</button></div>') + '</div>';
+        + (q.from ? (rooms || '<div class="sta-ht-empty">' + esc(L.none) + '</div><div data-ht-alt></div>') : '<div class="sta-ht-empty">' + esc(L.pickDates) + ' <button type="button" class="sta-btn sta-btn-sm" data-hc-dates="' + esc(h.id || q.open) + '">' + esc(L.checkPrices) + '</button></div>') + '</div>';
       bindLightbox($('[data-sta-lightbox]', body));
+      if (q.from && !rooms) alternatives(Object.assign({}, q, { hotel: h.id || q.open, destination: '' }), $('[data-ht-alt]', body));
       var md = $('[data-ht-more-desc]', body); if (md) md.addEventListener('click', function () { $('.sta-ht-desc', body).classList.remove('is-cut'); md.remove(); });
       $$('[data-ht-book]', body).forEach(function (b) { b.addEventListener('click', function () { var p = b.dataset.htBook.split(':'); book(h.rooms[+p[0]], h.rooms[+p[0]].rates[+p[1]]); }); });
     }

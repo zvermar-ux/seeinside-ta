@@ -104,6 +104,10 @@ class STA_Hotels
                 'noneFilter' => __('No hotel matches these filters.', 'seeinside-travel'),
                 'hotels' => __('hotels', 'seeinside-travel'),
                 'hotel1' => __('hotel', 'seeinside-travel'),
+                'altLooking' => __('Looking for the closest free dates…', 'seeinside-travel'),
+                'altDates' => __('Closest free dates', 'seeinside-travel'),
+                'altHotels' => __('Free hotels in %s for your dates', 'seeinside-travel'),
+                'altAll' => __('All free hotels in the area (%d)', 'seeinside-travel'),
                 'nights' => __('nights', 'seeinside-travel'),
                 'night1' => __('night', 'seeinside-travel'),
                 'for' => __('for', 'seeinside-travel'),
@@ -213,7 +217,7 @@ class STA_Hotels
     public static function routes(): void
     {
         $ns = 'seeinside-travel/v1';
-        foreach (['destinations', 'suggest', 'search', 'catalog'] as $what) {
+        foreach (['destinations', 'suggest', 'search', 'catalog', 'alternatives'] as $what) {
             register_rest_route($ns, '/hotels/'.$what, ['methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => fn (WP_REST_Request $r) => self::relay(STA_Api::get('hotels/'.$what, self::query($r), 60))]);
         }
         register_rest_route($ns, '/hotels/hotel', ['methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => function (WP_REST_Request $r) {
