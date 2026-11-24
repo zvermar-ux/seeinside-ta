@@ -59,7 +59,7 @@ class ChatBot
             return null;
         }
         $agencyId = (int) $conv->agency_id;
-        $history = $conv->messages()->latest('id')->limit(14)->get()->reverse()->values();
+        $history = $conv->messages()->reorder()->latest('id')->limit(14)->get()->reverse()->values();   // reorder: the relation is sorted oldest first
         $query = $history->where('role', 'visitor')->take(-3)->pluck('body')->implode(' ');
 
         $messages = [];
@@ -77,6 +77,10 @@ class ChatBot
         }
         if (! $messages || $messages[0]['role'] !== 'user') {
             array_unshift($messages, ['role' => 'user', 'content' => '(the visitor opened the chat)']);
+        }
+        // the conversation must end with the visitor (newer Claude models allow no assistant prefill)
+        while (count($messages) > 1 && end($messages)['role'] !== 'user') {
+            array_pop($messages);
         }
 
         try {
