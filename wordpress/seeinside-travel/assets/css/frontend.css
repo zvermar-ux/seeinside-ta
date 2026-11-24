@@ -1216,7 +1216,7 @@ body { max-width: 100%; }
 .sta-selroom b { font-size: 1.02rem; }
 .sta-selroom span { font-size: .85rem; color: #64748b; }
 .sta-selroom-x { flex: none; padding: .4rem .7rem !important; border: 1px solid #cbd5e1 !important; border-radius: 99px !important; background: #fff !important; color: #334155 !important; font: inherit; font-size: .82rem; cursor: pointer; }
-.sta-sr-only { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden !important; clip: rect(0 0 0 0) !important; white-space: nowrap !important; border: 0 !important; padding: 0 !important; }
+.sta-sr-only { position: absolute !important; left: 0 !important; top: 0 !important; width: 1px !important; min-width: 0 !important; max-width: 1px !important; height: 1px !important; min-height: 0 !important; margin: 0 !important; overflow: hidden !important; clip: rect(0 0 0 0) !important; clip-path: inset(50%) !important; white-space: nowrap !important; border: 0 !important; padding: 0 !important; opacity: 0 !important; pointer-events: none !important; }
 .sta-tp { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; margin-top: .25rem; }
 .sta-tp-b { display: grid; gap: 2px; text-align: left; padding: .55rem .7rem !important; border-radius: 12px !important; border: 1.5px solid !important; font: inherit; cursor: pointer; transition: transform .12s, box-shadow .12s; }
 .sta-tp-b b { font-size: .88rem; }
@@ -1241,3 +1241,22 @@ body { max-width: 100%; }
 .sta-near a:hover { border-color: #f59e0b; }
 .sta-near a small { color: #6b7280; }
 .sta-near a strong { margin-left: auto; color: #065f46 !important; }
+
+/* booking form never wider than its box (themes give inputs / selects fixed widths) */
+.sta-booking, .sta-booking *, .sta-booking *::before, .sta-booking *::after { box-sizing: border-box; }
+.sta-booking { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+.sta-booking .sta-row > *, .sta-booking .sta-field, .sta-booking .sta-offers, .sta-booking .sta-offer, .sta-booking .sta-offer > *, .sta-booking .sta-tp, .sta-booking .sta-tp-b, .sta-booking .sta-selroom, .sta-booking .sta-extras, .sta-booking .sta-fieldset, .sta-booking .sta-total { min-width: 0; max-width: 100%; }
+.sta-booking input:not([type=checkbox]):not([type=radio]), .sta-booking select:not(.sta-sr-only), .sta-booking textarea { max-width: 100%; min-width: 0; }
+.sta-booking .sta-field > input:not([type=checkbox]):not([type=radio]), .sta-booking .sta-field > select:not(.sta-sr-only), .sta-booking .sta-field > textarea { width: 100%; }
+.sta-booking .sta-field:has(> .sta-tp) { position: relative; }
+@media (max-width: 480px) {
+  .sta-selroom { flex-wrap: wrap; }
+  .sta-selroom img { width: 56px; height: 46px; }
+  .sta-selroom div { flex: 1 1 140px; }
+  .sta-selroom-x { margin-left: auto; }
+  .sta-offer { padding: .7rem .8rem; gap: .6rem; }
+  .sta-offer b { font-size: 1.05rem; }
+  .sta-tp { gap: .4rem; }
+  .sta-tp-b { padding: .5rem .55rem !important; }
+  .sta-tp-b b { font-size: .8rem; }
+}

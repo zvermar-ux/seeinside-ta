@@ -15,7 +15,7 @@ $tr = $type === 'accommodation' && ! empty($d['transport']) ? $d['transport'] : 
 $deps = array_values(array_filter($d['departures'] ?? [], fn ($x) => ! in_array($x['status'], ['sold_out', 'cancelled'], true)));
 // rooms of the accommodation: the chosen room is shown in the form, and its capacity limits the guests
 $roomsJs = $type === 'accommodation' ? array_values(array_map(fn ($r) => [
-    'id' => (int) $r['id'], 'name' => sta_t($r['name'] ?? ''), 'board' => $r['board'] ?? '', 'beds' => $r['beds'] ?? '',
+    'id' => (int) $r['id'], 'name' => sta_t($r['name'] ?? ''), 'board' => is_array($r['board'] ?? null) ? sta_t($r['board']['label'] ?? ($r['board']['value'] ?? '')) : (string) ($r['board'] ?? ''), 'beds' => $r['beds'] ?? '',
     'max_adults' => (int) ($r['max_adults'] ?? 0), 'max_children' => (int) ($r['max_children'] ?? 0),
     'image' => $r['cover_image'] ?? (($r['images'][0]['url'] ?? $r['images'][0] ?? '') ?: ''),
 ], (array) ($d['rooms'] ?? []))) : [];
