@@ -2210,5 +2210,6 @@
     "On: the nightly sync with the old system does not change these prices any more.": "Вклучено: ноќната синхронизација со старата апликација повеќе не ги менува овие цени.",
     "Nothing to save: no terms found or no room chosen.": "Нема што да се зачува: не се најдени термини или не е избрана соба.",
     ":n prices saved, :t new terms.": "Зачувани се :n цени, :t нови термини.",
-    ":n room/term answers only with another room of the old system (not free or not found).": ":n соба/термин старата апликација одговара само со друга соба (не е слободна или не е најдена)."
+    ":n room/term answers only with another room of the old system (not free or not found).": ":n соба/термин старата апликација одговара само со друга соба (не е слободна или не е најдена).",
+    "This room is not in the old system – the booking is only in the new app.": "Оваа соба ја нема во старата апликација – резервацијата е само во новата апликација."
 }

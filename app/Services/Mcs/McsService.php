@@ -380,6 +380,10 @@ class McsService
         if ($b->legacy_ref) {
             return ['ok' => true, 'message' => __('Already in the old system: :r', ['r' => $b->legacy_ref])];
         }
+        // a room that exists only here (e.g. a "1/2 studio" the old system does not have): the booking stays only in the app
+        if ($b->accommodation_room_id && blank(AccommodationRoom::query()->whereKey($b->accommodation_room_id)->value('provider_code'))) {
+            return ['ok' => false, 'message' => __('This room is not in the old system – the booking is only in the new app.')];
+        }
         try {
             // the old system books only "one of the results of a search": first with the price it gives for these guests,
             // then with the price of the booked room asked with all its beds (the search gives the cheapest room that fits)
