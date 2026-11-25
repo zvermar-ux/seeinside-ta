@@ -2197,5 +2197,18 @@
     "Name on the website (Macedonian)": "Име на сајтот (македонски)",
     "Areas": "Области",
     "Name in the booking system": "Име во системот за резервации",
-    "Name on the website": "Име на сајтот"
+    "Name on the website": "Име на сајтот",
+    "Prices from our price list (Aries only for terms and free places)": "Цени од нашиот ценовник (Aries само за термини и слободни места)",
+    "The prices in the Price matrix (typed or pasted with \"Paste price list\") stay as they are; the sync with the old system only adds terms and marks rooms free / full.": "Цените во Матрицата на цени (внесени или залепени со „Залепи ценовник“) остануваат такви; синхронизацијата со старата апликација само додава термини и означува соби слободни / полни.",
+    "Paste price list": "Залепи ценовник",
+    "Copy the table of the price list (term + one price per room in each row, e.g. \"22.05-29.05.2027 229 249 269 289\") and choose which room each price column is. Missing terms are created; stop sale stays as it is.": "Копирајте ја табелата од ценовникот (во секој ред термин + по една цена за секоја соба, на пр. „22.05-29.05.2027 229 249 269 289“) и изберете која соба е секоја колона со цени. Термините што недостасуваат се креираат; stop sale останува каков што е.",
+    "Price list": "Ценовник",
+    "Filled from the price list :t – check it.": "Пополнето од ценовникот :t – проверете го.",
+    "Year (when the dates have none)": "Година (кога датумите немаат)",
+    "Column :n": "Колона :n",
+    "– not used –": "– не се користи –",
+    "On: the nightly sync with the old system does not change these prices any more.": "Вклучено: ноќната синхронизација со старата апликација повеќе не ги менува овие цени.",
+    "Nothing to save: no terms found or no room chosen.": "Нема што да се зачува: не се најдени термини или не е избрана соба.",
+    ":n prices saved, :t new terms.": "Зачувани се :n цени, :t нови термини.",
+    ":n room/term answers only with another room of the old system (not free or not found).": ":n соба/термин старата апликација одговара само со друга соба (не е слободна или не е најдена)."
 }

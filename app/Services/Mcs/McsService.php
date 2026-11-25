@@ -752,6 +752,7 @@ class McsService
             }
             $byDate = self::perRoom($api, $c, $code, $byDate, $rooms, $out);
             $disc = self::discountFor($c, $a);
+            $manual = (bool) $a->manual_prices;   // prices from the agency's price list: Aries gives only terms and free places
             TermPrice::$quiet = true;
             $seenTerms = [];
             foreach ($byDate as $checkin => $rows) {
@@ -775,14 +776,29 @@ class McsService
                     foreach ($rooms as $room) {
                         $hit = $byRoom->get(self::askKey($room, $pp, $rooms))?->sortBy(fn ($r) => (float) $r['price'])->first();
                         $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $room->id]);
+                        if ($manual) {
+                            // our price stays; free when Aries offers this room, full only when Aries has nothing at all in this term
+                            if (! $tp->exists) {
+                                continue;
+                            }
+                            if ($hit) {
+                                $tp->supplier_price = (float) $hit['price'];
+                                $tp->stop_sale = false;
+                                $out['term_prices']++;
+                            }
+                            $tp->supplier_synced_at = now();
+                            $tp->save();
+
+                            continue;
+                        }
                         if ($hit) {
                             $tp->price = round(self::regular((float) $hit['price'], $disc) * $k, 2);
                             $tp->supplier_price = (float) $hit['price'];
                             $tp->stop_sale = false;
                             $out['term_prices']++;
                         } else {
-                            if (! $tp->exists) {
-                                continue;
+                            if (! $tp->exists || isset(self::$unresolved[$code][$checkin][self::askKey($room, $pp, $rooms)])) {
+                                continue;   // nothing yet, or the old system answered only with other rooms: left as it is
                             }
                             $tp->stop_sale = true;   // this room is full in the old system for this term
                             $out['stop_sale']++;
@@ -798,7 +814,7 @@ class McsService
             if ($gone->isNotEmpty()) {
                 $out['stop_sale'] += TermPrice::query()->whereIn('stay_term_id', $gone)->where('stop_sale', false)->update(['stop_sale' => true]);
             }
-            $out['removed'] = ($out['removed'] ?? 0) + self::onlyFromAries($a, $seenTerms);
+            $out['removed'] = ($out['removed'] ?? 0) + ($manual ? 0 : self::onlyFromAries($a, $seenTerms));
             TermPrice::$quiet = false;
             if (! $a->book_by_terms) {
                 $a->forceFill(['book_by_terms' => true])->save();   // sold only in these terms, like in the old system
@@ -836,6 +852,13 @@ class McsService
                 foreach ($rooms as $room) {
                     $hit = $rows->get((string) $room->provider_code)?->sortBy(fn ($r) => (float) $r['price'])->first();
                     $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $room->id]);
+                    if ($a->manual_prices) {
+                        if ($tp->exists) {
+                            $tp->forceFill(['stop_sale' => ! $hit && $rows->isEmpty() ? true : ($hit ? false : $tp->stop_sale), 'supplier_price' => $hit ? (float) $hit['price'] : $tp->supplier_price, 'supplier_synced_at' => now()])->save();
+                        }
+
+                        continue;
+                    }
                     if ($hit) {
                         $tp->price = round(self::regular((float) $hit['price'], $disc) * $k, 2);
                         $tp->supplier_price = (float) $hit['price'];
@@ -852,7 +875,7 @@ class McsService
                     $tp->save();
                 }
             }
-            if ($terms->isNotEmpty() && ! $out['errors']) {
+            if ($terms->isNotEmpty() && ! $out['errors'] && ! $a->manual_prices) {
                 // the terms are ours here (asked from Aries one by one): only the prices entered by hand and the period prices go
                 $out['removed'] = ($out['removed'] ?? 0)
                     + TermPrice::query()->whereIn('stay_term_id', $terms->pluck('id'))->whereNull('supplier_synced_at')->delete()
@@ -1110,6 +1133,9 @@ class McsService
      * The package search of the old system can answer without the room (accommodationid empty, one row per room,
      * the same price). Then every linked room is asked on its own for each term, so each room gets its own price.
      */
+    /** [package][checkin][room key]: the old system answered only with other rooms – the price of this one is left as it is */
+    protected static array $unresolved = [];
+
     protected static function perRoom(McsClient $api, SupplierConnection $c, string $code, array $byDate, Collection $rooms, array &$out): array
     {
         $p = self::product($c, 'package', $code);
@@ -1130,22 +1156,47 @@ class McsService
             }
         }
         $prices = [];
-        foreach ($api->packageSearchMany($queries, max(1, (int) ($c->settings['concurrency'] ?? 1))) as $key => $rows) {
-            $out['calls']++;
-            [$checkin, $room] = explode('|', $key, 2);
-            $roomId = explode('@', $room, 2)[0];   // Room-Id of the old system (the key may carry @persons)
-            if ($rows instanceof Throwable || ! $rows) {
-                continue;   // this room is not free in this term
+        // the old system answers with the cheapest room that fits the guests: a bigger room is asked again with more guests
+        // (+1 adult, +1 child…) until its own row comes; never the price of another room
+        $steps = [[0, 0], [1, 0], [0, 1], [1, 1], [0, 2], [2, 0], [2, 1]];
+        foreach ($steps as $si => [$addA, $addC]) {
+            if (! $queries) {
+                break;
             }
-            $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? $code) === (string) $code && McsClient::offer($r)));
-            // the answer for this room: its own row, or (when the API still gives no room) the first one
-            $mine = array_values(array_filter($rows, fn ($r) => (string) ($r['accommodationid'] ?? '') === $roomId)) ?: $rows;
-            if ($mine) {
-                $byDate[$checkin] = array_values(array_filter($byDate[$checkin], fn ($r) => filled($r['accommodationid'] ?? null)));
-                $prices[$checkin][$room] = (float) $mine[0]['price'];
-                $byDate[$checkin][] = ['id' => $code, 'accommodationid' => $room] + $mine[0];
-                $byDate[$checkin][count($byDate[$checkin]) - 1]['accommodationid'] = $room;
+            $ask = [];
+            foreach ($queries as $key => $q) {
+                $ask[$key] = ['adults' => $q['adults'] + $addA] + ($addC ? ['children_ages' => array_fill(0, $addC, 8)] : []) + $q;
             }
+            $next = [];
+            foreach ($api->packageSearchMany($ask, max(1, (int) ($c->settings['concurrency'] ?? 1))) as $key => $rows) {
+                $out['calls']++;
+                [$checkin, $room] = explode('|', $key, 2);
+                $roomId = explode('@', $room, 2)[0];   // Room-Id of the old system (the key may carry @persons)
+                if ($rows instanceof Throwable || ! $rows) {
+                    continue;   // this room is not free in this term
+                }
+                $rows = array_values(array_filter($rows, fn ($r) => (string) ($r['id'] ?? $code) === (string) $code && McsClient::offer($r)));
+                $named = collect($rows)->contains(fn ($r) => filled($r['accommodationid'] ?? null));
+                // its own row; the first one only when the old system names no room at all
+                $mine = array_values(array_filter($rows, fn ($r) => (string) ($r['accommodationid'] ?? '') === $roomId)) ?: ($named || $si > 0 ? [] : $rows);
+                if ($mine) {
+                    // rows that name no room are replaced by the answers per room
+                    $byDate[$checkin] = array_values(array_filter($byDate[$checkin], fn ($r) => filled($r['accommodationid'] ?? null)));
+                    $prices[$checkin][$room] = (float) $mine[0]['price'];
+                    $byDate[$checkin][] = ['id' => $code] + $mine[0];
+                    $byDate[$checkin][count($byDate[$checkin]) - 1]['accommodationid'] = $room;
+                } elseif ($named && $rows) {
+                    $next[$key] = $queries[$key];   // another (smaller) room answered: ask this one with more guests
+                }
+            }
+            $queries = $next;
+        }
+        if ($queries) {
+            foreach (array_keys($queries) as $key) {
+                [$checkin, $room] = explode('|', $key, 2);
+                self::$unresolved[$code][$checkin][$room] = true;
+            }
+            $out['notes'][] = ($p?->name ?? '#'.$code).': '.__(':n room/term answers only with another room of the old system (not free or not found).', ['n' => count($queries)]);
         }
         // the old system ignored the room: the same price for every room → say so
         $same = collect($prices)->filter(fn ($p) => count($p) > 1 && count(array_unique($p)) === 1)->count();

@@ -33,6 +33,7 @@ class Accommodation extends Model
     {
         return array_fill_keys(self::TRANSLATABLE, 'array') + [
             'payment_policy' => 'array',
+            'manual_prices' => 'boolean',
             'type' => AccommodationType::class,
             'stars' => 'integer',
             'board_types' => 'array',

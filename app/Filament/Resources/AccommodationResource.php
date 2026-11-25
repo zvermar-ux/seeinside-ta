@@ -186,6 +186,9 @@ class AccommodationResource extends Resource
                         Forms\Components\Toggle::make('sync_supplier_prices')->label(__('Take term prices from the old system'))->default(true)
                             ->helperText(__('Every night: the fixed terms of the old system and the price of each room for each term (Terms tab). Terms, room prices and period prices entered here are removed at the sync – only those from Aries stay. Texts, photos and rooms stay as they are here.'))
                             ->visible(fn (Get $get) => self::isMcs($get('supplier_connection_id'))),
+                        Forms\Components\Toggle::make('manual_prices')->label(__('Prices from our price list (Aries only for terms and free places)'))
+                            ->helperText(__('The prices in the Price matrix (typed or pasted with "Paste price list") stay as they are; the sync with the old system only adds terms and marks rooms free / full.'))
+                            ->visible(fn (Get $get) => self::isMcs($get('supplier_connection_id'))),
                         Forms\Components\Toggle::make('use_supplier_availability')->label(__('Take availability (free / booked) from the booking system'))
                             ->helperText(__('Each room needs its room code from the booking system (Rooms tab).'))
                             ->visible(fn (Get $get) => ! self::isMcs($get('supplier_connection_id')))
