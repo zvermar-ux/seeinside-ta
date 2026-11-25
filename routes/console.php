@@ -210,3 +210,79 @@ Artisan::command('chat:faq {--agency=} {--requested : only agencies where the bu
     }
 })->purpose('Questions & answers for the website chatbot, written by AI');
 \Illuminate\Support\Facades\Schedule::command('chat:faq --requested')->everyMinute()->runInBackground()->withoutOverlapping();
+
+// compare the apartment prices that came from Aries with the agency's price lists (resources/data/pricelists-2027.php)
+Artisan::command('aries:check-prices {key? : akropolis | bellagio | armonia | nidri port | afrodit}', function () {
+    $lists = require resource_path('data/pricelists-2027.php');
+    $alias = ['akropolis' => ['akropolis', 'акрополис'], 'bellagio' => ['bellagio', 'белаџ', 'белађ', 'белаг'], 'armonia' => ['armonia', 'армони'],
+        'nidri port' => ['nidri port', 'нидри порт'], 'afrodit' => ['afrodit', 'афродит']];
+    $all = \App\Models\Accommodation::withoutGlobalScopes()->with('rooms')->get();
+    foreach ($lists as $key => $pl) {
+        if ($this->argument('key') && ! str_contains($key, mb_strtolower($this->argument('key')))) {
+            continue;
+        }
+        $this->newLine();
+        $this->line('<options=bold>=== '.$pl['title'].' ===</>');
+        $found = $all->filter(function ($a) use ($alias, $key) {
+            $n = mb_strtolower(json_encode([$a->getRawOriginal('name'), $a->provider_code], JSON_UNESCAPED_UNICODE));
+            foreach ($alias[$key] as $w) {
+                if (str_contains($n, $w)) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+        if ($found->isEmpty()) {
+            $this->warn('  not found in the app');
+
+            continue;
+        }
+        foreach ($found as $a) {
+            $tier = $a->currentEarlyBookingTier();
+            $this->line('  #'.$a->id.' '.$a->tr('name').' | Aries: '.($a->provider_code ?: '-').' | sync: '.($a->sync_supplier_prices ? 'yes' : 'no')
+                .' | early booking today: '.($tier ? $tier['percent'].'%' : 'none'));
+            $terms = \App\Models\StayTerm::query()->where('accommodation_id', $a->id)->where('is_active', true)
+                ->whereYear('date_from', $pl['year'])->orderBy('date_from')->get()
+                ->keyBy(fn ($t) => $t->date_from->format('d.m').'-'.$t->date_to->format('d.m'));
+            $prices = \App\Models\TermPrice::query()->whereIn('stay_term_id', $terms->pluck('id'))->get()->groupBy('accommodation_room_id');
+            $termKey = $terms->mapWithKeys(fn ($t, $k) => [$t->id => $k]);
+            foreach ($a->rooms as $room) {
+                $mine = [];   // term key => [price, aries price, stop]
+                foreach ($prices[$room->id] ?? [] as $tp) {
+                    $mine[$termKey[$tp->stay_term_id]] = [(float) $tp->price, (float) $tp->supplier_price, (bool) $tp->stop_sale];
+                }
+                // the column of the price list this room is (most equal prices)
+                $best = null;
+                $bestHits = -1;
+                foreach ($pl['cols'] as $ci => $col) {
+                    $hits = 0;
+                    foreach ($pl['terms'] as $tk => $row) {
+                        if (isset($mine[$tk]) && (int) round($mine[$tk][0]) === $row[$ci]) {
+                            $hits++;
+                        }
+                    }
+                    if ($hits > $bestHits) {
+                        [$best, $bestHits] = [$ci, $hits];
+                    }
+                }
+                $this->line('  ┌ room #'.$room->id.' "'.$room->tr('name').'" | Aries room '.($room->provider_code ?: '-').($room->provider_guests ? ' asked for '.$room->provider_guests.' persons' : '')
+                    .' | max '.$room->max_adults.'+'.$room->max_children.' → price list column "'.$pl['cols'][$best].'" ('.$bestHits.'/'.count($pl['terms']).' equal)');
+                $bad = 0;
+                foreach ($pl['terms'] as $tk => $row) {
+                    $want = $row[$best];
+                    $m = $mine[$tk] ?? null;
+                    if ($m && (int) round($m[0]) === $want && ! $m[2]) {
+                        continue;
+                    }
+                    $bad++;
+                    $this->line('  │ '.str_pad($tk, 12).' list '.str_pad((string) $want, 5).' app '.($m ? str_pad((string) round($m[0]), 5).' (Aries gave '.round($m[1]).')'.($m[2] ? ' STOP SALE' : '') : '— no price / no term'));
+                }
+                foreach (array_diff(array_keys($mine), array_keys($pl['terms'])) as $tk) {
+                    $this->line('  │ '.str_pad($tk, 12).' term in the app, not in the price list: '.round($mine[$tk][0]));
+                }
+                $this->line('  └ '.($bad ? $bad.' different' : 'all equal ✓'));
+            }
+        }
+    }
+})->purpose('Apartment prices from Aries compared with the 2027 price lists');
