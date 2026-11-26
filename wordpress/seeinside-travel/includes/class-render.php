@@ -733,6 +733,11 @@ class STA_Render
         $band = $steps ? '<div class="sta-pl-band">'.esc_html__('Early booking discounts:', 'seeinside-travel').' '.implode(' · ', array_map(
             fn ($x) => '<b>−'.esc_html(rtrim(rtrim(number_format((float) $x['percent'], 2, '.', ''), '0'), '.')).'%</b> '.esc_html(sprintf(__('until %s', 'seeinside-travel'), sta_date($x['until']))),
             $steps)).'</div>' : '';
+        $lm = $d['promotions']['last_minute'] ?? null;
+        if ($lm) {
+            $band .= '<div class="sta-pl-band is-lm"><b>Last minute</b> '.(! empty($lm['discount_percent']) ? '−'.esc_html(rtrim(rtrim(number_format((float) $lm['discount_percent'], 2, '.', ''), '0'), '.')).'% ' : '')
+                .(! empty($lm['until']) ? esc_html(sprintf(__('until %s', 'seeinside-travel'), sta_date($lm['until']))) : '').'</div>';
+        }
         $html .= '<div class="sta-terms sta-pl'.(count($rooms) >= 4 ? ' is-many' : (count($rooms) === 3 ? ' is-three' : '')).'" data-sta-terms data-slug="'.esc_attr($d['slug']).'" data-currency="'.esc_attr($currency).'" data-price-type="'.esc_attr($t['price_type'] ?? 'per_room').'">';
         $html .= $band.'<div class="sta-table-wrap"><table class="sta-table sta-terms-table sta-pl-table"><thead><tr><th>'.esc_html__('Term', 'seeinside-travel').'</th>';
         foreach ($rooms as $r) {
