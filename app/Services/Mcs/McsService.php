@@ -757,6 +757,7 @@ class McsService
             $byDate = self::perRoom($api, $c, $code, $byDate, $rooms, $out);
             $disc = self::discountFor($c, $a);
             $manual = (bool) $a->manual_prices;   // prices from the agency's price list: Aries gives only terms and free places
+            $out['notes'][] = '#'.$a->id.' '.$a->name.': '.($manual ? 'prices from the price list' : 'prices from Aries');
             TermPrice::$quiet = true;
             $seenTerms = [];
             foreach ($byDate as $checkin => $rows) {
@@ -780,7 +781,7 @@ class McsService
                     foreach ($rooms as $room) {
                         $hit = $byRoom->get(self::askKey($room, $pp, $rooms))?->sortBy(fn ($r) => (float) $r['price'])->first();
                         $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $room->id]);
-                        if ($manual) {
+                        if ($manual || $tp->price_manual) {
                             // our price stays; free when Aries offers this room, full only when Aries has nothing at all in this term
                             if (! $tp->exists) {
                                 continue;
@@ -856,7 +857,7 @@ class McsService
                 foreach ($rooms as $room) {
                     $hit = $rows->get((string) $room->provider_code)?->sortBy(fn ($r) => (float) $r['price'])->first();
                     $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $room->id]);
-                    if ($a->manual_prices) {
+                    if ($a->manual_prices || $tp->price_manual) {
                         if ($tp->exists) {
                             $tp->forceFill(['stop_sale' => ! $hit && $rows->isEmpty() ? true : ($hit ? false : $tp->stop_sale), 'supplier_price' => $hit ? (float) $hit['price'] : $tp->supplier_price, 'supplier_synced_at' => now()])->save();
                         }
@@ -910,7 +911,9 @@ class McsService
             return 0;   // nothing came from Aries – leave everything as it is
         }
         $n = 0;
-        $manual = StayTerm::query()->where('accommodation_id', $a->id)->whereNull('supplier_synced_at')->pluck('id');
+        // terms typed here – except those with prices from the agency's price list
+        $manual = StayTerm::query()->where('accommodation_id', $a->id)->whereNull('supplier_synced_at')
+            ->whereNotIn('id', TermPrice::query()->where('price_manual', true)->select('stay_term_id'))->pluck('id');
         if ($manual->isNotEmpty()) {
             $booked = Booking::withoutGlobalScopes()->whereIn('stay_term_id', $manual)->pluck('stay_term_id')->unique();
             $free = $manual->diff($booked);
@@ -922,7 +925,7 @@ class McsService
         }
         // prices typed by hand in the Aries terms (rooms the old system did not price)
         $n += TermPrice::query()->whereIn('stay_term_id', StayTerm::query()->where('accommodation_id', $a->id)->whereNotNull('supplier_synced_at')->select('id'))
-            ->whereNull('supplier_synced_at')->delete();
+            ->whereNull('supplier_synced_at')->where('price_manual', false)->delete();
         // "Prices by period" of the rooms – the prices are only in the terms now
         $n += \App\Models\RoomRate::query()->whereIn('accommodation_room_id', $a->rooms->pluck('id'))->delete();
 

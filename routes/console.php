@@ -241,6 +241,7 @@ Artisan::command('aries:check-prices {key? : akropolis | bellagio | armonia | ni
         foreach ($found as $a) {
             $tier = $a->currentEarlyBookingTier();
             $this->line('  #'.$a->id.' '.$a->tr('name').' | Aries: '.($a->provider_code ?: '-').' | sync: '.($a->sync_supplier_prices ? 'yes' : 'no')
+                .' | prices from price list: '.($a->manual_prices ? 'YES' : 'no')
                 .' | early booking today: '.($tier ? $tier['percent'].'%' : 'none'));
             $terms = \App\Models\StayTerm::query()->where('accommodation_id', $a->id)->where('is_active', true)
                 ->whereYear('date_from', $pl['year'])->orderBy('date_from')->get()
@@ -250,7 +251,7 @@ Artisan::command('aries:check-prices {key? : akropolis | bellagio | armonia | ni
             foreach ($a->rooms as $room) {
                 $mine = [];   // term key => [price, aries price, stop]
                 foreach ($prices[$room->id] ?? [] as $tp) {
-                    $mine[$termKey[$tp->stay_term_id]] = [(float) $tp->price, (float) $tp->supplier_price, (bool) $tp->stop_sale];
+                    $mine[$termKey[$tp->stay_term_id]] = [(float) $tp->price, (float) $tp->supplier_price, (bool) $tp->stop_sale, (bool) $tp->price_manual];
                 }
                 // the column of the price list this room is (most equal prices)
                 $best = null;
@@ -276,7 +277,7 @@ Artisan::command('aries:check-prices {key? : akropolis | bellagio | armonia | ni
                         continue;
                     }
                     $bad++;
-                    $this->line('  │ '.str_pad($tk, 12).' list '.str_pad((string) $want, 5).' app '.($m ? str_pad((string) round($m[0]), 5).' (Aries gave '.round($m[1]).')'.($m[2] ? ' STOP SALE' : '') : '— no price / no term'));
+                    $this->line('  │ '.str_pad($tk, 12).' list '.str_pad((string) $want, 5).' app '.($m ? str_pad((string) round($m[0]), 5).' (Aries gave '.round($m[1]).')'.($m[2] ? ' STOP SALE' : '').($m[3] ? ' locked' : '') : '— no price / no term'));
                 }
                 foreach (array_diff(array_keys($mine), array_keys($pl['terms'])) as $tk) {
                     $this->line('  │ '.str_pad($tk, 12).' term in the app, not in the price list: '.round($mine[$tk][0]));
@@ -286,3 +287,38 @@ Artisan::command('aries:check-prices {key? : akropolis | bellagio | armonia | ni
         }
     }
 })->purpose('Apartment prices from Aries compared with the 2027 price lists');
+
+// what the old Aries system answers for one package and date: per room, per number of guests (to see why prices mix)
+Artisan::command('aries:probe {code : package Id in Aries, e.g. 28} {date : first day of a term, e.g. 2027-05-26}', function () {
+    $c = \App\Models\SupplierConnection::withoutGlobalScopes()->where('provider', \App\Enums\SupplierProvider::Mcs)->first();
+    if (! $c) {
+        $this->error('No Aries connection');
+
+        return;
+    }
+    $api = \App\Services\Mcs\McsService::client($c);
+    $p = \App\Models\SupplierProduct::withoutGlobalScopes()->where('supplier_connection_id', $c->id)->where('kind', 'package')->where('code', $this->argument('code'))->first();
+    $this->info(($p?->name ?? '?').' · rooms: '.collect($p?->rooms ?? [])->map(fn ($r) => $r['code'].'='.$r['room'])->implode(', '));
+    $where = array_filter(['country' => $p?->country, 'region' => $p?->region, 'city' => $p?->city]);
+    $show = function (string $label, array $q) use ($api, $where) {
+        try {
+            $rows = $api->packageSearch($q + $where);
+        } catch (\Throwable $e) {
+            $this->line(str_pad($label, 34).' ERROR '.$e->getMessage());
+
+            return;
+        }
+        $ok = array_filter($rows, [\App\Services\Mcs\McsClient::class, 'offer']);
+        $this->line(str_pad($label, 34).' '.($ok ? implode(' | ', array_map(fn ($r) => 'room '.($r['accommodationid'] ?? $r['roomid'] ?? '?').' '.($r['room'] ?? $r['accommodation'] ?? '').' = '.$r['price'].' ('.($r['checkin'] ?? '').'→'.($r['checkout'] ?? '').')', $ok)) : 'no offer'));
+    };
+    $d = $this->argument('date');
+    foreach ([[1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [2, 1], [2, 2], [3, 1]] as [$ad, $ch]) {
+        $show("all rooms, {$ad} adults".($ch ? " + {$ch} children" : ''), ['checkin' => $d, 'package' => $this->argument('code'), 'adults' => $ad] + ($ch ? ['children_ages' => array_fill(0, $ch, 8)] : []));
+    }
+    foreach ((array) ($p?->rooms ?? []) as $r) {
+        foreach ([2, 3, 4] as $ad) {
+            $show('room '.$r['code'].", {$ad} adults", ['checkin' => $d, 'package' => $this->argument('code'), 'room' => (string) $r['code'], 'adults' => $ad]);
+        }
+    }
+    $this->line('first raw row: '.json_encode(($api->packageSearch(['checkin' => $d, 'package' => $this->argument('code'), 'adults' => 2] + $where))[0] ?? null, JSON_UNESCAPED_UNICODE));
+})->purpose('Raw answers of the old Aries system for one package and date');

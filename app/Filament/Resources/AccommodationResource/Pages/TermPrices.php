@@ -127,6 +127,10 @@ class TermPrices extends Page
 
                             continue;
                         }
+                        // a price changed here by hand is kept by the sync with the old system
+                        if (! $existing || (float) $existing->price !== (float) $vals['price']) {
+                            $vals['price_manual'] = $vals['price'] !== null;
+                        }
                         $existing ? $existing->update($vals) : TermPrice::create($vals + ['stay_term_id' => $tid, 'accommodation_room_id' => $rid]);
                     }
                 }
@@ -283,6 +287,7 @@ class TermPrices extends Page
                                 }
                                 $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $roomId]);
                                 $tp->price = $prices[$i];
+                                $tp->price_manual = true;   // the sync with the old system never changes it
                                 $tp->save();
                                 $n++;
                             }
