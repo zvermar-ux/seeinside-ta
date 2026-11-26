@@ -55,8 +55,16 @@ $termPriceType = $d['terms']['price_type'] ?? '';
                     <option value=""><?php esc_html_e('Choose a term', 'seeinside-travel'); ?></option>
                     <?php foreach ($d['terms']['terms'] ?? [] as $term) :
                         $avail = [];
+                        // the most expensive price of a room (by the people in it: 2, 2+1 … 3+1) for "from X to Y"
+                        $top = [];
+                        foreach ((array) ($term['cells'] ?? []) as $key => $x) {
+                            $rid0 = (int) explode('|', (string) $key, 2)[0];
+                            if ($x && isset($x['price'])) {
+                                $top[$rid0] = max($top[$rid0] ?? 0, (float) $x['price']);
+                            }
+                        }
                         foreach ((array) ($term['rooms'] ?? []) as $rid => $x) {
-                            $avail[$rid] = $x ? ['f' => ! empty($x['free']) ? 1 : 0, 'p' => $x['price'] ?? null, 'r' => $x['regular'] ?? null] : null;
+                            $avail[$rid] = $x ? ['f' => ! empty($x['free']) ? 1 : 0, 'p' => $x['price'] ?? null, 'r' => $x['regular'] ?? null, 'x' => $top[$rid] ?? ($x['price'] ?? null)] : null;
                         } ?>
                         <option value="<?php echo (int) $term['id']; ?>" data-from="<?php echo esc_attr($term['from']); ?>" data-to="<?php echo esc_attr($term['to']); ?>" data-nights="<?php echo (int) $term['nights']; ?>" data-label="<?php echo esc_attr((string) ($term['label'] ?? '')); ?>" data-rooms="<?php echo esc_attr(wp_json_encode($avail)); ?>">
                             <?php echo esc_html(sta_date($term['from']).' – '.sta_date($term['to']).' · '.(int) $term['nights'].' '.__('nights', 'seeinside-travel').($term['label'] ? ' · '.$term['label'] : '')); ?>

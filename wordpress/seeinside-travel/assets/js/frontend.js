@@ -317,15 +317,23 @@
       var rid = ($('[name="room_id"]', form) || {}).value, ptype = form.dataset.priceType;
       tp.innerHTML = $$('option', termSel).filter(function (o) { return o.value; }).map(function (o) {
         var av = {}; try { av = JSON.parse(o.dataset.rooms || '{}') || {}; } catch (err) {}
-        var free = false, price = null;
-        if (rid) { var x = av[rid]; free = !!(x && x.f); price = x ? x.p : null; }
-        else Object.keys(av).forEach(function (k) { var x = av[k]; if (x && x.f) { free = true; if (x.p != null && (price === null || +x.p < price)) price = +x.p; } });
+        var free = false, price = null, top = null;
+        if (rid) { var x = av[rid]; free = !!(x && x.f); price = x ? x.p : null; top = x && x.x != null ? +x.x : null; }
+        else Object.keys(av).forEach(function (k) {
+          var x = av[k]; if (!x || !x.f) return;
+          free = true;
+          if (x.p != null && (price === null || +x.p < price)) price = +x.p;
+          var hi = x.x != null ? +x.x : (x.p != null ? +x.p : null);
+          if (hi != null && (top === null || hi > top)) top = hi;
+        });
+        // "€152 – €219": the cheapest to the most expensive room / number of people
+        var range = price != null && top != null && top > +price;
         o.disabled = !free;
         var d1 = o.dataset.from.split('-'), d2 = o.dataset.to.split('-');
         return '<button type="button" class="sta-tp-b ' + (free ? 'is-free' : 'is-full') + (o.selected ? ' is-on' : '') + '" data-v="' + o.value + '"' + (free ? '' : ' disabled aria-disabled="true"') + '>'
           + '<b>' + d1[2] + '.' + d1[1] + ' – ' + d2[2] + '.' + d2[1] + '.' + d2[0] + '</b>'
           + '<small>' + o.dataset.nights + ' ' + esc(T.nightsShort || 'nights') + (o.dataset.label ? ' · ' + esc(o.dataset.label) : '') + '</small>'
-          + '<em>' + (free ? (price != null ? (rid ? '' : esc(T.from || 'from') + ' ') + money(price, cur) + (ptype === 'per_person' ? ' / ' + esc(T.person || 'person') : '') : '✓ ' + esc(T.free || 'free')) : '✕ ' + esc(T.full || 'full')) + '</em></button>';
+          + '<em>' + (free ? (price != null ? (range ? money(price, cur) + ' – ' + money(top, cur) : money(price, cur)) + (ptype === 'per_person' ? ' / ' + esc(T.person || 'person') : '') : '✓ ' + esc(T.free || 'free')) : '✕ ' + esc(T.full || 'full')) + '</em></button>';
       }).join('') || '<p class="sta-muted">' + esc(T.noTerms || 'No terms') + '</p>';
       // the chosen term is no longer free for this room → choose again
       var cur0 = termSel.selectedOptions[0];
