@@ -53,14 +53,15 @@ class BookingPricing
             $nights = $b->nights();
             $tp = $b->stay_term_id && $b->accommodation_room_id
                 ? TermPrice::query()->where('stay_term_id', $b->stay_term_id)->where('accommodation_room_id', $b->accommodation_room_id)->first() : null;
-            if ($tp && $tp->price !== null) {
+            $unit = $tp?->priceFor(max(1, $adults), $kids);   // by the people in the room when the price list has it
+            if ($tp && $unit !== null) {
                 $perPerson = $item->term_price_type === 'per_person';
-                $lines[] = self::line('base', trim(($room?->tr('name') ?? '').' · '.$b->stayTerm?->label().' ('.$nights.' '.__('nights').')'), $perPerson ? $pax : $qty, (float) $tp->price);
+                $lines[] = self::line('base', trim(($room?->tr('name') ?? '').' · '.$b->stayTerm?->label().' ('.$nights.' '.__('nights').')'), $perPerson ? $pax : $qty, $unit);
                 // early booking / last minute of the apartment (the term price is the regular one)
-                $promo = (float) $item->promoPrice((float) $tp->price);
-                if ($promo < (float) $tp->price) {
+                $promo = (float) $item->promoPrice($unit);
+                if ($promo < $unit) {
                     $label = $item->isLastMinuteActive() ? 'Last minute' : ($item->first_minute_label ?: 'Early Booking');
-                    $lines[] = self::line('discount', $label, $perPerson ? $pax : $qty, -round((float) $tp->price - $promo, 2));
+                    $lines[] = self::line('discount', $label, $perPerson ? $pax : $qty, -round($unit - $promo, 2));
                 }
             } elseif ($room && $b->date_from && $b->date_to) {
                 // the booking itself occupies the room – price only, no availability check

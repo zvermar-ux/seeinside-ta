@@ -123,7 +123,8 @@ class Accommodation extends Model
         $out = [];
         foreach ($this->rooms()->where('is_active', true)->get() as $room) {
             $tp = $prices->get($room->id);
-            if (! $tp || $tp->price === null || $tp->stop_sale) {
+            $unit = $tp?->priceFor(max(1, $adults), $children);   // by the people in the room when the price list has it
+            if (! $tp || $unit === null || $tp->stop_sale) {
                 continue;
             }
             if (! $includeFull && ($adults > $room->max_adults || $children > $room->max_children)) {
@@ -133,10 +134,10 @@ class Accommodation extends Model
             if (! $includeFull && $free !== null && $free < 1) {
                 continue;
             }
-            $total = (float) $tp->price * ($perPerson ? max(1, $adults + $children) : 1);
+            $total = $unit * ($perPerson ? max(1, $adults + $children) : 1);
             $out[] = [
                 'room_id' => $room->id, 'room' => $room->tr('name'), 'room_type' => $room->room_type?->value, 'board' => $room->board?->value,
-                'nights' => $term->nights(), 'available' => $free, 'term_id' => $term->id, 'price' => (float) $tp->price, 'price_type' => $this->term_price_type,
+                'nights' => $term->nights(), 'available' => $free, 'term_id' => $term->id, 'price' => $unit, 'price_type' => $this->term_price_type,
                 'total' => round($this->promoPrice($total), 2), 'regular' => round($total, 2), 'currency' => $this->currency,
             ];
         }
@@ -161,8 +162,51 @@ class Accommodation extends Model
             ];
         }
 
+        // columns of the website table: one per room, or – like the price list – one per number of people in the room
+        $terms = $this->stayTerms()->where('is_active', true)->whereDate('date_from', '>=', $from)->with('prices')->limit(60)->get();
+        $cols = [];
+        foreach ($rooms as $r) {
+            $occs = $terms->flatMap(fn ($t) => array_keys(array_filter((array) $t->prices->firstWhere('accommodation_room_id', $r->id)?->occupancy_prices)))->unique()->values();
+            $base = ['room_id' => $r->id, 'name' => $r->trAll('name'), 'board' => $r->board?->value, 'max_adults' => $r->max_adults, 'max_children' => $r->max_children];
+            if ($occs->isEmpty()) {
+                $cols[] = ['key' => (string) $r->id, 'occ' => null, 'adults' => null, 'children' => null] + $base;
+            }
+            foreach ($occs as $o) {
+                [$oa, $oc] = TermPrice::occ((string) $o);
+                $cols[] = ['key' => $r->id.'|'.$o, 'occ' => (string) $o, 'adults' => $oa, 'children' => $oc] + $base;
+            }
+        }
+        if ($cols && collect($cols)->every(fn ($c) => $c['occ'] !== null)) {
+            usort($cols, fn ($x, $y) => [$x['adults'], $x['children']] <=> [$y['adults'], $y['children']]);   // 2, 2+1, 2+2, 3, 3+1
+        }
+        foreach ($terms as $i => $t) {
+            if (! isset($rows[$i]) || $rows[$i]['id'] !== $t->id) {
+                continue;
+            }
+            $cells = [];
+            foreach ($cols as $c) {
+                $tp = $t->prices->firstWhere('accommodation_room_id', $c['room_id']);
+                $base = $rows[$i]['rooms'][$c['room_id']] ?? null;
+                if (! $base || ! $tp) {
+                    $cells[$c['key']] = null;
+
+                    continue;
+                }
+                if ($c['occ'] === null) {
+                    $cells[$c['key']] = $base;
+
+                    continue;
+                }
+                $unit = ((array) $tp->occupancy_prices)[$c['occ']] ?? null;
+                $total = $unit === null ? null : (float) $unit * ($this->term_price_type === 'per_person' ? max(1, $c['adults'] + $c['children']) : 1);
+                $cells[$c['key']] = $total === null ? null : ['price' => round($this->promoPrice($total), 2), 'regular' => round($total, 2), 'free' => $base['free']];
+            }
+            $rows[$i]['cells'] = $cells;
+        }
+
         return ['price_type' => $this->term_price_type, 'currency' => $this->currency,
             'rooms' => $rooms->map(fn ($r) => ['id' => $r->id, 'name' => $r->trAll('name'), 'board' => $r->board?->value, 'max_adults' => $r->max_adults, 'max_children' => $r->max_children])->values()->all(),
+            'cols' => $cols,
             'terms' => $rows];
     }
 

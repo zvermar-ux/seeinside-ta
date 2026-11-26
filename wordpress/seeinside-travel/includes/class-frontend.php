@@ -85,6 +85,7 @@ class STA_Frontend
                 'childAge' => __('Age of child', 'seeinside-travel'),
                 'free' => __('Free', 'seeinside-travel'),
                 'booked' => __('Booked', 'seeinside-travel'),
+                'onlyLeft' => _n('Only %d left!', 'Only %d left!', 2, 'seeinside-travel'),
                 'notFound' => __('Nothing found. Check the number and e-mail.', 'seeinside-travel'),
                 'status' => __('Status', 'seeinside-travel'),
                 'payment' => __('Payment', 'seeinside-travel'),

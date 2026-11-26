@@ -2211,5 +2211,8 @@
     "Nothing to save: no terms found or no room chosen.": "Нема што да се зачува: не се најдени термини или не е избрана соба.",
     ":n prices saved, :t new terms.": "Зачувани се :n цени, :t нови термини.",
     ":n room/term answers only with another room of the old system (not free or not found).": ":n соба/термин старата апликација одговара само со друга соба (не е слободна или не е најдена).",
-    "This room is not in the old system – the booking is only in the new app.": "Оваа соба ја нема во старата апликација – резервацијата е само во новата апликација."
+    "This room is not in the old system – the booking is only in the new app.": "Оваа соба ја нема во старата апликација – резервацијата е само во новата апликација.",
+    "people, e.g. 2+1": "лица, на пр. 2+1",
+    "Empty = price of the room; 2 / 2+1 / 3+1 = price for that many adults + children in it": "Празно = цена на собата; 2 / 2+1 / 3+1 = цена за толку возрасни + деца во неа",
+    "Prices by the people in the room (from the pasted price list)": "Цени според бројот на лица во собата (од залепениот ценовник)"
 }

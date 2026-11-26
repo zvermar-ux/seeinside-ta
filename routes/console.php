@@ -282,6 +282,26 @@ Artisan::command('aries:check-prices {key? : akropolis | bellagio | armonia | ni
                 foreach (array_diff(array_keys($mine), array_keys($pl['terms'])) as $tk) {
                     $this->line('  │ '.str_pad($tk, 12).' term in the app, not in the price list: '.round($mine[$tk][0]));
                 }
+                // prices by the people in the room (Bellagio: 2, 2+1, 2+2 …) against the columns of the same name
+                $occBad = 0;
+                $occSeen = [];
+                foreach ($prices[$room->id] ?? [] as $tp) {
+                    foreach ((array) $tp->occupancy_prices as $occ => $val) {
+                        $ci = collect($pl['cols'])->search(fn ($col) => \App\Filament\Resources\AccommodationResource\Pages\TermPrices::occFromName($col) === (string) $occ);
+                        $tk = $termKey[$tp->stay_term_id];
+                        if ($ci === false || ! isset($pl['terms'][$tk])) {
+                            continue;
+                        }
+                        $occSeen[$occ] = $pl['cols'][$ci];
+                        if ((int) round((float) $val) !== $pl['terms'][$tk][$ci]) {
+                            $occBad++;
+                            $this->line('  │ '.str_pad($tk, 12).' '.$occ.' list '.$pl['terms'][$tk][$ci].' app '.round((float) $val));
+                        }
+                    }
+                }
+                if ($occSeen) {
+                    $this->line('  │ by people in the room: '.implode(', ', array_keys($occSeen)).' → '.($occBad ? $occBad.' different' : 'all equal ✓'));
+                }
                 $this->line('  └ '.($bad ? $bad.' different' : 'all equal ✓'));
             }
         }

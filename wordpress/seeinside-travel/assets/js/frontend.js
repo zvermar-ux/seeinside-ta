@@ -688,6 +688,12 @@
       var tr = c.closest('tr');
       sel = { term: tr.dataset.term, from: tr.dataset.from, to: tr.dataset.to, room: c.dataset.room };
       $('[name="date_from"]', qform).value = sel.from; $('[name="date_to"]', qform).value = sel.to;
+      // a price for a number of people (2 adults + 1 child): the guests of the booking too
+      if (c.dataset.adults) {
+        var ai = $('[name="adults"]', qform), ci = $('[name="children"]', qform);
+        if (ai) ai.value = c.dataset.adults;
+        if (ci) { ci.value = c.dataset.children || 0; ci.dispatchEvent(new Event('input', { bubbles: true })); }
+      }
       $('[name="room_id"]', qform).value = sel.room; $('[name="term_id"]', qform).value = sel.term;
       $('[data-sta-msg]', qform).className = 'sta-msg';
       quote();
@@ -702,10 +708,16 @@
         d.terms.forEach(function (t) {
           var tr = $('tr[data-term="' + t.id + '"]', box); if (!tr) return;
           $$('button.sta-term-cell', tr).forEach(function (b) {
-            var c = t.rooms[b.dataset.room]; if (!c) return;
-            var full = c.free !== null && c.free < 1, small = $('small', b);
-            if (small) small.textContent = full ? T.booked : (c.free !== null ? c.free + ' ' + T.freeUnits : T.free);
-            var bb = $('b', b); if (bb) bb.textContent = money(c.price, d.currency || cur);
+            var c = (t.cells && b.dataset.key) ? t.cells[b.dataset.key] : t.rooms[b.dataset.room]; if (!c) return;
+            var full = c.free !== null && c.free < 1, reg = c.regular && c.regular > c.price ? c.regular : null;
+            // price-list look: the list price, today's price under it, "only N left" / booked
+            var h = '<b>' + esc(money(reg || c.price, d.currency || cur)) + '</b>';
+            if (full) h += '<small class="is-full">' + esc(T.booked) + '</small>';
+            else {
+              if (reg) h += '<small class="is-promo">' + esc(money(c.price, d.currency || cur)) + '</small>';
+              if (c.free !== null && c.free <= 2) h += '<small class="is-few">' + esc((T.onlyLeft || '%d').replace('%d', c.free)) + '</small>';
+            }
+            b.innerHTML = h;
             b.disabled = full; b.closest('td').classList.toggle('is-full', full);
           });
         });

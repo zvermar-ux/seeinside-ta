@@ -738,16 +738,20 @@ class STA_Render
             $band .= '<div class="sta-pl-band is-lm"><b>Last minute</b> '.(! empty($lm['discount_percent']) ? '−'.esc_html(rtrim(rtrim(number_format((float) $lm['discount_percent'], 2, '.', ''), '0'), '.')).'% ' : '')
                 .(! empty($lm['until']) ? esc_html(sprintf(__('until %s', 'seeinside-travel'), sta_date($lm['until']))) : '').'</div>';
         }
-        $html .= '<div class="sta-terms sta-pl'.(count($rooms) >= 4 ? ' is-many' : (count($rooms) === 3 ? ' is-three' : '')).'" data-sta-terms data-slug="'.esc_attr($d['slug']).'" data-currency="'.esc_attr($currency).'" data-price-type="'.esc_attr($t['price_type'] ?? 'per_room').'">';
+        // columns: one per room, or one per number of people in a room (2 adults, 2+1 …) like the price list
+        $cols = $t['cols'] ?? array_map(fn ($r) => ['key' => (string) $r['id'], 'room_id' => $r['id'], 'occ' => null, 'adults' => null, 'children' => null] + $r, $rooms);
+        $html .= '<div class="sta-terms sta-pl'.(count($cols) >= 4 ? ' is-many' : (count($cols) === 3 ? ' is-three' : '')).'" data-sta-terms data-slug="'.esc_attr($d['slug']).'" data-currency="'.esc_attr($currency).'" data-price-type="'.esc_attr($t['price_type'] ?? 'per_room').'">';
         $html .= $band.'<div class="sta-table-wrap"><table class="sta-table sta-terms-table sta-pl-table"><thead><tr><th>'.esc_html__('Term', 'seeinside-travel').'</th>';
-        foreach ($rooms as $r) {
-            $html .= '<th>'.esc_html(sta_t($r['name'])).($r['board'] ? '<small>'.esc_html($r['board']).' · '.(int) $r['max_adults'].'+'.(int) $r['max_children'].'</small>' : '').'</th>';
+        foreach ($cols as $r) {
+            $html .= $r['occ'] !== null
+                ? '<th>'.esc_html(self::occ_label((int) $r['adults'], (int) $r['children'])).'<small>'.esc_html(sta_t($r['name'])).($r['board'] ? ' · '.esc_html($r['board']) : '').'</small></th>'
+                : '<th>'.esc_html(sta_t($r['name'])).($r['board'] ? '<small>'.esc_html($r['board']).' · '.(int) $r['max_adults'].'+'.(int) $r['max_children'].'</small>' : '').'</th>';
         }
         $html .= '</tr></thead><tbody>';
         foreach ($t['terms'] as $term) {
             $html .= '<tr data-term="'.(int) $term['id'].'" data-from="'.esc_attr($term['from']).'" data-to="'.esc_attr($term['to']).'"><td><b>'.esc_html(date_i18n('d.m', strtotime($term['from']))).'–'.esc_html(sta_date($term['to'])).'</b><small>'.(int) $term['nights'].' '.esc_html__('nights', 'seeinside-travel').($term['label'] ? ' · '.esc_html($term['label']) : '').'</small></td>';
-            foreach ($rooms as $r) {
-                $c = $term['rooms'][$r['id']] ?? ($term['rooms'][(string) $r['id']] ?? null);
+            foreach ($cols as $r) {
+                $c = isset($term['cells']) ? ($term['cells'][$r['key']] ?? null) : ($term['rooms'][$r['room_id']] ?? ($term['rooms'][(string) $r['room_id']] ?? null));
                 if (! $c) {
                     $html .= '<td class="is-na">—</td>';
                     continue;
@@ -762,7 +766,8 @@ class STA_Render
                         .($few ? '<small class="is-few">'.esc_html(sprintf(_n('Only %d left!', 'Only %d left!', (int) $c['free'], 'seeinside-travel'), (int) $c['free'])).'</small>' : ''));
                 $html .= $full || ! $quick
                     ? '<td class="'.($full ? 'is-full' : '').'"><span class="sta-term-cell">'.$cell.'</span></td>'
-                    : '<td><button type="button" class="sta-term-cell" data-room="'.(int) $r['id'].'" data-room-name="'.esc_attr(sta_t($r['name'])).'" data-price="'.esc_attr($c['price']).'">'.$cell.'</button></td>';
+                    : '<td><button type="button" class="sta-term-cell" data-key="'.esc_attr($r['key']).'" data-room="'.(int) $r['room_id'].'" data-room-name="'.esc_attr(sta_t($r['name'])).'" data-price="'.esc_attr($c['price']).'"'
+                        .($r['occ'] !== null ? ' data-adults="'.(int) $r['adults'].'" data-children="'.(int) $r['children'].'"' : '').'>'.$cell.'</button></td>';
             }
             $html .= '</tr>';
         }
@@ -772,6 +777,13 @@ class STA_Render
         }
 
         return $html.'</div>';
+    }
+
+    /** "2 adults + 1 child" */
+    public static function occ_label(int $adults, int $children): string
+    {
+        return sprintf(_n('%d adult', '%d adults', $adults, 'seeinside-travel'), $adults)
+            .($children ? ' + '.sprintf(_n('%d child', '%d children', $children, 'seeinside-travel'), $children) : '');
     }
 
     /** Extra galleries ("The hotel", "Excursions" …) */

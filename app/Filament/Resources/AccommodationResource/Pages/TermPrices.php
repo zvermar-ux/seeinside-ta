@@ -178,6 +178,18 @@ class TermPrices extends Page
         return $out;
     }
 
+    /** "2 возрасни" → "2", "2+1 дете" / "2 возр. + 1 дете" → "2+1", "1/2 студио" → null */
+    public static function occFromName(string $col): ?string
+    {
+        $c = mb_strtolower($col);
+        if (str_contains($c, '/') || ! preg_match('/^\s*(\d)\s*(?:возр|adult|ad\b|\+)/u', $c, $m)) {
+            return null;
+        }
+        $kids = preg_match('/\+\s*(\d)/u', $c, $k) ? (int) $k[1] : 0;
+
+        return $m[1].($kids ? '+'.$kids : '');
+    }
+
     /** the agency's price list of this apartment (resources/data), when there is one */
     protected function knownList(): ?array
     {
@@ -225,6 +237,7 @@ class TermPrices extends Page
                             $data['col_'.$i] = $best;
                             unset($free[$best]);
                         }
+                        $data['occ_'.$i] = self::occFromName($col);
                     }
                 }
 
@@ -239,16 +252,19 @@ class TermPrices extends Page
                 ];
                 $cols = [];
                 for ($i = 0; $i < 8; $i++) {
-                    $cols[] = \Filament\Forms\Components\Select::make('col_'.$i)
-                        ->label(fn () => __('Column :n', ['n' => $i + 1]).(isset($pl['cols'][$i]) ? ' – '.$pl['cols'][$i] : ''))
-                        ->options($rooms)->placeholder(__('– not used –'))
-                        ->visible(function (\Filament\Forms\Get $get) use ($i) {
-                            $rows = self::parseList((string) $get('table'), (int) ($get('year') ?: now()->year));
+                    $shown = function (\Filament\Forms\Get $get) use ($i) {
+                        $rows = self::parseList((string) $get('table'), (int) ($get('year') ?: now()->year));
 
-                            return $rows && $i < max(array_map(fn ($r) => count($r[1]), $rows));
-                        });
+                        return $rows && $i < max(array_map(fn ($r) => count($r[1]), $rows));
+                    };
+                    $cols[] = \Filament\Forms\Components\Fieldset::make(__('Column :n', ['n' => $i + 1]).(isset($pl['cols'][$i]) ? ' – '.$pl['cols'][$i] : ''))
+                        ->columns(1)->visible($shown)->schema([
+                            \Filament\Forms\Components\Select::make('col_'.$i)->hiddenLabel()->options($rooms)->placeholder(__('– not used –')),
+                            \Filament\Forms\Components\TextInput::make('occ_'.$i)->hiddenLabel()->placeholder(__('people, e.g. 2+1'))->maxLength(5)
+                                ->regex('/^\d(\+\d)?$/')->helperText(__('Empty = price of the room; 2 / 2+1 / 3+1 = price for that many adults + children in it')),
+                        ]);
                 }
-                $fields[] = \Filament\Forms\Components\Grid::make(4)->schema($cols);
+                $fields[] = \Filament\Forms\Components\Grid::make(3)->schema($cols);
                 $fields[] = \Filament\Forms\Components\Toggle::make('manual')->label(__('Prices from our price list (Aries only for terms and free places)'))
                     ->helperText(__('On: the nightly sync with the old system does not change these prices any more.'));
 
@@ -257,9 +273,11 @@ class TermPrices extends Page
             ->action(function (array $data) {
                 $rows = self::parseList((string) $data['table'], (int) $data['year']);
                 $map = [];
+                $occ = [];
                 for ($i = 0; $i < 8; $i++) {
                     if (! empty($data['col_'.$i])) {
                         $map[$i] = (int) $data['col_'.$i];
+                        $occ[$i] = preg_match('/^\d(\+\d)?$/', trim((string) ($data['occ_'.$i] ?? ''))) ? trim((string) $data['occ_'.$i]) : null;
                     }
                 }
                 if (! $rows || ! $map) {
@@ -274,19 +292,30 @@ class TermPrices extends Page
                 $newTerms = 0;
                 TermPrice::$quiet = true;
                 try {
-                    DB::transaction(function () use ($rows, $map, $a, $roomIds, &$n, &$newTerms) {
+                    DB::transaction(function () use ($rows, $map, $occ, $a, $roomIds, &$n, &$newTerms) {
                         foreach ($rows as [[$from, $to], $prices]) {
                             $term = $a->stayTerms()->whereDate('date_from', $from)->whereDate('date_to', $to)->first();
                             if (! $term) {
                                 $term = $a->stayTerms()->create(['date_from' => $from, 'date_to' => $to, 'is_active' => true]);
                                 $newTerms++;
                             }
+                            $fresh = [];
                             foreach ($map as $i => $roomId) {
                                 if (! isset($prices[$i]) || ! in_array($roomId, $roomIds, true)) {
                                     continue;
                                 }
                                 $tp = TermPrice::query()->firstOrNew(['stay_term_id' => $term->id, 'accommodation_room_id' => $roomId]);
-                                $tp->price = $prices[$i];
+                                if ($occ[$i] !== null) {
+                                    // price by the people in the room (2 adults, 2+1 …); the room price = the cheapest of them
+                                    $op = isset($fresh[$roomId]) ? (array) $tp->occupancy_prices : [];
+                                    $op[$occ[$i]] = $prices[$i];
+                                    $tp->occupancy_prices = $op;
+                                    $tp->price = min($op);
+                                    $fresh[$roomId] = true;
+                                } else {
+                                    $tp->price = $prices[$i];
+                                    $tp->occupancy_prices = null;
+                                }
                                 $tp->price_manual = true;   // the sync with the old system never changes it
                                 $tp->save();
                                 $n++;
@@ -306,6 +335,16 @@ class TermPrices extends Page
 
     protected function getViewData(): array
     {
-        return ['terms' => $this->terms(), 'rooms' => $this->record->rooms()->get()];
+        $terms = $this->terms();
+        $occupancy = [];
+        foreach ($terms as $t) {
+            foreach ($t->prices as $p) {
+                if ($p->occupancy_prices) {
+                    $occupancy[$t->id][$p->accommodation_room_id] = $p->occupancy_prices;
+                }
+            }
+        }
+
+        return ['terms' => $terms, 'rooms' => $this->record->rooms()->get(), 'occupancy' => $occupancy];
     }
 }

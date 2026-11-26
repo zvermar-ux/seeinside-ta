@@ -4119,3 +4119,13 @@ msgstr "Нема слободни хотели за %s. Подолу се сит
 
 msgid "Early booking discounts:"
 msgstr "Попусти за рана уплата:"
+
+msgid "%d adult"
+msgid_plural "%d adults"
+msgstr[0] "%d возрасен"
+msgstr[1] "%d возрасни"
+
+msgid "%d child"
+msgid_plural "%d children"
+msgstr[0] "%d дете"
+msgstr[1] "%d деца"

@@ -81,6 +81,9 @@
                                 @if ($mode === 'price' && ($cells[$t->id][$room->id]['cost_price'] ?? null))
                                     <div class="muted">{{ __('purch.') }} {{ $cells[$t->id][$room->id]['cost_price'] }}</div>
                                 @endif
+                                @if ($mode === 'price' && ($occ = $occupancy[$t->id][$room->id] ?? null))
+                                    <div class="muted" title="{{ __('Prices by the people in the room (from the pasted price list)') }}">{{ collect($occ)->map(fn ($v, $k) => $k.': '.(float) $v)->implode(' · ') }}</div>
+                                @endif
                             @endif
                         </td>
                     @endforeach
