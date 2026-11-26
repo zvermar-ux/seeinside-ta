@@ -51,14 +51,20 @@
             <thead>
                 <tr>
                     <th class="first">{{ __('Term') }}</th>
-                    @foreach ($rooms as $room)
+                    @foreach ($cols as $col)
+                        @php $room = $col['room']; @endphp
                         <th>
-                            <div>{{ $room->tr('name') }}</div>
-                            <div class="muted">{{ $room->board?->value }} · {{ $room->max_adults }}+{{ $room->max_children }}</div>
-                            @if ($mode !== 'stop_sale')
+                            @if ($col['occ'] !== null)
+                                <div>{{ trans_choice(':count adult|:count adults', \App\Models\TermPrice::occ($col['occ'])[0]) }}{{ \App\Models\TermPrice::occ($col['occ'])[1] ? ' + '.trans_choice(':count child|:count children', \App\Models\TermPrice::occ($col['occ'])[1]) : '' }}</div>
+                                <div class="muted">{{ $room->tr('name') }} · {{ $col['occ'] }}</div>
+                            @else
+                                <div>{{ $room->tr('name') }}</div>
+                                <div class="muted">{{ $room->board?->value }} · {{ $room->max_adults }}+{{ $room->max_children }}</div>
+                            @endif
+                            @if ($mode !== 'stop_sale' && ($col['occ'] === null || $mode === 'price'))
                                 <div class="tp-fill" x-data="{ v: '' }">
                                     <input type="number" step="0.01" x-model="v" placeholder="{{ __('all') }}" class="tp-in sm">
-                                    <button type="button" x-on:click="$wire.fillColumn({{ $room->id }}, v, true)" title="{{ __('Set for all terms') }}">↓ {{ __('all') }}</button>
+                                    <button type="button" x-on:click="$wire.fillColumn('{{ $col['occ'] !== null && $mode === 'price' ? $col['key'] : $room->id }}', v, true)" title="{{ __('Set for all terms') }}">↓ {{ __('all') }}</button>
                                 </div>
                             @endif
                         </th>
@@ -72,18 +78,24 @@
                         <div style="font-weight:600">{{ $t->date_from->format('d.m') }} – {{ $t->date_to->format('d.m.Y') }}</div>
                         <div class="muted">{{ $t->nights() }} {{ __('nights') }}{{ $t->label ? ' · '.$t->label : '' }}</div>
                     </td>
-                    @foreach ($rooms as $room)
+                    @foreach ($cols as $col)
+                        @php $room = $col['room']; @endphp
                         <td>
                             @if ($mode === 'stop_sale')
-                                <label style="display:flex; align-items:center; gap:.3rem; font-size:.78rem"><x-filament::input.checkbox wire:model="cells.{{ $t->id }}.{{ $room->id }}.stop_sale" /> STOP</label>
-                            @else
+                                @if ($col['first'])
+                                    <label style="display:flex; align-items:center; gap:.3rem; font-size:.78rem"><x-filament::input.checkbox wire:model="cells.{{ $t->id }}.{{ $room->id }}.stop_sale" /> STOP</label>
+                                @else
+                                    <span class="muted">{{ __('same room') }}</span>
+                                @endif
+                            @elseif ($mode === 'price' && $col['occ'] !== null)
+                                <input type="number" step="0.01" wire:model="occ.{{ $t->id }}.{{ $room->id }}.{{ $col['enc'] }}" @class(['tp-in', 'stop' => $cells[$t->id][$room->id]['stop_sale'] ?? false])>
+                            @elseif ($col['first'])
                                 <input type="number" step="0.01" wire:model="cells.{{ $t->id }}.{{ $room->id }}.{{ $mode }}" @class(['tp-in', 'stop' => $cells[$t->id][$room->id]['stop_sale'] ?? false])>
                                 @if ($mode === 'price' && ($cells[$t->id][$room->id]['cost_price'] ?? null))
                                     <div class="muted">{{ __('purch.') }} {{ $cells[$t->id][$room->id]['cost_price'] }}</div>
                                 @endif
-                                @if ($mode === 'price' && ($occ = $occupancy[$t->id][$room->id] ?? null))
-                                    <div class="muted" title="{{ __('Prices by the people in the room (from the pasted price list)') }}">{{ collect($occ)->map(fn ($v, $k) => $k.': '.(float) $v)->implode(' · ') }}</div>
-                                @endif
+                            @else
+                                <span class="muted">{{ __('same room') }}</span>
                             @endif
                         </td>
                     @endforeach

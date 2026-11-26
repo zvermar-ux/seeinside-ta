@@ -2214,5 +2214,8 @@
     "This room is not in the old system – the booking is only in the new app.": "Оваа соба ја нема во старата апликација – резервацијата е само во новата апликација.",
     "people, e.g. 2+1": "лица, на пр. 2+1",
     "Empty = price of the room; 2 / 2+1 / 3+1 = price for that many adults + children in it": "Празно = цена на собата; 2 / 2+1 / 3+1 = цена за толку возрасни + деца во неа",
-    "Prices by the people in the room (from the pasted price list)": "Цени според бројот на лица во собата (од залепениот ценовник)"
+    "Prices by the people in the room (from the pasted price list)": "Цени според бројот на лица во собата (од залепениот ценовник)",
+    ":count adult|:count adults": ":count возрасен|:count возрасни",
+    ":count child|:count children": ":count дете|:count деца",
+    "same room": "иста соба"
 }

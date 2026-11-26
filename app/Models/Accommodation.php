@@ -34,6 +34,7 @@ class Accommodation extends Model
         return array_fill_keys(self::TRANSLATABLE, 'array') + [
             'payment_policy' => 'array',
             'manual_prices' => 'boolean',
+            'price_list_map' => 'array',
             'type' => AccommodationType::class,
             'stars' => 'integer',
             'board_types' => 'array',

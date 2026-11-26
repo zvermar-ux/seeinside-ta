@@ -23,6 +23,9 @@ class TermPrices extends Page
     /** [termId][roomId] => ['price' => , 'cost_price' => , 'stop_sale' => ] */
     public array $cells = [];
 
+    /** prices by the people in the room: [termId][roomId]["2p1"] => price */
+    public array $occ = [];
+
     public string $mode = 'price';
 
     public bool $past = false;
@@ -61,10 +64,46 @@ class TermPrices extends Page
         $this->loadCells();
     }
 
+    /** "2+1" ⇄ "2p1" (a key Livewire can use) */
+    public static function enc(string $occ): string
+    {
+        return str_replace('+', 'p', $occ);
+    }
+
+    public static function dec(string $enc): string
+    {
+        return str_replace('p', '+', $enc);
+    }
+
+    /** the columns of the matrix: one per room, or one per number of people of a room (2, 2+1 …) */
+    public function columns(): array
+    {
+        $occs = [];
+        foreach (TermPrice::query()->whereIn('stay_term_id', $this->record->stayTerms()->select('id'))->whereNotNull('occupancy_prices')->get(['accommodation_room_id', 'occupancy_prices']) as $p) {
+            foreach (array_keys(array_filter((array) $p->occupancy_prices, fn ($v) => $v !== null && $v !== '')) as $k) {
+                $occs[$p->accommodation_room_id][(string) $k] = true;
+            }
+        }
+        $cols = [];
+        foreach ($this->record->rooms()->get() as $room) {
+            $list = array_keys($occs[$room->id] ?? []);
+            usort($list, fn ($a, $b) => TermPrice::occ($a) <=> TermPrice::occ($b));
+            if (! $list) {
+                $cols[] = ['key' => (string) $room->id, 'room' => $room, 'occ' => null, 'first' => true];
+            }
+            foreach ($list as $i => $o) {
+                $cols[] = ['key' => $room->id.':'.self::enc($o), 'room' => $room, 'occ' => $o, 'enc' => self::enc($o), 'first' => $i === 0];
+            }
+        }
+
+        return $cols;
+    }
+
     protected function loadCells(): void
     {
         $rooms = $this->record->rooms()->pluck('id');
         $this->cells = [];
+        $this->occ = [];
         foreach ($this->terms() as $t) {
             foreach ($rooms as $rid) {
                 $p = $t->prices->firstWhere('accommodation_room_id', $rid);
@@ -73,16 +112,38 @@ class TermPrices extends Page
                     'cost_price' => $p?->cost_price !== null ? (float) $p->cost_price : null,
                     'stop_sale' => (bool) $p?->stop_sale,
                 ];
+                foreach ((array) $p?->occupancy_prices as $k => $v) {
+                    $this->occ[$t->id][$rid][self::enc((string) $k)] = $v !== null && $v !== '' ? (float) $v : null;
+                }
+            }
+        }
+        // every term has every people-column of a room (empty when not priced)
+        foreach ($this->columns() as $c) {
+            if ($c['occ'] !== null) {
+                foreach (array_keys($this->cells) as $tid) {
+                    $this->occ[$tid][$c['room']->id][$c['enc']] ??= null;
+                }
             }
         }
     }
 
     /** same value for a whole room column (only empty cells unless $overwrite) */
-    public function fillColumn(int $roomId, $value, bool $overwrite = false): void
+    public function fillColumn(string $key, $value, bool $overwrite = false): void
     {
         if ($value === null || $value === '') {
             return;
         }
+        if (str_contains($key, ':')) {   // a people-column (2+1 …): sale prices only
+            [$rid, $enc] = explode(':', $key, 2);
+            foreach ($this->occ as $tid => $row) {
+                if ($overwrite || ($row[$rid][$enc] ?? null) === null) {
+                    $this->occ[$tid][$rid][$enc] = (float) $value;
+                }
+            }
+
+            return;
+        }
+        $roomId = (int) $key;
         foreach ($this->cells as $tid => $row) {
             if (array_key_exists($roomId, $row) && ($overwrite || $row[$roomId][$this->mode] === null)) {
                 $this->cells[$tid][$roomId][$this->mode] = (float) $value;
@@ -121,6 +182,19 @@ class TermPrices extends Page
                         }
                         $num = fn ($v) => ($v === null || $v === '') ? null : (float) $v;
                         $vals = ['price' => $num($c['price'] ?? null), 'cost_price' => $num($c['cost_price'] ?? null), 'stop_sale' => (bool) ($c['stop_sale'] ?? false)];
+                        // prices by the people in the room: kept, the room price = the cheapest of them
+                        if (isset($this->occ[$tid][$rid])) {
+                            $op = [];
+                            foreach ($this->occ[$tid][$rid] as $enc => $v) {
+                                if ($num($v) !== null) {
+                                    $op[self::dec((string) $enc)] = $num($v);
+                                }
+                            }
+                            $vals['occupancy_prices'] = $op ?: null;
+                            if ($op) {
+                                $vals['price'] = min($op);
+                            }
+                        }
                         $existing = TermPrice::where('stay_term_id', $tid)->where('accommodation_room_id', $rid)->first();
                         if ($vals['price'] === null && $vals['cost_price'] === null && ! $vals['stop_sale']) {
                             $existing?->delete();
@@ -128,7 +202,7 @@ class TermPrices extends Page
                             continue;
                         }
                         // a price changed here by hand is kept by the sync with the old system
-                        if (! $existing || (float) $existing->price !== (float) $vals['price']) {
+                        if (! $existing || (float) $existing->price !== (float) $vals['price'] || ($vals['occupancy_prices'] ?? null) != ($existing->occupancy_prices ?: null)) {
                             $vals['price_manual'] = $vals['price'] !== null;
                         }
                         $existing ? $existing->update($vals) : TermPrice::create($vals + ['stay_term_id' => $tid, 'accommodation_room_id' => $rid]);
@@ -139,6 +213,7 @@ class TermPrices extends Page
             TermPrice::$quiet = false;
         }
         $this->record->touch();
+        $this->loadCells();
         Notification::make()->success()->title(__('Saved'))->send();
     }
 
@@ -220,6 +295,7 @@ class TermPrices extends Page
             ->fillForm(function () use ($rooms) {
                 $pl = $this->knownList();
                 $data = ['year' => (int) ($pl['year'] ?? now()->addYear()->year), 'manual' => true, 'table' => ''];
+                $saved = (array) ($this->record->price_list_map ?? []);
                 if ($pl) {
                     $data['table'] = collect($pl['terms'])->map(fn ($row, $k) => $k.' '.implode(' ', $row))->implode("\n");
                     // each column to the room with the most similar name
@@ -240,6 +316,15 @@ class TermPrices extends Page
                         $data['occ_'.$i] = self::occFromName($col);
                     }
                 }
+                // what you chose the last time
+                if (! empty($saved['table'])) {
+                    $data['table'] = $saved['table'];
+                }
+                foreach ((array) ($saved['cols'] ?? []) as $i => $c) {
+                    $data['col_'.$i] = $c['room'] ?? null;
+                    $data['occ_'.$i] = $c['occ'] ?? null;
+                }
+                $data['year'] = (int) ($saved['year'] ?? $data['year']);
 
                 return $data;
             })
@@ -325,7 +410,14 @@ class TermPrices extends Page
                 } finally {
                     TermPrice::$quiet = false;
                 }
-                $a->forceFill(['manual_prices' => (bool) ($data['manual'] ?? false), 'book_by_terms' => true])->save();
+                $remember = [];
+                for ($i = 0; $i < 8; $i++) {
+                    if (array_key_exists('col_'.$i, $data)) {
+                        $remember[$i] = ['room' => $data['col_'.$i] ? (int) $data['col_'.$i] : null, 'occ' => trim((string) ($data['occ_'.$i] ?? '')) ?: null];
+                    }
+                }
+                $a->forceFill(['manual_prices' => (bool) ($data['manual'] ?? false), 'book_by_terms' => true,
+                    'price_list_map' => ['cols' => $remember, 'year' => (int) $data['year'], 'table' => (string) $data['table']]])->save();
                 $a->touch();
                 $this->loadCells();
                 Notification::make()->success()->title(__('Saved'))
@@ -336,15 +428,7 @@ class TermPrices extends Page
     protected function getViewData(): array
     {
         $terms = $this->terms();
-        $occupancy = [];
-        foreach ($terms as $t) {
-            foreach ($t->prices as $p) {
-                if ($p->occupancy_prices) {
-                    $occupancy[$t->id][$p->accommodation_room_id] = $p->occupancy_prices;
-                }
-            }
-        }
 
-        return ['terms' => $terms, 'rooms' => $this->record->rooms()->get(), 'occupancy' => $occupancy];
+        return ['terms' => $terms, 'rooms' => $this->record->rooms()->get(), 'cols' => $this->columns()];
     }
 }
