@@ -1298,3 +1298,40 @@ figure.attachment figcaption { font-size: .85rem; color: #64748b; margin-top: .3
 .sta-ht-busy { margin: 0 0 .8rem; padding: .8rem 1rem; border-radius: 14px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: .95rem; line-height: 1.45; }
 .sta-ht-busy + [data-ht-alt] .sta-ht-alt { margin: 0 0 1rem; }
 .sta-finder-cell.is-busy .sta-c-price.is-ask:empty { display: none; }
+
+/* fixed terms – like the agency's price list: discounts band, orange room header, green term column, compact cells */
+.sta-pl { --pl-head: #f59e0b; --pl-term: #d9f99d; --pl-band: #fef9c3; --pl-line: #e5e7eb; }
+.sta-pl-band { padding: .5rem .8rem; background: var(--pl-band); border: 1px solid #fde68a; border-bottom: 0; border-radius: 12px 12px 0 0; font-size: .88rem; color: #713f12; text-align: center; line-height: 1.5; }
+.sta-pl-band b { color: #b91c1c; }
+.sta-pl .sta-table-wrap { border: 1px solid var(--pl-line); border-radius: 12px; overflow-x: auto; }
+.sta-pl-band + .sta-table-wrap { border-radius: 0 0 12px 12px; }
+.sta-pl-table { width: 100%; border-collapse: collapse !important; margin: 0 !important; font-size: .92rem; }
+.sta-pl-table th, .sta-pl-table td { padding: .3rem .45rem !important; border: 0 !important; border-bottom: 1px solid var(--pl-line) !important; text-align: center; vertical-align: middle; }
+.sta-pl-table thead th { background: var(--pl-head) !important; color: #1f2937 !important; font-weight: 700; font-size: .85rem; text-transform: none; letter-spacing: 0; line-height: 1.25; }
+.sta-pl-table thead th small { color: #422006 !important; opacity: .8; font-size: .7rem !important; }
+.sta-pl-table tbody td:first-child, .sta-pl-table thead th:first-child { position: sticky; left: 0; z-index: 1; text-align: left; }
+.sta-pl-table tbody td:first-child { background: var(--pl-term) !important; white-space: nowrap; width: 1%; }
+.sta-pl-table thead th:first-child { width: 1%; }
+.sta-pl-table tbody td:first-child b { font-size: .88rem; color: #1f2937; }
+.sta-pl-table tbody td:first-child small { font-size: .68rem !important; }
+.sta-pl-table tbody tr:nth-child(even) td:not(:first-child) { background: #fafafa; }
+.sta-pl .sta-term-cell { min-width: 0 !important; width: auto; align-items: center !important; padding: .2rem .35rem !important; margin: 0 auto; border-radius: 8px; border: 1px solid transparent !important; background: transparent !important; box-shadow: none !important; line-height: 1.2; }
+.sta-pl button.sta-term-cell:hover { border-color: var(--sta-primary) !important; background: #fff !important; }
+.sta-pl .sta-term-cell b { color: #111827 !important; font-size: .95rem; font-weight: 800; }
+.sta-pl .sta-term-cell small { font-size: .7rem !important; margin: 0; }
+.sta-pl .sta-term-cell small.is-promo { color: #059669 !important; font-weight: 700; }
+.sta-pl .sta-term-cell small.is-full { color: #b91c1c !important; font-weight: 700; }
+.sta-pl td.is-full .sta-term-cell { opacity: .6; }
+/* 3 – 5 rooms: smaller and tighter */
+.sta-pl.is-three .sta-pl-table { font-size: .86rem; }
+.sta-pl.is-many .sta-pl-table { font-size: .8rem; }
+.sta-pl.is-many .sta-pl-table th, .sta-pl.is-many .sta-pl-table td { padding: .22rem .3rem !important; }
+.sta-pl.is-many .sta-pl-table thead th { font-size: .74rem; }
+.sta-pl.is-many .sta-term-cell b, .sta-pl.is-three .sta-term-cell b { font-size: .85rem; }
+.sta-pl.is-many .sta-term-cell small { font-size: .64rem !important; }
+@media (max-width: 640px) {
+  .sta-pl-table { font-size: .8rem; }
+  .sta-pl-table th, .sta-pl-table td { padding: .22rem .28rem !important; }
+  .sta-pl .sta-term-cell b { font-size: .82rem; }
+  .sta-pl-table tbody td:first-child b { font-size: .76rem; }
+}

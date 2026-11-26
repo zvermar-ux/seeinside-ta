@@ -728,14 +728,19 @@ class STA_Render
         }
         $quick = ! isset($d['booking']['enabled']) || ! empty($d['booking']['enabled']);
         $per = ($t['price_type'] ?? '') === 'per_person' ? __('Prices per person for the whole term.', 'seeinside-travel') : __('Prices per room / apartment for the whole term.', 'seeinside-travel');
-        $html .= '<div class="sta-terms" data-sta-terms data-slug="'.esc_attr($d['slug']).'" data-currency="'.esc_attr($currency).'" data-price-type="'.esc_attr($t['price_type'] ?? 'per_room').'">';
-        $html .= '<div class="sta-table-wrap"><table class="sta-table sta-terms-table"><thead><tr><th>'.esc_html__('Term', 'seeinside-travel').'</th>';
+        // looks like the agency's price list: discounts band, rooms in columns, the price-list price in each cell
+        $steps = (array) ($d['promotions']['first_minute']['steps'] ?? []);
+        $band = $steps ? '<div class="sta-pl-band">'.esc_html__('Early booking discounts:', 'seeinside-travel').' '.implode(' · ', array_map(
+            fn ($x) => '<b>−'.esc_html(rtrim(rtrim(number_format((float) $x['percent'], 2, '.', ''), '0'), '.')).'%</b> '.esc_html(sprintf(__('until %s', 'seeinside-travel'), sta_date($x['until']))),
+            $steps)).'</div>' : '';
+        $html .= '<div class="sta-terms sta-pl'.(count($rooms) >= 4 ? ' is-many' : (count($rooms) === 3 ? ' is-three' : '')).'" data-sta-terms data-slug="'.esc_attr($d['slug']).'" data-currency="'.esc_attr($currency).'" data-price-type="'.esc_attr($t['price_type'] ?? 'per_room').'">';
+        $html .= $band.'<div class="sta-table-wrap"><table class="sta-table sta-terms-table sta-pl-table"><thead><tr><th>'.esc_html__('Term', 'seeinside-travel').'</th>';
         foreach ($rooms as $r) {
             $html .= '<th>'.esc_html(sta_t($r['name'])).($r['board'] ? '<small>'.esc_html($r['board']).' · '.(int) $r['max_adults'].'+'.(int) $r['max_children'].'</small>' : '').'</th>';
         }
         $html .= '</tr></thead><tbody>';
         foreach ($t['terms'] as $term) {
-            $html .= '<tr data-term="'.(int) $term['id'].'" data-from="'.esc_attr($term['from']).'" data-to="'.esc_attr($term['to']).'"><td><b>'.esc_html(sta_date($term['from'])).' – '.esc_html(sta_date($term['to'])).'</b><small>'.(int) $term['nights'].' '.esc_html__('nights', 'seeinside-travel').($term['label'] ? ' · '.esc_html($term['label']) : '').'</small></td>';
+            $html .= '<tr data-term="'.(int) $term['id'].'" data-from="'.esc_attr($term['from']).'" data-to="'.esc_attr($term['to']).'"><td><b>'.esc_html(date_i18n('d.m', strtotime($term['from']))).'–'.esc_html(sta_date($term['to'])).'</b><small>'.(int) $term['nights'].' '.esc_html__('nights', 'seeinside-travel').($term['label'] ? ' · '.esc_html($term['label']) : '').'</small></td>';
             foreach ($rooms as $r) {
                 $c = $term['rooms'][$r['id']] ?? ($term['rooms'][(string) $r['id']] ?? null);
                 if (! $c) {
@@ -743,9 +748,13 @@ class STA_Render
                     continue;
                 }
                 $full = $c['free'] !== null && (int) $c['free'] < 1;
-                $cell = (! empty($c['regular']) && $c['regular'] > $c['price'] ? '<del>'.esc_html(sta_money($c['regular'], $currency)).'</del>' : '')
-                    .'<b>'.esc_html(sta_money($c['price'], $currency)).'</b>'
-                    .'<small'.(! $full && $c['free'] !== null && (int) $c['free'] <= 2 ? ' class="is-few"' : '').'>'.esc_html($full ? __('Booked', 'seeinside-travel') : ($c['free'] !== null && (int) $c['free'] <= 2 ? sprintf(_n('Only %d left!', 'Only %d left!', (int) $c['free'], 'seeinside-travel'), (int) $c['free']) : ($c['free'] !== null ? sprintf(_n('%d free', '%d free', (int) $c['free'], 'seeinside-travel'), (int) $c['free']) : __('Free', 'seeinside-travel')))).'</small>';
+                $few = ! $full && $c['free'] !== null && (int) $c['free'] <= 2;
+                $reg = ! empty($c['regular']) && $c['regular'] > $c['price'] ? (float) $c['regular'] : null;
+                // the price of the price list, and under it the price with today's discount
+                $cell = '<b>'.esc_html(sta_money($reg ?? $c['price'], $currency)).'</b>'
+                    .($full ? '<small class="is-full">'.esc_html__('Booked', 'seeinside-travel').'</small>'
+                        : ($reg ? '<small class="is-promo">'.esc_html(sta_money($c['price'], $currency)).'</small>' : '')
+                        .($few ? '<small class="is-few">'.esc_html(sprintf(_n('Only %d left!', 'Only %d left!', (int) $c['free'], 'seeinside-travel'), (int) $c['free'])).'</small>' : ''));
                 $html .= $full || ! $quick
                     ? '<td class="'.($full ? 'is-full' : '').'"><span class="sta-term-cell">'.$cell.'</span></td>'
                     : '<td><button type="button" class="sta-term-cell" data-room="'.(int) $r['id'].'" data-room-name="'.esc_attr(sta_t($r['name'])).'" data-price="'.esc_attr($c['price']).'">'.$cell.'</button></td>';

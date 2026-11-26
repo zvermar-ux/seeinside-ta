@@ -4116,3 +4116,6 @@ msgstr "Нема слободно место за избраните датум�
 
 msgid "No free hotels for %s. Below are all hotels – open one, or choose one of the closest free dates."
 msgstr "Нема слободни хотели за %s. Подолу се сите хотели – отворете хотел или изберете некој од најблиските слободни термини."
+
+msgid "Early booking discounts:"
+msgstr "Попусти за рана уплата:"
