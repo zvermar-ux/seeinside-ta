@@ -716,6 +716,7 @@
             else {
               if (reg) h += '<small class="is-promo">' + esc(money(c.price, d.currency || cur)) + '</small>';
               if (c.free !== null && c.free <= 2) h += '<small class="is-few">' + esc((T.onlyLeft || '%d').replace('%d', c.free)) + '</small>';
+              else if (c.free !== null) h += '<small class="is-free">' + esc(c.free + ' ' + T.freeUnits) + '</small>';
             }
             b.innerHTML = h;
             b.disabled = full; b.closest('td').classList.toggle('is-full', full);

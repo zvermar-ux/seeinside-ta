@@ -763,7 +763,8 @@ class STA_Render
                 $cell = '<b>'.esc_html(sta_money($reg ?? $c['price'], $currency)).'</b>'
                     .($full ? '<small class="is-full">'.esc_html__('Booked', 'seeinside-travel').'</small>'
                         : ($reg ? '<small class="is-promo">'.esc_html(sta_money($c['price'], $currency)).'</small>' : '')
-                        .($few ? '<small class="is-few">'.esc_html(sprintf(_n('Only %d left!', 'Only %d left!', (int) $c['free'], 'seeinside-travel'), (int) $c['free'])).'</small>' : ''));
+                        .($few ? '<small class="is-few">'.esc_html(sprintf(_n('Only %d left!', 'Only %d left!', (int) $c['free'], 'seeinside-travel'), (int) $c['free'])).'</small>'
+                            : ($c['free'] !== null ? '<small class="is-free">'.esc_html(sprintf(_n('%d free', '%d free', (int) $c['free'], 'seeinside-travel'), (int) $c['free'])).'</small>' : '')));
                 $html .= $full || ! $quick
                     ? '<td class="'.($full ? 'is-full' : '').'"><span class="sta-term-cell">'.$cell.'</span></td>'
                     : '<td><button type="button" class="sta-term-cell" data-key="'.esc_attr($r['key']).'" data-room="'.(int) $r['room_id'].'" data-room-name="'.esc_attr(sta_t($r['name'])).'" data-price="'.esc_attr($c['price']).'"'
