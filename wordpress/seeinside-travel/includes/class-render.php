@@ -760,9 +760,10 @@ class STA_Render
                 $few = ! $full && $c['free'] !== null && (int) $c['free'] <= 2;
                 $reg = ! empty($c['regular']) && $c['regular'] > $c['price'] ? (float) $c['regular'] : null;
                 // the price of the price list, and under it the price with today's discount
-                $cell = '<b>'.esc_html(sta_money($reg ?? $c['price'], $currency)).'</b>'
+                // today's price big, the price-list price small and crossed out above it
+                $cell = ($reg ? '<del class="is-reg">'.esc_html(sta_money($reg, $currency)).'</del>' : '').'<b>'.esc_html(sta_money($c['price'], $currency)).'</b>'
                     .($full ? '<small class="is-full">'.esc_html__('Booked', 'seeinside-travel').'</small>'
-                        : ($reg ? '<small class="is-promo">'.esc_html(sta_money($c['price'], $currency)).'</small>' : '')
+                        : ''
                         .($few ? '<small class="is-few">'.esc_html(sprintf(_n('Only %d left!', 'Only %d left!', (int) $c['free'], 'seeinside-travel'), (int) $c['free'])).'</small>'
                             : ($c['free'] !== null ? '<small class="is-free">'.esc_html(sprintf(_n('%d free', '%d free', (int) $c['free'], 'seeinside-travel'), (int) $c['free'])).'</small>' : '')));
                 $html .= $full || ! $quick

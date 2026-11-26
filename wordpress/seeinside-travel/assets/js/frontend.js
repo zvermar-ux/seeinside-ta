@@ -711,10 +711,9 @@
             var c = (t.cells && b.dataset.key) ? t.cells[b.dataset.key] : t.rooms[b.dataset.room]; if (!c) return;
             var full = c.free !== null && c.free < 1, reg = c.regular && c.regular > c.price ? c.regular : null;
             // price-list look: the list price, today's price under it, "only N left" / booked
-            var h = '<b>' + esc(money(reg || c.price, d.currency || cur)) + '</b>';
+            var h = (reg ? '<del class="is-reg">' + esc(money(reg, d.currency || cur)) + '</del>' : '') + '<b>' + esc(money(c.price, d.currency || cur)) + '</b>';
             if (full) h += '<small class="is-full">' + esc(T.booked) + '</small>';
             else {
-              if (reg) h += '<small class="is-promo">' + esc(money(c.price, d.currency || cur)) + '</small>';
               if (c.free !== null && c.free <= 2) h += '<small class="is-few">' + esc((T.onlyLeft || '%d').replace('%d', c.free)) + '</small>';
               else if (c.free !== null) h += '<small class="is-free">' + esc(c.free + ' ' + T.freeUnits) + '</small>';
             }
