@@ -342,3 +342,18 @@ Artisan::command('aries:probe {code : package Id in Aries, e.g. 28} {date : firs
     }
     $this->line('first raw row: '.json_encode(($api->packageSearch(['checkin' => $d, 'package' => $this->argument('code'), 'adults' => 2] + $where))[0] ?? null, JSON_UNESCAPED_UNICODE));
 })->purpose('Raw answers of the old Aries system for one package and date');
+
+// the bank's answer for the last card payments (for Halk / Payten support) – no card data, no hashes
+Artisan::command('pay:last {n=3}', function () {
+    foreach (\App\Models\OnlinePayment::withoutGlobalScopes()->latest('id')->limit((int) $this->argument('n'))->get() as $p) {
+        $r = (array) $p->response;
+        $this->line("{$p->created_at} | {$p->oid} | {$p->amount} {$p->currency} | {$p->status} | {$p->message}");
+        foreach (['Response', 'ProcReturnCode', 'ErrMsg', 'mdStatus', 'mdErrorMsg', 'ErrCode', 'TransId', 'currency', 'amount', 'storetype', 'TranType', 'clientid', 'EXTRA_HOSTMSG', 'HostRefNum'] as $k) {
+            foreach ($r as $rk => $rv) {
+                if (strcasecmp($rk, $k) === 0 && $rv !== '' && $rv !== null) {
+                    $this->line('    '.$rk.' = '.(is_scalar($rv) ? $rv : json_encode($rv)));
+                }
+            }
+        }
+    }
+})->purpose('Last card payments and what the bank answered');
