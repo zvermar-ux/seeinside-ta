@@ -165,8 +165,21 @@ class AccommodationResource extends Resource
                                 ->visible(fn (Get $get) => (bool) $get('transport.enabled')),
                             Forms\Components\TextInput::make('transport.child_age_to')->label(__('Child price up to (years)'))->numeric()->default(12)
                                 ->visible(fn (Get $get) => (bool) $get('transport.enabled')),
-                            Forms\Components\Select::make('transport.places')->label(__('Departure places'))->multiple()->columnSpan(2)
-                                ->options(fn () => \App\Models\DeparturePlace::orderBy('sort_order')->get()->mapWithKeys(fn ($p) => [$p->id => $p->tr('name')]))
+                            // each city with its own time and price (empty price = the price above), like the tours
+                            Forms\Components\Repeater::make('transport.departures')->label(__('Departure places'))->columnSpanFull()
+                                ->schema([
+                                    Forms\Components\Select::make('place')->label(__('City'))->required()
+                                        ->options(fn () => \App\Models\DeparturePlace::orderBy('sort_order')->get()->mapWithKeys(fn ($p) => [$p->id => $p->tr('name')])),
+                                    Forms\Components\TextInput::make('time')->label(__('Time'))->placeholder('05:30')->maxLength(20),
+                                    Forms\Components\TextInput::make('price_adult')->label(__('Price per adult'))->numeric()->placeholder(__('as above')),
+                                    Forms\Components\TextInput::make('price_child')->label(__('Price per child'))->numeric()->placeholder(__('as above')),
+                                ])->columns(4)->defaultItems(0)->reorderable()->addActionLabel(__('Add city'))
+                                ->afterStateHydrated(function (Forms\Components\Repeater $component, $state, Get $get) {
+                                    // the old list of cities (only names) becomes rows
+                                    if (! $state && ($old = (array) $get('transport.places'))) {
+                                        $component->state(collect($old)->mapWithKeys(fn ($id) => [(string) \Illuminate\Support\Str::uuid() => ['place' => (int) $id, 'time' => null, 'price_adult' => null, 'price_child' => null]])->all());
+                                    }
+                                })
                                 ->visible(fn (Get $get) => (bool) $get('transport.enabled')),
                             Forms\Components\TextInput::make('transport.note')->label(__('Note (departure time, meeting point…)'))->columnSpanFull()
                                 ->visible(fn (Get $get) => (bool) $get('transport.enabled')),

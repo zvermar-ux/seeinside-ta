@@ -383,11 +383,14 @@
         var trb = $('[data-sta-transport]', form), trc = trb && $('[name="with_transport"]', trb);
         if (trb) { var pl = $('[data-sta-transport-place]', trb); if (pl) pl.hidden = !trc.checked; }
         if (sum !== null && trc && trc.checked) {
-          var add = adults * (+trb.dataset.adult || 0);
+          // the price of the chosen city when it has its own, otherwise the general one
+          var po = ($('[name="departure_place_id"]', trb) || {}).selectedOptions, pod = po && po[0] && po[0].dataset.adult ? po[0].dataset : null;
+          var pA = +(pod ? pod.adult : trb.dataset.adult) || 0, pC = +(pod ? pod.child : trb.dataset.child) || 0;
+          var add = adults * pA;
           var agesIn = $$('[name="children_ages[]"]', form);
           for (var ci = 0; ci < kids; ci++) {
             var age = agesIn[ci] && agesIn[ci].value !== '' ? +agesIn[ci].value : null;
-            add += age !== null && age < +trb.dataset.free ? 0 : age !== null && age > +trb.dataset.childTo ? +trb.dataset.adult || 0 : +trb.dataset.child || 0;
+            add += age !== null && age < +trb.dataset.free ? 0 : age !== null && age > +trb.dataset.childTo ? pA : pC;
           }
           sum += add;
         }

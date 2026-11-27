@@ -316,7 +316,16 @@ class CatalogPresenter
                 'type' => $a->transport['type'] ?? 'bus',
                 'price_adult' => (float) $a->transport['price_adult'], 'price_child' => isset($a->transport['price_child']) && $a->transport['price_child'] !== '' ? (float) $a->transport['price_child'] : null,
                 'free_under' => (int) ($a->transport['free_under'] ?? 2), 'child_age_to' => (int) ($a->transport['child_age_to'] ?? 12),
-                'places' => \App\Models\DeparturePlace::whereIn('id', (array) ($a->transport['places'] ?? []))->orderBy('sort_order')->get()->map(fn ($p) => ['id' => $p->id, 'name' => $p->trAll('name')])->values()->all(),
+                'places' => (function () use ($a) {
+                    $rows = $a->transportPlaces();
+                    $names = \App\Models\DeparturePlace::whereIn('id', array_column($rows, 'place'))->get()->keyBy('id');
+
+                    return collect($rows)->filter(fn ($r) => $names->has((int) $r['place']))->map(fn ($r) => [
+                        'id' => (int) $r['place'], 'name' => $names[(int) $r['place']]->trAll('name'), 'time' => $r['time'] ?: null,
+                        'price_adult' => filled($r['price_adult'] ?? null) ? (float) $r['price_adult'] : null,
+                        'price_child' => filled($r['price_child'] ?? null) ? (float) $r['price_child'] : null,
+                    ])->values()->all();
+                })(),
                 'note' => $a->transport['note'] ?? null,
             ] : null,
             'book_by_terms' => (bool) $a->book_by_terms,

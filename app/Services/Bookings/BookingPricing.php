@@ -72,7 +72,7 @@ class BookingPricing
             }
             // organized transport sold with the stay
             if ($item->hasTransport() && in_array($b->transport, ['bus', 'flight'], true)) {
-                $tp = $item->transportPrice((int) $b->adults, (array) $b->children_ages, (int) $b->children);
+                $tp = $item->transportPrice((int) $b->adults, (array) $b->children_ages, (int) $b->children, $b->departure_place_id ? (int) $b->departure_place_id : null);
                 if ($tp > 0) {
                     $lines[] = self::line('supplement', __('Transport').' ('.($b->transport === 'flight' ? __('Plane') : __('Bus')).($b->departurePlace ? ', '.$b->departurePlace->tr('name') : '').')', 1, $tp);
                 }

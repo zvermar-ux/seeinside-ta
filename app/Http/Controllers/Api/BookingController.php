@@ -231,10 +231,10 @@ class BookingController extends Controller
         // stay + organized transport (bus / plane) from the agency
         if ($item instanceof Accommodation && ! empty($data['with_transport']) && $item->hasTransport()) {
             $booking->transport = $item->transport['type'] ?? 'bus';
-            if (! empty($data['departure_place_id']) && in_array((int) $data['departure_place_id'], array_map('intval', (array) ($item->transport['places'] ?? [])), true)) {
+            if (! empty($data['departure_place_id']) && $item->transportPlace((int) $data['departure_place_id'])) {
                 $booking->departure_place_id = (int) $data['departure_place_id'];
             }
-            $tp = $item->transportPrice($adults, (array) ($data['children_ages'] ?? []), $children);
+            $tp = $item->transportPrice($adults, (array) ($data['children_ages'] ?? []), $children, $booking->departure_place_id);
             $total = $total !== null ? $total + $tp : null;
         }
 

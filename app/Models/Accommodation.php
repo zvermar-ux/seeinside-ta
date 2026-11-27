@@ -64,6 +64,29 @@ class Accommodation extends Model
         });
     }
 
+    /** Departure cities of the transport: [{place, time, price_adult, price_child}] (older: only ids in "places") */
+    public function transportPlaces(): array
+    {
+        $t = (array) $this->transport;
+        $rows = array_values(array_filter((array) ($t['departures'] ?? []), fn ($r) => ! empty($r['place'])));
+        if (! $rows && ! array_key_exists('departures', $t)) {   // not saved with the new rows yet
+            $rows = array_map(fn ($id) => ['place' => (int) $id, 'time' => null, 'price_adult' => null, 'price_child' => null], (array) ($t['places'] ?? []));
+        }
+
+        return $rows;
+    }
+
+    public function transportPlace(int $placeId): ?array
+    {
+        foreach ($this->transportPlaces() as $r) {
+            if ((int) $r['place'] === $placeId) {
+                return $r;
+            }
+        }
+
+        return null;
+    }
+
     /** Organized transport offered with the stay (bus / plane) */
     public function hasTransport(): bool
     {
@@ -71,14 +94,16 @@ class Accommodation extends Model
     }
 
     /** Price of the transport for a party; children by age (infants free, children's price, older = adult) */
-    public function transportPrice(int $adults, array $childAges = [], int $children = 0): float
+    public function transportPrice(int $adults, array $childAges = [], int $children = 0, ?int $placeId = null): float
     {
         if (! $this->hasTransport()) {
             return 0.0;
         }
         $t = (array) $this->transport;
-        $adult = (float) ($t['price_adult'] ?? 0);
-        $child = (float) (($t['price_child'] ?? null) !== null && $t['price_child'] !== '' ? $t['price_child'] : $adult);
+        $row = $placeId ? $this->transportPlace($placeId) : null;
+        $adult = (float) (filled($row['price_adult'] ?? null) ? $row['price_adult'] : ($t['price_adult'] ?? 0));
+        $childDefault = ($t['price_child'] ?? null) !== null && $t['price_child'] !== '' ? $t['price_child'] : ($t['price_adult'] ?? 0);
+        $child = (float) (filled($row['price_child'] ?? null) ? $row['price_child'] : (filled($row['price_adult'] ?? null) && ! filled($t['price_child'] ?? null) ? $row['price_adult'] : $childDefault));
         $free = (int) ($t['free_under'] ?? 2);
         $childTo = (int) ($t['child_age_to'] ?? 12);
         $sum = $adults * $adult;

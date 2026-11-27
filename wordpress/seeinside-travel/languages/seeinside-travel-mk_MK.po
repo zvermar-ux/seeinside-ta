@@ -4129,3 +4129,6 @@ msgid "%d child"
 msgid_plural "%d children"
 msgstr[0] "%d дете"
 msgstr[1] "%d деца"
+
+msgid "%1$s adult / %2$s child"
+msgstr "%1$s возрасен / %2$s дете"

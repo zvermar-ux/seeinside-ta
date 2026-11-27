@@ -119,8 +119,15 @@ $termPriceType = $d['terms']['price_type'] ?? '';
             <?php if (! empty($tr['places'])) : ?>
                 <label class="sta-field" data-sta-transport-place hidden><span><?php esc_html_e('Departure place', 'seeinside-travel'); ?></span>
                     <select name="departure_place_id">
-                        <?php foreach ($tr['places'] as $p) : ?>
-                            <option value="<?php echo (int) $p['id']; ?>"><?php echo esc_html(sta_t($p['name'])); ?></option>
+                        <?php foreach ($tr['places'] as $p) :
+                            // each city: its time and (when it has one) its own price
+                            $pa = $p['price_adult'] ?? null;
+                            $pc = $p['price_child'] ?? null;
+                            $extra = array_filter([
+                                ! empty($p['time']) ? (string) $p['time'] : null,
+                                $pa !== null ? sprintf(__('%1$s adult / %2$s child', 'seeinside-travel'), sta_money($pa, $currency), sta_money($pc ?? $pa, $currency)) : null,
+                            ]); ?>
+                            <option value="<?php echo (int) $p['id']; ?>"<?php if ($pa !== null) : ?> data-adult="<?php echo esc_attr($pa); ?>" data-child="<?php echo esc_attr($pc ?? $pa); ?>"<?php endif; ?>><?php echo esc_html(sta_t($p['name']).($extra ? ' · '.implode(' · ', $extra) : '')); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </label>
