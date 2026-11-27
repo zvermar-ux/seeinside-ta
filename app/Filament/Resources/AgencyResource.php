@@ -138,10 +138,11 @@ class AgencyResource extends Resource
                             return new \Illuminate\Support\HtmlString('<p style="font-size:.85rem;color:rgb(var(--gray-500))">'.e(__('Pays 1 MKD with a real card through the same pages as the clients. Save the settings first. The 1 MKD can be returned (Void / Refund) in the merchant panel of the bank.')).'</p>'.$rows);
                         })
                         ->hintAction(
-                            Forms\Components\Actions\Action::make('payTest')->label(__('Test payment 1 MKD'))->icon('heroicon-o-credit-card')->button()->color('primary')
-                                ->requiresConfirmation()
-                                ->modalDescription(__('You will be taken to the page of Halk Bank to pay 1 MKD with a real card. Afterwards you come back here.'))
-                                ->action(function ($record, $livewire) {
+                            Forms\Components\Actions\Action::make('payTest')->label(__('Test payment'))->icon('heroicon-o-credit-card')->button()->color('primary')
+                                ->modalHeading(__('Test payment'))
+                                ->modalDescription(__('You will be taken to the page of Halk Bank to pay with a real card (in test mode: a test card of the bank). Afterwards you come back here. Some terminals do not accept very small amounts ("Invalid amount") – then try 10 or 100 MKD.'))
+                                ->form([Forms\Components\TextInput::make('amount')->label(__('Amount (MKD)'))->numeric()->minValue(1)->maxValue(1000)->default(1)->required()])
+                                ->action(function ($record, $livewire, array $data) {
                                     $agency = $record instanceof Agency ? $record->fresh() : Agency::find(\Illuminate\Support\Facades\Auth::user()?->agency_id);
                                     if (! \App\Services\Payments\Halk::enabled($agency)) {
                                         \Filament\Notifications\Notification::make()->title(__('Save the settings first: Halk Bank, card payment switched on, Client ID and Store key.'))->warning()->send();
@@ -151,7 +152,7 @@ class AgencyResource extends Resource
                                     $p = \App\Models\OnlinePayment::withoutGlobalScopes()->create([
                                         'agency_id' => $agency->id, 'payable_type' => 'test', 'payable_id' => 0,
                                         'token' => \Illuminate\Support\Str::random(48), 'oid' => 'TEST-'.now()->format('ymdHis').'-'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(4)),
-                                        'provider' => 'halk', 'amount' => 1, 'currency' => 'MKD', 'booking_amount' => 1, 'status' => 'pending',
+                                        'provider' => 'halk', 'amount' => (float) $data['amount'], 'currency' => 'MKD', 'booking_amount' => (float) $data['amount'], 'status' => 'pending',
                                         'return_url' => $record instanceof Agency ? static::getUrl('edit', ['record' => $record]) : \App\Filament\Pages\MyAgency::getUrl(),
                                     ]);
                                     $livewire->redirect($p->url());

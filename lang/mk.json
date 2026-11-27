@@ -2217,5 +2217,7 @@
     "Prices by the people in the room (from the pasted price list)": "Цени според бројот на лица во собата (од залепениот ценовник)",
     ":count adult|:count adults": ":count возрасен|:count возрасни",
     ":count child|:count children": ":count дете|:count деца",
-    "same room": "иста соба"
+    "same room": "иста соба",
+    "Amount (MKD)": "Износ (ден.)",
+    "You will be taken to the page of Halk Bank to pay with a real card (in test mode: a test card of the bank). Afterwards you come back here. Some terminals do not accept very small amounts (\"Invalid amount\") – then try 10 or 100 MKD.": "Ќе ве однесе на страницата на Халк Банка за плаќање со картичка (во тест режим: тест картичка од банката). Потоа се враќате тука. Некои терминали не примаат многу мали износи („Неисправен износ“) – тогаш пробајте со 10 или 100 ден."
 }
