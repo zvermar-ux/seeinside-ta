@@ -548,7 +548,8 @@ class STA_Templates
             'apartmani' => [__('Apartments', 'seeinside-travel'), '[sta_hotel_finder]'],
             'nastani' => [__('Events', 'seeinside-travel'), '[sta_list type="event" limit="12" columns="3" orderby="departure" pagination="1"]'],
             'vizi' => [__('Visas', 'seeinside-travel'), '[sta_list type="visa" limit="24" columns="4" orderby="title"]'],
-            'last-minute' => ['Last minute', '[sta_last_minute limit="24" columns="3"]'],
+            'first-minute' => ['First minute', '[sta_first_minute limit="24" columns="3"]'],
+            'last-minute' => ['Last minute', '[sta_last_minute limit="24" columns="3"]'],   // stays, but not in the menu
             'carteri' => [__('Charter seats', 'seeinside-travel'), '[sta_charters]'],
             'avio-karti' => [__('Flights', 'seeinside-travel'), '[sta_flight_search]'],
             'proveri-rezervacija' => [__('Check your booking', 'seeinside-travel'), '[sta_booking_status]'],

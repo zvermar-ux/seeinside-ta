@@ -15,7 +15,7 @@ class STA_Header
             // top bar
             'tb_on' => '0',
             'tb_where' => 'all',            // all | mobile | desktop
-            'tb_links' => "Last minute|/last-minute/\nВизи|/vizi/\nКонтакт|/contact-us/",
+            'tb_links' => "First minute|/first-minute/\nВизи|/vizi/\nКонтакт|/contact-us/",
             'tb_phone' => '1',
             'tb_email' => '1',
             'tb_text' => '',                // short text, e.g. "Работно време: пон–пет 9–17"

@@ -471,8 +471,15 @@ class STA_Site
         if ($count('sta_visa')) {
             $add(__('Visas', 'seeinside-travel'), $link('vizi', 'sta_visa'));
         }
-        if ($page('last-minute')) {
-            $add('Last minute', $link('last-minute', ''));
+        // "First minute" in the menu; the "Last minute" page stays (hidden – not in the menu)
+        if ($page('first-minute')) {
+            $add('First minute', $link('first-minute', ''));
+        }
+        $lmId = (int) (get_option('sta_pages', [])['last-minute'] ?? 0);
+        foreach ($lmId ? (array) wp_get_nav_menu_items($menuId, ['post_status' => 'any']) : [] as $it) {
+            if ($it->type === 'post_type' && (int) $it->object_id === $lmId) {
+                wp_delete_post($it->ID, true);
+            }
         }
         if ($page('avio-karti')) {
             $add(__('Flights', 'seeinside-travel'), $link('avio-karti', ''));

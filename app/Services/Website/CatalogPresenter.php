@@ -90,6 +90,7 @@ class CatalogPresenter
             'has_guide' => $t->has_guide,
             'is_featured' => $t->is_featured,
             'promotions' => $t->promoArray(),
+            'first_minute_page' => (bool) $t->show_first_minute,
             'updated_at' => $t->updated_at?->toIso8601String(),
         ];
     }
@@ -255,6 +256,7 @@ class CatalogPresenter
             'amenities' => $a->amenities->map(fn ($m) => ['key' => $m->key, 'name' => $m->trAll('name'), 'icon' => $m->icon, 'category' => $m->category])->values()->all(),
             'is_featured' => $a->is_featured,
             'promotions' => $a->promoArray(),
+            'first_minute_page' => (bool) $a->show_first_minute,
             'updated_at' => $a->updated_at?->toIso8601String(),
         ];
     }

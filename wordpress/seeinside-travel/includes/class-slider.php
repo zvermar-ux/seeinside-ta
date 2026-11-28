@@ -53,7 +53,7 @@ class STA_Slider
             'btn_arrow' => '1',
             'btn2_default_label' => 'Сите понуди',
             'btn2_default_label_en' => 'All offers',
-            'btn2_default_link' => '/last-minute/',
+            'btn2_default_link' => '/first-minute/',
             // navigation
             'arrows' => 'right-vertical',    // right-vertical | left-vertical | sides | bottom-right | bottom-center | none
             'arrow_style' => 'glass',        // glass | solid | outline | minimal

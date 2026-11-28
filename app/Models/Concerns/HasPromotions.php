@@ -11,6 +11,7 @@ trait HasPromotions
     {
         $this->mergeCasts([
             'is_last_minute' => 'boolean',
+            'show_first_minute' => 'boolean',
             'last_minute_price' => 'decimal:2',
             'last_minute_discount_percent' => 'decimal:2',
             'last_minute_until' => 'date',

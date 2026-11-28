@@ -4132,3 +4132,6 @@ msgstr[1] "%d деца"
 
 msgid "%1$s adult / %2$s child"
 msgstr "%1$s возрасен / %2$s дете"
+
+msgid "Offers marked for \"First minute\" in the app"
+msgstr "Понуди означени за „First minute“ во апликацијата"

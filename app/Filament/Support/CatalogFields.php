@@ -63,6 +63,9 @@ class CatalogFields
             ->columns(3)
             ->schema([
                 Forms\Components\Toggle::make('is_last_minute')->label(__('Last minute offer'))->live()->columnSpanFull(),
+                // the "First minute" page of the website (apartments and tours)
+                Forms\Components\Toggle::make('show_first_minute')->label(__('Show on the "First minute" page of the website'))->columnSpanFull()
+                    ->visible(fn ($record, $livewire) => in_array($livewire::getResource()::getModel(), [\App\Models\Accommodation::class, \App\Models\Tour::class], true)),
                 Forms\Components\TextInput::make('last_minute_price')->label(__('Last minute price'))->numeric()
                     ->visible(fn (Get $get) => $get('is_last_minute')),
                 Forms\Components\TextInput::make('last_minute_discount_percent')->label(__('or discount'))->numeric()->suffix('%')

@@ -314,6 +314,7 @@ class STA_Sync
         // numbers for sorting / filtering in listings (also without ACF)
         update_post_meta($postId, '_sta_price', $map['fields']['price_from'] ?? $map['fields']['price'] ?? '');
         update_post_meta($postId, '_sta_last_minute', ! empty($d['promotions']['last_minute']) ? 1 : 0);
+        update_post_meta($postId, '_sta_first_minute', ! empty($d['first_minute_page']) ? 1 : 0);   // marked in the app for the "First minute" page
         update_post_meta($postId, '_sta_date', $map['sort_date'] ?? '');
         // every departure / event day – the search box looks for offers between two dates
         delete_post_meta($postId, '_sta_day');

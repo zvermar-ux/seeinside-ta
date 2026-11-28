@@ -142,6 +142,7 @@ class STA_Frontend
         }
         add_shortcode('sta_list', [self::class, 'sc_list']);
         add_shortcode('sta_last_minute', fn ($a) => self::sc_list(array_merge(['type' => 'all', 'last_minute' => '1'], (array) $a)));
+        add_shortcode('sta_first_minute', fn ($a) => self::sc_list(array_merge(['type' => 'all', 'first_minute' => '1'], (array) $a)));
         add_shortcode('sta_slider', [self::class, 'sc_slider']);
         add_shortcode('sta_search', [self::class, 'sc_search']);
         add_shortcode('sta_flight_search', [self::class, 'sc_flights']);
@@ -168,7 +169,7 @@ class STA_Frontend
     {
         $a = shortcode_atts([
             'type' => 'tour', 'limit' => 9, 'columns' => 3, 'destination' => '', 'place' => '', 'group' => '', 'tour_type' => '', 'category' => '',
-            'country' => '', 'last_minute' => '', 'featured' => '', 'orderby' => 'date', 'order' => '', 'pagination' => '', 'search' => '', 'ids' => '',
+            'country' => '', 'last_minute' => '', 'first_minute' => '', 'featured' => '', 'orderby' => 'date', 'order' => '', 'pagination' => '', 'search' => '', 'ids' => '',
             'query' => '',
         ], $atts, 'sta_list');
 
@@ -195,6 +196,9 @@ class STA_Frontend
             }
             if ($a['last_minute']) {
                 $args['meta_query'][] = ['key' => '_sta_last_minute', 'value' => 1];
+            }
+            if ($a['first_minute']) {
+                $args['meta_query'][] = ['key' => '_sta_first_minute', 'value' => 1];
             }
             if ($a['featured']) {
                 $args['meta_query'][] = ['key' => 'is_featured', 'value' => 1];

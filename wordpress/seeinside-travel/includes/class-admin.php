@@ -384,6 +384,7 @@ class STA_Admin
             ['[sta_search types="tour,accommodation,event"]', __('Search: destination, month, budget, last minute', 'seeinside-travel')],
             ['[sta_list type="tour" limit="6" columns="3" destination="grcija" orderby="departure"]', __('Grid of offers. type: tour, hotel, event, visa, all · last_minute="1" · featured="1" · orderby: date, departure, price, title, random · pagination="1" · search="1"', 'seeinside-travel')],
             ['[sta_last_minute]', __('All last minute offers', 'seeinside-travel')],
+            ['[sta_first_minute]', __('Offers marked for "First minute" in the app', 'seeinside-travel')],
             ['[sta_destinations taxonomy="sta_destination" limit="8"]', __('Destination tiles', 'seeinside-travel')],
             ['[sta_charters]', __('Charter seats with booking', 'seeinside-travel')],
             ['[sta_reviews limit="6" layout="grid" form="yes"]', __('Reviews. type: tour, event, accommodation, visa, agency · layout: grid, slider, list · featured="yes" · on an offer page: that offer', 'seeinside-travel')],
