@@ -17,6 +17,7 @@ class TourDeparture extends Model
             'end_date' => 'date',
             'status' => DepartureStatus::class,
             'is_last_minute' => 'boolean',
+            'stop_sale' => 'boolean',
             'price_adult' => 'decimal:2',
             'price_child' => 'decimal:2',
             'last_minute_price' => 'decimal:2',

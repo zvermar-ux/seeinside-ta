@@ -13,7 +13,11 @@ class EditTour extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [\App\Filament\Support\WebsitePreview::action('tour'), $this->aiActions(), Actions\DeleteAction::make()];
+        return [
+            \App\Filament\Resources\TourResource::stopSaleAction(Actions\Action::class)
+                ->after(fn ($record) => $this->redirect(\App\Filament\Resources\TourResource::getUrl('edit', ['record' => $record]))),
+            \App\Filament\Support\WebsitePreview::action('tour'), $this->aiActions(), Actions\DeleteAction::make(),
+        ];
     }
 
     public function getContentTabLabel(): ?string

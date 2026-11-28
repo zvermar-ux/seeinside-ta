@@ -2223,5 +2223,16 @@
     "Price per adult": "Цена по возрасен",
     "as above": "како горе",
     "Add city": "Додај град",
-    "Show on the \"First minute\" page of the website": "Прикажи на страницата „First minute“ на сајтот"
+    "Show on the \"First minute\" page of the website": "Прикажи на страницата „First minute“ на сајтот",
+    "Open sale": "Отвори продажба",
+    "Full – no more bookings for this date": "Полно – не се примаат резервации за овој датум",
+    "Sale": "Продажба",
+    "Stopped": "Стопирана",
+    ":n dates closed": "Затворени :n термини",
+    "Closed dates are shown as sold out on the website and no booking is accepted for them. The sync with the old system does not open them again.": "Затворените термини на сајтот се прикажуваат како распродадени и не се примаат резервации за нив. Синхронизацијата со старата апликација не ги отвора повторно.",
+    "Stop the whole tour": "Стопирај ја целата тура",
+    "Or close only these dates": "Или затвори ги само овие термини",
+    ":n seats": ":n места",
+    "The tour is closed for bookings": "Турата е затворена за резервации",
+    "The tour is open for bookings": "Турата е отворена за резервации"
 }

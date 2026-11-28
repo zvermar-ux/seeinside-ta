@@ -188,6 +188,8 @@ class TourResource extends Resource
                                 Forms\Components\TextInput::make('price_child')->label(__('Children'))->numeric(),
                                 Forms\Components\Select::make('status')->label(__('Status'))->options(DepartureStatus::class)
                                     ->default(DepartureStatus::Available->value)->selectablePlaceholder(false)->columnSpan(2),
+                                Forms\Components\Toggle::make('stop_sale')->label(__('Stop sale'))->inline(false)->onColor('danger')
+                                    ->helperText(__('Full – no more bookings for this date')),
                                 Forms\Components\Toggle::make('is_last_minute')->label('Last minute')->inline(false)->live(),
                                 Forms\Components\TextInput::make('last_minute_price')->label(__('Last minute price'))->numeric()
                                     ->visible(fn (Get $get) => $get('is_last_minute')),
@@ -277,7 +279,7 @@ class TourResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['destination'])->withCount('departures')
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['destination', 'departures'])->withCount('departures')
                 ->withMin(['departures as next_departure' => fn ($q) => $q->whereDate('start_date', '>=', today())], 'start_date'))
             ->columns([
                 CatalogFields::coverColumn(),
@@ -289,6 +291,9 @@ class TourResource extends Resource
                 Tables\Columns\TextColumn::make('price_from')->label(__('Price from'))->sortable()
                     ->formatStateUsing(fn ($state, Tour $r) => $state ? number_format((float) $state, 0, ',', '.').' '.$r->currency : '—'),
                 CatalogFields::lastMinuteColumn(),
+                Tables\Columns\TextColumn::make('stop_sale_badge')->label(__('Sale'))
+                    ->state(fn (Tour $r) => $r->stop_sale ? __('Stopped') : (($n = $r->departures->where('stop_sale', true)->filter(fn ($d) => $d->start_date->gte(today()))->count()) ? __(':n dates closed', ['n' => $n]) : __('Open')))
+                    ->badge()->color(fn (Tour $r) => $r->stop_sale ? 'danger' : ($r->departures->where('stop_sale', true)->isNotEmpty() ? 'warning' : 'success')),
                 Tables\Columns\IconColumn::make('is_flight')->label(__('Transport'))->boolean()->trueIcon('heroicon-o-paper-airplane')->falseIcon('heroicon-o-truck')
                     ->trueColor('info')->falseColor('gray')->tooltip(fn (Tour $r) => $r->is_flight ? __('Flight tour') : __('Bus tour'))->toggleable(),
                 AgencyField::column()->toggleable(isToggledHiddenByDefault: true),
@@ -308,6 +313,7 @@ Tables\Filters\SelectFilter::make('place_id')->label(__('Place'))->searchable()
                     ->query(fn (Builder $query) => $query->whereHas('departures', fn ($q) => $q->whereDate('start_date', '>=', today()))),
             ])
             ->actions([
+                static::stopSaleAction(Tables\Actions\Action::class),
                 Tables\Actions\EditAction::make(),
                 Duplicate::action(fn (Tour $from, Tour $to) => static::copyRelations($from, $to), ['price_from']),
             ])
@@ -356,5 +362,40 @@ Tables\Filters\SelectFilter::make('place_id')->label(__('Place'))->searchable()
             'create' => Pages\CreateTour::route('/create'),
             'edit' => Pages\EditTour::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * "Stop sale": the whole tour or single dates are closed (e.g. full with bookings taken in the office) –
+     * the website shows them sold out and takes no booking; the sync with the old system does not open them again
+     */
+    public static function stopSaleAction(string $class)
+    {
+        return $class::make('stopSale')->label(fn (Tour $record) => $record->stop_sale ? __('Open sale') : __('Stop sale'))
+            ->icon(fn (Tour $record) => $record->stop_sale ? 'heroicon-o-play-circle' : 'heroicon-o-no-symbol')
+            ->color(fn (Tour $record) => $record->stop_sale ? 'success' : 'danger')
+            ->modalHeading(fn (Tour $record) => __('Stop sale').' – '.$record->tr('name'))
+            ->modalDescription(__('Closed dates are shown as sold out on the website and no booking is accepted for them. The sync with the old system does not open them again.'))
+            ->fillForm(fn (Tour $record) => [
+                'all' => (bool) $record->stop_sale,
+                'dates' => $record->departures()->where('stop_sale', true)->pluck('id')->all(),
+            ])
+            ->form(fn (Tour $record) => [
+                Forms\Components\Toggle::make('all')->label(__('Stop the whole tour'))->onColor('danger')->live(),
+                Forms\Components\CheckboxList::make('dates')->label(__('Or close only these dates'))->columns(2)->bulkToggleable()
+                    ->options($record->departures()->whereDate('start_date', '>=', today())->orderBy('start_date')->get()
+                        ->mapWithKeys(fn ($d) => [$d->id => $d->start_date->format('d.m.Y').($d->end_date ? ' – '.$d->end_date->format('d.m.Y') : '').($d->seatsLeft() !== null ? ' · '.__(':n seats', ['n' => $d->seatsLeft()]) : '')]))
+                    ->hidden(fn (Forms\Get $get) => (bool) $get('all')),
+            ])
+            ->action(function (Tour $record, array $data) {
+                $record->forceFill(['stop_sale' => (bool) $data['all']])->save();
+                $ids = array_map('intval', (array) ($data['dates'] ?? []));
+                $record->departures()->whereDate('start_date', '>=', today())->update(['stop_sale' => false]);
+                if ($ids && ! $data['all']) {
+                    $record->departures()->whereIn('id', $ids)->update(['stop_sale' => true]);
+                }
+                $record->touch();   // the website gets it right away
+                \Filament\Notifications\Notification::make()->success()
+                    ->title($data['all'] ? __('The tour is closed for bookings') : ($ids ? __(':n dates closed', ['n' => count($ids)]) : __('The tour is open for bookings')))->send();
+            });
     }
 }

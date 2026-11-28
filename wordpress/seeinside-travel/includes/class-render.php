@@ -867,6 +867,17 @@ class STA_Render
         if ($type === 'custom' && empty($d['booking']['enabled'])) {
             return '';
         }
+        // tour closed by the agency (stop sale) or every date closed / sold out: no form, a clear message
+        if ($type === 'tour') {
+            $open = array_filter((array) ($d['departures'] ?? []), fn ($x) => ! in_array($x['status'] ?? '', ['sold_out', 'cancelled'], true));
+            if (! empty($d['stop_sale']) || ($d['departures'] ?? []) && ! $open) {
+                $agency = (array) (get_option('sta_meta', [])['agency'] ?? []);
+                $phone = (string) ($agency['phone'] ?? '');
+
+                return '<div class="sta-soldout"><b>'.esc_html__('Sold out', 'seeinside-travel').'</b><p>'.esc_html__('No more online bookings are accepted for this tour. Call us – we will tell you about free places or a similar offer.', 'seeinside-travel').'</p>'
+                    .($phone ? '<a class="sta-btn" href="tel:'.esc_attr(preg_replace('/[^0-9+]/', '', $phone)).'">'.esc_html($phone).'</a>' : '').'</div>';
+            }
+        }
 
         return sta_part('form-booking', ['d' => $d, 'type' => $type, 'post_id' => $postId]);
     }

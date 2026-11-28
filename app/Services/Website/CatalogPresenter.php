@@ -91,6 +91,7 @@ class CatalogPresenter
             'is_featured' => $t->is_featured,
             'promotions' => $t->promoArray(),
             'first_minute_page' => (bool) $t->show_first_minute,
+            'stop_sale' => (bool) $t->stop_sale,
             'updated_at' => $t->updated_at?->toIso8601String(),
         ];
     }
@@ -128,8 +129,9 @@ class CatalogPresenter
                 'price_adult_regular' => ($reg = $d->price_adult ?? $t->price_adult) !== null && (float) $reg > (float) $d->adultPrice() ? (float) $reg : null,
                 'price_child' => $d->childPrice(),
                 'seats_left' => $d->seatsLeft(),
-                'status' => $d->status?->value,
-                'status_label' => $d->status?->labels(),
+                // closed by the agency (stop sale of the tour or of this date) = sold out on the website
+                'status' => $t->stop_sale || $d->stop_sale ? \App\Enums\DepartureStatus::SoldOut->value : $d->status?->value,
+                'status_label' => $t->stop_sale || $d->stop_sale ? \App\Enums\DepartureStatus::SoldOut->labels() : $d->status?->labels(),
                 'is_last_minute' => $d->is_last_minute,
                 'note' => $d->note,
             ])->values()->all(),

@@ -34,6 +34,7 @@ class Tour extends Model
     {
         return array_fill_keys(self::TRANSLATABLE, 'array') + [
             'payment_policy' => 'array',
+            'stop_sale' => 'boolean',
             'tour_type' => TourType::class,
             'video_urls' => 'array',
             'galleries' => 'array',

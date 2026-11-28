@@ -137,7 +137,7 @@ class BookingController extends Controller
             if (! $dep) {
                 throw ValidationException::withMessages(['departure_id' => 'Choose a departure date.']);
             }
-            if (in_array($dep->status?->value, ['sold_out', 'cancelled'], true)) {
+            if ($item->stop_sale || $dep->stop_sale || in_array($dep->status?->value, ['sold_out', 'cancelled'], true)) {
                 throw ValidationException::withMessages(['departure_id' => 'This departure is not available.']);
             }
             if ($dep->seatsLeft() !== null && $dep->seatsLeft() < $adults + $children) {

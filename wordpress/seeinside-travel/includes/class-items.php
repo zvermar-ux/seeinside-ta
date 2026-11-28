@@ -283,6 +283,9 @@ class STA_Items
         [$price, $old, $promo] = sta_price_info($d, $type);
         $it['price'] = $price;
         $it['old_price'] = $old;
+        if (! empty($d['stop_sale'])) {
+            $it['badges'][] = ['soldout', __('Sold out', 'seeinside-travel')];   // closed by the agency
+        }
         if (! empty($d['promotions']['last_minute'])) {
             $it['badges'][] = ['lm', $promo];
         } elseif (! empty($d['promotions']['first_minute'])) {

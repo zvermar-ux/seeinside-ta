@@ -4135,3 +4135,6 @@ msgstr "%1$s возрасен / %2$s дете"
 
 msgid "Offers marked for \"First minute\" in the app"
 msgstr "Понуди означени за „First minute“ во апликацијата"
+
+msgid "No more online bookings are accepted for this tour. Call us – we will tell you about free places or a similar offer."
+msgstr "За оваа тура повеќе не се примаат онлајн резервации. Јавете ни се – ќе ве известиме за слободни места или слична понуда."
